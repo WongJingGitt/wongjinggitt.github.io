@@ -1,0 +1,22 @@
+{
+    "type": "directory",
+    "name": "blog",
+    "children": [
+        {
+            "type": "directory",
+            "name": "\u968f\u7b14",
+            "children": [
+                {
+                    "type": "directory",
+                    "name": "Python",
+                    "children": [
+                        {
+                            "type": "file",
+                            "name": "\u4e00\u4e9b\u6709\u610f\u601d\u7684\u5199\u6cd5.md"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
