@@ -1,1 +1,0 @@
-document.getElementById('test').onclick = () => document.body.style.backgroundColor = 'red'
