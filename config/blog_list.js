@@ -1,0 +1,1 @@
+var blogList = {'type': 'directory', 'name': 'blog', 'children': [{'type': 'directory', 'name': '随笔', 'children': [{'type': 'directory', 'name': 'Python', 'children': [{'type': 'file', 'name': '一些有意思的写法.md'}]}]}]}
