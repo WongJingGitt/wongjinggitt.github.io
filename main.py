@@ -18,7 +18,7 @@ class Push:
         hierarchy = {
             "type": "directory",
             "name": "blog",
-            "path": "blog",
+            "path": "",
             "children": []
         }
 
