@@ -113,6 +113,53 @@
         ![](https://wongjinggitt.github.io/images/自动化/UI自动化/Web端各类UI自动化工具库的使用总结/Playwright原理.png)    
         
         ![](https://wongjinggitt.github.io/images/自动化/UI自动化/Web端各类UI自动化工具库的使用总结/Cypress原理.png)
+        
+    <table>
+        <thead>
+            <tr>
+                <th>工具名称</th>
+                <th>所属时期</th> 
+                <th>与浏览器的通讯方式</th>
+                <th>运行效率(相对)</th>
+                <th>支持的语言</th>
+                <th>总结</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Selenium</td>
+                <td>早期</td>
+                <td>通过WebDriver进行通讯</td>
+                <td>相对较低</td>
+                <td>多语言支持，包括Python和JavaScript</td>
+                <td>流行的早期UI自动化工具，但运行效率较低，配置复杂。</td>
+            </tr>
+            <tr>
+                <td>Robot Framework</td>
+                <td>早期</td>
+                <td>通过WebDriver进行通讯</td>
+                <td>相对较低</td>
+                <td>支持多种语言，包括Python和JavaScript</td>
+                <td>具有可扩展性的自动化框架，但需要第三方驱动。</td>
+            </tr>
+            <tr>
+                <td>Playwright</td>
+                <td>新一代</td>
+                <td>直接使用浏览器的DevTools协议通讯</td>
+                <td>相对高</td>
+                <td>支持多种语言，包括Python和JavaScript</td>
+                <td>新一代工具，高效且提供了丰富的API。</td>
+            </tr>
+            <tr>
+                <td>Cypress</td>
+                <td>新一代</td>
+                <td>基于Electron构建，直接访问应用程序的DOM</td>
+                <td>相对高</td>
+                <td>主要支持JavaScript</td>
+                <td>适用于现代Web应用测试，与应用程序深度集成。</td>
+            </tr>
+        </tbody>
+    </table>
 
     #### 对比：
 
