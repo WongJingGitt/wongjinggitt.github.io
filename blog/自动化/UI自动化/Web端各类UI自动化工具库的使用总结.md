@@ -90,7 +90,32 @@
     如果想要**更低的门槛**，使用**Python**。  
 
 - ### 工具库  
+
+    UI自动化的工具库的发展，我个人认为可以分为两个阶段：**早期**与**现代**。  
     
+    它们之间主要体现在使用的底层技术不同。  
+
+    #### 特点：    
+
+    - 早期的UI自动化工具，以`Selenium`、`Robot Framework`为例：  
+    
+        > 它们无法直接与浏览器进行通讯，往往要借助第三方驱动如：WebDriver。也因为这样，它们的运行效率要低于新一代工具，并且使用门槛要高于新一代工具。<span style="color: rgb(198, 202, 205)">PS：我真的见过有人在用Selenium时，WebDriver驱动装了一下午都没装好的。</span>
+        
+        ![](https://wongjinggitt.github.io/images/自动化/UI自动化/Web端各类UI自动化工具库的使用总结/Selenium原理.png)    
+
+    - 新一代UI自动化工具，以`Playwright`、`Cypress`为例：  
+  
+        > 新一代的UI自动化工具往往是借助浏览器的特性，直接与浏览器进行通讯，不需要借助第三方驱动。  
+        例如：  
+            1. `Playwright`：是基于浏览器自身的`DevTools`协议来与浏览器通讯，它提供了一种更直接的方法来控制浏览器行为，包括页面导航、DOM操作等。  
+            2. `Cypress`：`Cypress`是基于`Electron`构建的，`Electron`是一款用于制作跨平台应用的工具，它的底层是基于`Chromium`浏览器。而`Cypress`利用了这个特性，把测试代码运行在主进程之外，与Electron的渲染进程共享上下文。这意味着Cypress的测试脚本可以直接访问应用程序的DOM
+
+        ![](https://wongjinggitt.github.io/images/自动化/UI自动化/Web端各类UI自动化工具库的使用总结/Playwright原理.png)    
+        
+        ![](https://wongjinggitt.github.io/images/自动化/UI自动化/Web端各类UI自动化工具库的使用总结/Cypress原理.png)
+
+    #### 对比：
+
     - **早期的UI自动化：**
         
         提起UI自动化相信很多人第一反应是`Selenium`，这从侧面证实了`Selenium`的影响力。  
