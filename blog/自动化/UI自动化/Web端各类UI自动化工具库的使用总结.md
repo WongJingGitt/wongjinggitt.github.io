@@ -229,7 +229,7 @@
         
         简单讲一下我的体验感受：
         
-        - `Playwright`：
+        - **Playwright：**
           
             > 微软开源的UI自动化工具。能够控制FireFox、Webkit、Chrome。可以使用`NodeJS`与`Python`进行开发，但我多使用Python。
             底层是基于浏览器的DevTools协议。有两套API，分别是异步与同步。但是由于Python的语言特性，我多使用同步API。
@@ -247,7 +247,7 @@
             1. 学习曲线较陡峭，相对较新，使用者可能需要一些时间来学习和适应其API和工作原理。
             2. 社区支持相对较少。
 
-        - `Puppeteer`：
+        - **Puppeteer：**
             
             > 谷歌开源的UI自动化工具，默认的浏览器是Chromium，但是可以通过内置的API，结合ChromeLauncher库控制Chrome浏览器。如果有debug链接的话理论上所有chromium内核的浏览器都支持控制，本人实测Edge、QQ浏览器都可以控制。  
             Puppeteer是基于NodeJS的一个库，有Python开发者编写了第三方库Pyppeteer，但貌似好久没有更新了。
@@ -266,7 +266,7 @@
             2. 社区支持相对较少（对比Selenium）。
             3. 学习成本高，不懂NodeJS的测试人员需要先学习NodeJS。
 
-        - `Cypress`：
+        - **Cypress：**
         
             > [Cypress](https://www.cypress.io/)在国内使用的人应该挺少的，但个人认为这是我目前为止使用过最省心的UI自动化测试工具了。
             它内置了`Mocha`测试框架，并且内置直观的测试报告。但它的缺点也挺明显的，可拓展性不强。类似于Android与iOS的区别。
@@ -299,95 +299,95 @@
             <tr>
                 <td>Selenium</td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>支持多种浏览器和操作系统</li>
                         <li>多语言支持，包括Python和JavaScript</li>
                         <li>支持分布式测试和并行测试</li>
                         <li>可以录制和回放测试用例</li>
                         <li>可以与其他测试框架和工具集成</li>
-                    </ul>
+                    </ol>
                 </td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>没有内置的图像比较功能，需要第三方软件或库</li>
                         <li>没有自带的测试报告功能，需要第三方插件</li>
                         <li>需要安装和配置浏览器驱动</li>
                         <li>需要处理一些浏览器和网页的兼容性问题</li>
-                    </ul>
+                    </ol>
                 </td>
             </tr>
             <tr>
                 <td>Robot Framework</td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>语法简单，使用表格格式编写测试数据</li>
                         <li>支持关键字驱动和数据驱动的测试方法</li>
                         <li>支持用户自定义关键字和变量</li>
                         <li>提供HTML格式的报告和日志</li>
                         <li>提供多种扩展库来支持不同的平台和应用</li>
                         <li>提供远程测试执行接口和事件监听接口</li>
-                    </ul>
+                    </ol>
                 </td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>运行速度较慢，不适合大量数据的测试</li>
                         <li>需要安装和配置Python环境和相关库</li>
                         <li>需要学习和掌握不同库的关键字用法</li>
                         <li>需要处理一些库之间的兼容性问题</li>
-                    </ul>
+                    </ol>
                 </td>
             </tr>
             <tr>
                 <td>Playwright</td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>支持多浏览器，多语言，适用于广泛的用例</li>
                         <li>基于浏览器的DevTools协议，运行速度相对较快</li>
                         <li>提供了同步和异步两套API，降低了使用门槛</li>
                         <li>安装简单，直接使用pip或npm安装软件包即可</li>
-                    </ul>
+                    </ol>
                 </td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>学习曲线较陡峭，相对较新，可能需要时间适应其API和工作原理</li>
                         <li>社区支持相对较少</li>
-                    </ul>
+                    </ol>
                 </td>
             </tr>
             <tr>
                 <td>Puppeteer</td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>安装简单，无需额外配置</li>
                         <li>支持网页截图和PDF生成</li>
                         <li>可捕获SPA并生成预渲染内容</li>
                         <li>提供时间线轨迹捕获，有助于性能问题诊断</li>
-                    </ul>
+                    </ol>
                 </td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>仅支持Node.js</li>
                         <li>社区支持相对较少</li>
                         <li>学习成本较高，需要了解Node.js</li>
-                    </ul>
+                    </ol>
                 </td>
             </tr>
             <tr>
                 <td>Cypress</td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>提供简洁的API和直观的界面，便于编写和运行测试</li>
                         <li>自动重新加载页面，提供快速反馈</li>
                         <li>强大的调试功能，帮助定位问题</li>
                         <li>内置测试报告和测试框架，省去了第三方集成</li>
                         <li>全局隐式等待，无需额外代码</li>
-                    </ul>
+                    </ol>
                 </td>
                 <td>
-                    <ul>
+                    <ol>
                         <li>自由度较低，可拓展性不强</li>
                         <li>仅支持Chrome浏览器</li>
-                    </ul>
+                    </ol>
                 </td>
             </tr>
         </tbody>
