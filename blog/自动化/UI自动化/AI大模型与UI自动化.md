@@ -94,10 +94,10 @@
         
         还有一些场景也有很大的问题，例如按钮可以使用`<button></button>`来写，还可以使用`<input type="button"/>`
 
-        于是我便另一种方式：class。
+        于是我便换了另一种方式：class。
 
         前端项目中UI组件设计，通常会遵循对应的规范。
-        在设计通用组件时，往往会用class来绑定css样式，而这些class通常会遵循一定的命名规范。会把尝试拆分成一个个class，然后按需绑定DOM。
+        在设计通用组件时，往往会用class来绑定css样式，而这些class通常会遵循一定的命名规范。会把样式拆分成一个个class，然后按需绑定DOM。
         
         > 例如：最基础的按钮class可能是 `btn`，不同的按钮则会在`btn`之上增加对应的class。  
         因此禁用的按钮class可能是 `btn btn-disabled`。
@@ -106,7 +106,7 @@
 
         ![](https://wongjinggitt.github.io/images/自动化/UI自动化/AI大模型与UI自动化/class命名规律.png)        
 
-        所以有了这个规律就好办了，在这个例子中如果我只使用`h-f-btn`这个class则可以把这两按钮都捕获到。
+        所以有了这个规律就好办了，在这个例子中，我只需要使用`h-f-btn`这个class就可以把这两按钮都捕获到。
         
         ![](https://wongjinggitt.github.io/images/自动化/UI自动化/AI大模型与UI自动化/class捕获元素.png)
 
@@ -117,4 +117,100 @@
         3. 页面加载完之后，在页面遍历搜寻所有定义的DOM选择器。
         4. 在遍历选择器中：如果元素存在则得到的应该时一个列表，还需要循环一次DOM列表得到每一个DOM，然后获取DOM的在页面的坐标信息。
         5. 截图，然后将坐标信息转成YOLO标记。
-        6. 保存截图与坐标文件。
+        6. 保存截图与坐标文件。  
+    
+        有了逻辑接下来就是代码实现。具体已实现的完整代码在项目的[utils/label_generator.py](https://github.com/WongJingGitt/AutoFlowAI/blob/master/utils/label_generator.py)中。  
+        这里就只贴一点核心代码讲解一下。  
+        
+        ```python
+        for url in urls:
+            self.__page.goto(url)
+            self.__page.wait_for_timeout(REDIRECT_TIME)
+
+            visible, hidden = self._element_visibility_classify(selector_strs=self._selectors)
+
+            # 首先搜一遍初始的位置，然后把hidden(当前处于可视窗口外)中还没有进行捕获的元素逐一地进行滚动到可视窗口内进行捕获，然后更新hidden直到hidden为空。
+            while True:
+                data_name = f"{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}__{int(random.random() * 10000000)}"
+                yolo_datas = [f'{index} {self._element_position_for_yolo(selector)}' for index, selector in visible]
+
+                # 爬B站首页时出现空yolo_datas陷入死循环的情况，优化这类场景
+                if len(yolo_datas) <= 0:
+                    print(url, '搜寻完毕')
+                    print()
+                    break
+
+                with open(path.join(self._label_path, f'{data_name}.txt'), 'w') as fw:
+                    yolo_datas = '\n'.join(yolo_datas)
+                    self.__page.screenshot(path=path.join(self._image_path, f'{data_name}.png'))
+                    self._filelist.append(data_name)
+                    fw.write(yolo_datas)
+                    fw.close()
+
+                print(data_name, '已写入')
+                print()
+
+                if len(hidden) <= 0:
+                    print(url, '搜寻完毕')
+                    print()
+                    break
+                hidden[0][1].scroll_into_view_if_needed()
+
+                visible, hidden = self._element_visibility_classify(selector_strs=hidden)
+        ```  
+        
+        这里面有涉及到了一个`element_visibility_classify`函数不得不讲一下，也是我在编写这个脚本过程中踩过的一个坑。  
+        
+        在实际页面中，所有的DOM都会被加载到DOM树。但是当前的窗口可能会放不下，所以就会触发滚动条。
+        也就是说：**某个DOM虽然在DOM树层面是可见的，但是在初始的界面其实是不可见的。可能需要向右或者向下滚动才能展示在页面。**  
+        
+        这个时候就需要滚动页面，然后再截图并且捕获元素打YOLO标签。  
+
+        ```python
+        def _element_visibility_classify(self, selector_strs: list[str or Locator or ElementHandle]) -> tuple[
+            list[Locator or ElementHandle], list[Locator or ElementHandle]]:
+            """
+            根据元素在窗口内的可见性，将DOM元素分类为窗口内可见、窗口内不可见或隐藏。
+            :param selector_strs: 要分类的选择器列表。
+            :return: 包含可见和隐藏元素的元组。
+            """
+            visible = []
+            hidden = []
+
+            for index, selector_str in enumerate(selector_strs):
+                # 判断是否是初次调用，初次调用时selector_str的是字符串。
+                if isinstance(selector_str, str):
+                    selector_str = self._convert_selector(selector_str)
+                    selectors = self.__page.query_selector_all(selector_str)
+                    # 优化处理，确保selectors是可迭代对象
+                    selectors = selectors if len(selectors) > 0 else []
+                else:
+                    # 优化处理，当不是初次调用时传入的格式时 (label索引, 元素对象)。如果不用数组包裹后续遍历会遍历元组导致_, selector = result分解失败
+                    selectors = [selector_str]
+
+                for selector in selectors:
+                    # 如果是初次调用，把label索引和元素对象用元组绑定
+                    result = selector if not isinstance(selector_str, str) else (index, selector)
+                    _, selector = result
+                    try:
+                        if self._visible_check(selector):
+                            visible.append(result)
+                        elif not self._visible_check(selector):
+                            hidden.append(result)
+                    except TypeError:
+                        pass
+            return visible, hidden
+        ```  
+        
+        这里的核心逻辑其实就是：传入一个DOM元素的列表，然后遍历每一个元素。判断元素是当前窗口可见还是不可见（需要滚动）。  
+        然后把可见和不可见的元素分开放入两个列表，最后返回。  
+        
+        在调用这个函数时：
+        
+        1. 初始的元素列表会被分为可见与不可见两种。
+        2. 然后在可见的元素捕获完毕之后，把页面滚动到不可见的列表第一个元素，让其出现在窗口中。
+        3. 把不可见的元素再重新作为一个新的列表传入到`_element_visibility_classify`中。因为此时页面已经滚动了一次，`hidden`列表中的部分元素以处于可见状态。需要重新划分一次。  
+        4. 再继续捕获可见的元素。此时`hidden`列表的长度已经变小。  
+        5. 循环`步骤2`、`步骤3`、`步骤4`，直到输出的`hidden`列表长度为0。  
+      
+        这样就完美解决了这个问题。
