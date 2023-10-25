@@ -56,6 +56,7 @@ class Push:
             fw.close()
 
     def __update(self):
+        subprocess.run(['git', 'pull', 'origin', 'main'])
         subprocess.run(['git', 'add', '.'])
         subprocess.run(['git', 'commit', '-m', datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
         subprocess.run(['git', 'push', '-u', 'origin', 'main'])
