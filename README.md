@@ -85,6 +85,34 @@
 
 ----
 
+### config配置
+
+示例：
+
+```json
+{
+    "username": "王英杰",
+    "logo": "https://wongjinggitt.github.io/public/logo.svg",
+    "email": "WongJingGit@163.com",
+    "links": [
+        {"title": "Github", "url": "https://github.com/WongJingGitt"},
+        {"title": "Gitee", "url": "https://gitee.com/wangyingjie1003", "src": "https://gitee.com/static/images/logo-black.svg?t=158106664"}
+    ]
+}
+```
+
+![](https://wongjinggitt.github.io/images/Readme/config对应关系.png)
+
+`logo`可以找免费的在线设计网站做一个，这种网站很多。
+
+`links`接收多维数组作为配置项，每个配置项包含title、url、src(可选)三个属性。  
+
+* title: 链接的标题
+* url: 点击后跳转的链接
+* src: 链接的图标，可选。可以从跳转网站的logo里提取出来，如果**填了将会使用src作为标题，并且不会展示title文案**，跳转交互保留。
+
+----
+
 ### 安装
 ```commandline
 git clone https://github.com/WongJingGitt/wongjinggitt.github.io.git
