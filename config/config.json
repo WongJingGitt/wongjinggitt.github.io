@@ -4,6 +4,9 @@
     "email": "WongJingGit@163.com",
     "links": [
         {"title": "Github", "url": "https://github.com/WongJingGitt"},
-        {"title": "Gitee", "url": "https://gitee.com/wangyingjie1003", "src": "https://gitee.com/static/images/logo-black.svg?t=158106664"}
+        {"title": "Gitee", "url": "https://gitee.com/wangyingjie1003", "src": "https://gitee.com/static/images/logo-black.svg?t=158106664"},
+        {"title": "示例外链", "url": "https://baidu.com"},
+        {"title": "示例外链2", "url": "https://baidu.com"},
+        {"title": "示例外链3", "url": "https://baidu.com", "src": "https://pss.bdstatic.com/static/superman/img/logo/logo_white-d0c9fe2af5.png"}
     ]
 }
