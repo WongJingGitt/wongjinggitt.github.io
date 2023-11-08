@@ -125,10 +125,29 @@
 
 ----
 
+### 目录说明
+
+* `blog`: 博客存放目录
+* `config`: 配置文件存放目录
+* `images`: 图片存放目录
+* `public`: 公共文件存放目录
+* `static`: 博客前端静态文件存放目录
+* `asset-manifest.json`: 前端静态资源映射文件
+* `index.html`: 博客首页文件
+* `main.py`: 主程序文件
+
+----
+
 ### 安装
 ```commandline
 git clone https://github.com/WongJingGitt/wongjinggitt.github.io.git
 cd wongjinggitt.github.io
+
+// 删除博客
+rmdir /s/q blog
+
+// 创建blog文件夹
+md blog
 
 // 移除默认的远程仓库
 git remote remove origin
