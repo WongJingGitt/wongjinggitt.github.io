@@ -12,32 +12,7 @@
 
 也就是说**不管你怎么写，你只要写完把Markdown文件放在blog文件夹下面（可以用文件夹分类），然后运行main.py即可。**
 
-项目基本可以满足日常需求，但是有一个点：**仅支持原生Markdown语法，拓展语法需要以HTML标记语言书写。** 例如表格、字体颜色等等。
-
-```html
-<!--表格-->
-<table>
-    <thead>
-        <tr>
-            <th>表格标题</th>
-            <th>表格标题</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>表格内容</td>
-            <td>表格内容</td>
-        </tr>
-    </tbody>
-</table>
-
-<!--字体颜色-->
-<span style="color: red;">测试字体</span>
-```
-
-表格在写的时候带上thead标签与tbody标签，不然无法区分表格标题与表格内容。
-
-博客界面UI使用的是字节跳动的[Semi Design](https://semi.design/zh-CN/)，个人挺喜欢这种风格。  
+博客界面UI使用的是字节跳动的[Semi Design](https://semi.design/zh-CN/)，个人挺喜欢这种风格。
 
 效果预览：[https://wongjinggitt.github.io/](https://wongjinggitt.github.io/)
 
@@ -81,7 +56,38 @@
 
 并且list还可以嵌套使用，list内嵌套list，展示逻辑卡片内嵌套卡片。详细可以看我的博客。
 
-**关于文档内目录的锚点渲染：**
+----
+
+### Tips
+
+项目基本可以满足日常需求，但是有一个点：**仅支持原生Markdown语法，拓展语法需要以HTML标记语言书写。** 例如表格、字体颜色等等。
+
+#### 拓展语法处理
+
+```html
+<!--表格-->
+<table>
+    <thead>
+        <tr>
+            <th>表格标题</th>
+            <th>表格标题</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>表格内容</td>
+            <td>表格内容</td>
+        </tr>
+    </tbody>
+</table>
+
+<!--字体颜色-->
+<span style="color: red;">测试字体</span>
+```
+
+**表格在写的时候带上thead标签与tbody标签，不然无法区分表格标题与表格内容。**
+
+#### 文档目录处理
 
 项目会识别文档内**一级标题**（`h1`、`#`）一直到六级标题（`h6`、`######`），然后生成目录。并且会用缩进的方式映射层级关系。
 
