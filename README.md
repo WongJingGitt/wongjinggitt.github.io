@@ -139,6 +139,9 @@
 ----
 
 ### 安装
+
+**部署之前记得更改`config.json`，删除仓库内的博客、图片、公共文件。**
+
 ```commandline
 git clone https://github.com/WongJingGitt/wongjinggitt.github.io.git
 cd wongjinggitt.github.io
