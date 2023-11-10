@@ -10,6 +10,8 @@
 我自认为现在基本实现了“傻瓜式”操作，项目会将blog目录下的目录层级与md文件映射到前端展示，除了首次部署时需要在`config/config.json`中更改个人信息。
 后续只需要按照个人喜好将文件放在`blog`目录下，然后**运行main.py**提交到GitHub即可。
 
+**blog目录不建议嵌套太深的层级，可能会有展示异常。**
+
 也就是说**不管你怎么写，你只要写完把Markdown文件放在blog文件夹下面（可以用文件夹分类），然后运行main.py即可。**
 
 博客界面UI使用的是字节跳动的[Semi Design](https://semi.design/zh-CN/)，个人挺喜欢这种风格。
@@ -160,3 +162,12 @@ git remote remove origin
 // 添加远程仓库
 git remote add origin <你的Github Pages仓库>
 ```
+
+----
+
+### 引用与依赖
+
+- React: https://react.dev/
+- Semi Design: https://semi.design/zh-CN
+- React-Markdown: https://github.com/remarkjs/react-markdown
+- React-Router-Dom: https://reactrouter.com/en/main
