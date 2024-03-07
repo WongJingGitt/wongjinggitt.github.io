@@ -63,4 +63,4 @@ class Push:
 
 
 if __name__ == '__main__':
-    p = Push()
+    Push()
