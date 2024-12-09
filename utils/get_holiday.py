@@ -111,11 +111,16 @@ class GetHoliday:
                 # status 1: 周末
                 # status 2: 法定假
 
-                status = 2 if item.get('status') == '1' else 0
-                status = 1 if status == 0 and item.get('week') in ('6', '7') else status
-
-                value = "法定假" if status == 2 else "工作日" if status == 0 else "周末"
-                value = "补班" if value == "工作日" and item.get('status') == '2' else value
+                status = 0
+                value = "工作日"
+                if item.get('status') == '1':
+                    status = 2
+                    value = "法定假"
+                elif item.get('cnDay') in ('六', '日') and item.get('status') != '2':
+                    status = 1
+                    value = "周末"
+                elif item.get('status') == '2' and item.get('cnDay') in ('六', '日'):
+                    value = "补班"
 
                 self.__calendar[key] = {
                     "date": key,
@@ -178,4 +183,4 @@ if __name__ == '__main__':
     gh.start_date = (1, 1, 2020)
     gh.end_date = (1, 12, 2025)
     gh.get_holiday()
-    gh.write_to_file(overwrite_base=True)
+    gh.write_to_file(overwrite_base=False)
