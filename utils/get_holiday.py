@@ -222,18 +222,18 @@ class GetHoliday:
         if not filename.endswith('.ics'):
             filename += '.ics'
 
-        with open(path.join(public_path, filename), 'w', newline="") as fw:
+        with open(path.join(public_path, filename), 'w', newline="", encoding='utf-8') as fw:
             fw.write(cal.serialize())
 
 
 if __name__ == '__main__':
     # 标准使用方式
     gh = GetHoliday()
-    gh.start_date = (1, 1, 2020)
-    gh.end_date = (1, 12, 2025)
-    gh.get_holiday()
-    gh.write_to_json_file(overwrite_base=False)
-    gh.write_to_ics_file('2020_2025.ics')
+    # gh.start_date = (1, 1, 2020)
+    # gh.end_date = (1, 12, 2025)
+    # gh.get_holiday()
+    # gh.write_to_json_file(overwrite_base=False)
+    # gh.write_to_ics_file('2020_2025.ics')
 
     # 从json文件中获取数据
     gh.write_to_ics_file('中国大陆节假日.ics', json_file='holiday.json')
