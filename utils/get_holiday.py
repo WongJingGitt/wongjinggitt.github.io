@@ -1,11 +1,16 @@
 import json
 from datetime import datetime
-from typing import Iterator, Tuple, Dict
+from typing import Iterator, Tuple, Dict, Union
 from random import Random
 from time import sleep
 from os import path
 
 import requests
+from ics import Calendar, Event
+
+utils_path = path.abspath(path.dirname(__file__))
+root_path = path.abspath(path.join(utils_path, '..'))
+public_path = path.join(root_path, 'public')
 
 
 class GetHoliday:
@@ -133,7 +138,7 @@ class GetHoliday:
 
             print("=" * 50)
 
-    def write_to_file(self, overwrite_base: bool = False, separate: bool = False):
+    def write_to_json_file(self, overwrite_base: bool = False, separate: bool = False):
         """
         将结果写入文件
         separate开启时，会将基础的holiday.json替换为当前爬取的时间，然后将原始的holiday.json写入到holiday_custom.json文件中
@@ -142,9 +147,6 @@ class GetHoliday:
         :param separate: 是否将结果写入到单独的holiday_custom.json文件，只有当overwrite_base为True时有效
         :return:
         """
-        utils_path = path.abspath(path.dirname(__file__))
-        root_path = path.abspath(path.join(utils_path, '..'))
-        public_path = path.join(root_path, 'public')
 
         if not overwrite_base:
             start_day, start_month, start_year = self.__start_date
@@ -177,10 +179,61 @@ class GetHoliday:
                 base_calendar.update(self.__calendar)
                 json.dump(base_calendar, fw, ensure_ascii=False, indent=4)
 
+    def write_to_ics_file(self, filename: str, json_file: str = None):
+        """
+        将日历数据写入到ics文件中
+        :param json_file: 从json文件中读取数据，不传则使用__calendar
+        :param filename: 需要保存的文件名字
+        :return:
+        """
+        if not json_file:
+            calendar_data: Dict[str, Dict[str, Union[str, int, Dict[str, str]]]] = self.__calendar
+        else:
+            json_file = path.join(public_path, json_file) if not path.dirname(json_file) else json_file
+            with open(json_file, 'r', encoding='utf-8') as fr:
+                calendar_data: Dict[str, Dict[str, Union[str, int, Dict[str, str]]]] = json.load(fr)
+
+        cal = Calendar()
+
+        for item in calendar_data.values():
+            detail: Dict = item.get('detail')
+
+            date = datetime.strptime(item.get('date'), '%Y/%m/%d')
+
+            work_event = Event()
+            work_event.name = item.get('value')
+            work_event.begin = date
+            work_event.make_all_day()
+
+            cal.events.add(work_event)
+
+            if not detail.get('festivalInfoList'):
+                continue
+
+            for festival in detail.get('festivalInfoList'):
+                festival_event = Event()
+                festival_event.name = festival.get('name')
+                festival_event.begin = date
+                festival_event.make_all_day()
+                festival_event.url = festival.get('baikeUrl')
+
+                cal.events.add(festival_event)
+
+        if not filename.endswith('.ics'):
+            filename += '.ics'
+
+        with open(filename, 'w', newline="") as fw:
+            fw.write(cal.serialize())
+
 
 if __name__ == '__main__':
+    # 标准使用方式
     gh = GetHoliday()
     gh.start_date = (1, 1, 2020)
     gh.end_date = (1, 12, 2025)
     gh.get_holiday()
-    gh.write_to_file(overwrite_base=False)
+    gh.write_to_json_file(overwrite_base=False)
+    gh.write_to_ics_file('2020_2025.ics')
+
+    # 从json文件中获取数据
+    gh.write_to_ics_file('中国大陆节假日.ics', json_file='holiday.json')
