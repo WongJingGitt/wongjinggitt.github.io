@@ -222,7 +222,7 @@ class GetHoliday:
         if not filename.endswith('.ics'):
             filename += '.ics'
 
-        with open(filename, 'w', newline="") as fw:
+        with open(path.join(public_path, filename), 'w', newline="") as fw:
             fw.write(cal.serialize())
 
 
