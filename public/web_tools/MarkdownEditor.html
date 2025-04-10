@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Markdown转换工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/pptxgenjs@3.10.0/dist/pptxgen.bundle.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css" integrity="sha512-jYtlOKxyOGJQxuHAR9h4PK04vh9HzaxI0dHVXx/kqICgw82nv3UpzWkaef+Fg8g4XJEvf/W+sPOnaeYQp5SRaQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --preview-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --text-color: #24292e;
+            --secondary-text-color: #6a737d;
+            --primary-color: #0366d6;
+            --primary-hover-color: #0056b3;
+            --danger-color: #d73a49;
+            --danger-hover-color: #cb2431;
+            --modal-overlay-bg: rgba(0,0,0,0.6);
+            --modal-content-bg: #ffffff;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            overflow: hidden; /* Prevent body scrollbars */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin: 0 auto;
+            height: calc(100vh - 1rem); /* Full height minus padding */
+            box-sizing: border-box; /* Include padding in height calculation */
+        }
+
+        .editor-box, .preview-box {
+            background: var(--preview-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow: hidden; /* Prevent box itself from overflowing */
+            min-width: 0; /* Fix Issue 2: Allow grid item to shrink */
+        }
+
+        .markdown-body {
+            background: var(--preview-bg) !important;
+            padding: 1.5rem !important;
+            width: 100%; /* Use full width */
+            height: 100%; /* Use full height */
+            box-sizing: border-box; /* Include padding in dimensions */
+            overflow: auto; /* Use combined overflow property */
+        }
+
+        .title-toolbar {
+            display: flex;
+            gap: 0.75rem; /* Slightly reduced gap */
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+
+        select, button, input[type="search"] { /* Added search input */
+            padding: 0.5rem 1rem;
+            border-radius: 6px; /* Slightly rounder */
+            border: 1px solid var(--border-color);
+            background: white;
+            font-size: 0.9em; /* Consistent font size */
+            box-sizing: border-box;
+        }
+        button {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        button:hover {
+             border-color: #c6cbd1;
+             background-color: #f6f8fa;
+        }
+        button:active {
+             background-color: #f3f4f6;
+             border-color: #c6cbd1;
+             box-shadow: inset 0 1px 0 rgba(225,228,232,0.2);
+        }
+
+
+        button.primary {
+            background: var(--primary-color);
+            color: white;
+            border: 1px solid var(--primary-color); /* Fixed border color */
+        }
+
+        button.primary:hover {
+            background: var(--primary-hover-color);
+            border-color: var(--primary-hover-color);
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+         }
+         button.danger:hover {
+            background-color: var(--danger-hover-color);
+            border-color: var(--danger-hover-color);
+         }
+         button.small {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8em;
+         }
+
+        .notice {
+            color: var(--secondary-text-color);
+            font-size: 0.9em;
+            margin-top: 0; /* Adjusted margin */
+            margin-left: auto; /* Push notice to the right if space allows */
+        }
+        .card-title {
+            padding: 10px 0; /* Adjusted padding */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            flex-shrink: 0; /* Prevent title from shrinking */
+            box-sizing: border-box;
+            flex-wrap: wrap; /* Allow wrapping */
+            gap: 10px; /* Add gap for wrapped items */
+            border-bottom: 1px solid var(--border-color); /* Add subtle separator */
+            margin-bottom: 0.5rem; /* Space below title */
+        }
+        .card-body {
+            flex-grow: 1; /* Allow body to take remaining space */
+            overflow: hidden; /* Important: Let children handle scroll */
+            display: flex; /* Use flex for inner content */
+            flex-direction: column; /* Stack children vertically */
+        }
+        .text-title {
+            font-size: 1.25em; /* Adjusted size */
+            font-weight: 600; /* Bolder */
+            margin-right: auto; /* Push buttons to the right */
+            white-space: nowrap; /* Prevent title breaking */
+        }
+        .title-button-group {
+             display: flex;
+             gap: 0.5rem;
+             align-items: center;
+             margin-left: 1rem; /* Space between title and buttons */
+        }
+		.title-button-item { /* Applied to buttons */
+			height: 35px;
+			min-width: 75px;
+			display: inline-flex; /* Use inline-flex for button content */
+			align-items: center;
+			justify-content: center; /* Center content */
+            gap: 0.4em; /* Space between icon and text */
+            padding: 0.5rem 0.8rem; /* Adjust padding */
+            white-space: nowrap; /* Prevent text wrapping */
+		}
+    </style>
+    <style>
+        /* Editor specific styles */
+        .editor {
+            width: 100%;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            border-radius: 6px; /* Match button radius */
+            overflow: hidden; /* Keep this */
+            display: flex; /* Fix Issue 1: Use flex */
+            flex-direction: column; /* Fix Issue 1: Stack toolbar and textarea */
+            flex-grow: 1; /* Make editor container fill card-body */
+            border: 1px solid var(--border-color); /* Use variable */
+            background: #fafafa; /* Background for the whole editor area */
+        }
+
+        #editor { /* Textarea */
+            width: 100%; /* Use full width */
+            flex-grow: 1; /* Fix Issue 1: Allow textarea to fill space */
+            padding: 15px; /* Adjusted padding */
+            font-size: 14px;
+            line-height: 1.6;
+            border: none;
+            background: transparent; /* Inherit background or set specific */
+            resize: none;
+            tab-size: 4;
+            overflow-y: auto; /* Keep vertical scroll */
+            box-sizing: border-box; /* Include padding in dimensions */
+        }
+
+        #editor:focus {
+            outline: none;
+        }
+
+        .toolbar {
+            padding: 8px 15px; /* Match textarea horizontal padding */
+            background: #f6f8fa; /* Lighter toolbar */
+            border-bottom: 1px solid var(--border-color); /* Use variable */
+            font-size: 0.85em; /* Slightly smaller */
+            color: var(--secondary-text-color); /* Use variable */
+            flex-shrink: 0; /* Fix Issue 1: Prevent toolbar from shrinking */
+            box-sizing: border-box;
+            width: 100%;
+            user-select: none; /* Prevent text selection */
+        }
+    </style>
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: var(--modal-overlay-bg); /* Black w/ opacity */
+            backdrop-filter: blur(3px); /* Optional blur effect */
+        }
+
+        .modal-content {
+            background-color: var(--modal-content-bg);
+            margin: 8% auto; /* Reduced top margin slightly */
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            width: 85%; /* Slightly wider */
+            max-width: 650px; /* Slightly wider max */
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative; /* For close button positioning */
+            animation: fadeIn 0.3s ease-out;
+            display: flex; /* Use flex for layout */
+            flex-direction: column; /* Stack vertically */
+            gap: 1rem; /* Space between elements */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.8rem;
+        }
+
+        .modal-close-btn {
+            color: #aaa;
+            /* position: absolute; */ /* Removed absolute positioning */
+            /* top: 10px; */
+            /* right: 15px; */
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1;
+            background: none;
+            border: none;
+            padding: 0 5px; /* Add some clickable area */
+            cursor: pointer;
+        }
+
+        .modal-close-btn:hover,
+        .modal-close-btn:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .modal h2 {
+            margin: 0; /* Reset margin */
+            font-weight: 600;
+            font-size: 1.3em;
+        }
+        .modal-toolbar { /* Container for search and save new button */
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping */
+        }
+        #searchInput {
+            flex-grow: 1; /* Allow search to take available space */
+            min-width: 200px; /* Minimum width */
+        }
+        #saveNewButton {
+             display: none; /* Hidden by default, shown via JS */
+             /* Styles inherited or can add specific ones */
+        }
+
+        .saved-item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 50vh; /* Increased max height */
+            overflow-y: auto;
+            border: 1px solid var(--border-color); /* Add border around list */
+            border-radius: 6px;
+        }
+
+        .saved-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px; /* Adjust padding */
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.15s ease-in-out;
+            gap: 10px; /* Space between info and actions */
+        }
+        .saved-item:last-child {
+            border-bottom: none;
+        }
+        .saved-item:hover {
+            background-color: #f6f8fa;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px; /* Increased gap */
+            flex-grow: 1; /* Allow info to take space */
+            min-width: 0; /* Prevent overflow issues */
+        }
+
+        .item-name {
+            font-weight: 500;
+            color: var(--text-color);
+            white-space: nowrap; /* Prevent wrapping */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Add ellipsis */
+        }
+
+        .item-timestamp {
+            font-size: 0.8em;
+            color: var(--secondary-text-color);
+        }
+        .item-actions {
+            display: flex;
+            gap: 8px; /* Consistent gap */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .no-items {
+             text-align: center;
+             color: var(--secondary-text-color);
+             padding: 2rem 0;
+             font-style: italic;
+             border-bottom: none !important; /* Ensure no border */
+             display: block !important; /* Ensure it takes full width */
+        }
+        .no-items:hover {
+             background-color: transparent !important; /* No hover effect */
+        }
+        .toast-message { /* Simple toast styling */
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            border-radius: 6px;
+            z-index: 1050; /* Above modal overlay */
+            font-family: sans-serif;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            text-align: center;
+            pointer-events: none; /* Prevent interaction */
+        }
+        .toast-message.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 编辑区 -->
+        <div class="editor-box">
+            <div class="card-title">
+                <div class="text-title">Markdown 编辑器</div>
+                <div class="title-button-group">
+                    <button onclick="showLoadModal()" title="Load saved markdown" class="title-button-item">
+						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-history"><path d="M1.643 3.143L.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684zM7.75 4a.75.75 0 0 1 .75.75v4.336l3.47 2.023a.75.75 0 0 1-.74 1.298l-3.75-2.165A.75.75 0 0 1 7 9.75V4.75a.75.75 0 0 1 .75-.75z"></path></svg>
+						加载
+					</button>
+                    <button class="primary title-button-item" onclick="showSaveModal()" title="Save or update markdown"> <!-- Changed onclick -->
+						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-download"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 11.75a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 1.5 0v9.5a.75.75 0 0 1-.75.75Zm-4.28-4.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.31V9.5a.75.75 0 0 1-1.5 0V4.31L3.78 7.47a.75.75 0 0 1-1.06 0Z"></path></svg>
+						保存
+					</button>
+                    <button class="title-button-item" onclick="loadSample()" >加载示例</button> <!-- Adjusted style -->
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="editor">
+                    <div class="toolbar">Markdown Editor (Tab/Shift+Tab supported)</div>
+                    <textarea id="editor" placeholder="Start typing markdown here..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预览区 -->
+        <div class="preview-box">
+            <div  class="card-title">
+                <div class="text-title">
+                    实时预览
+                </div>
+                <div class="title-toolbar">
+                    <select id="format">
+                        <option value="html">HTML</option>
+                        <option value="image" selected>图片</option>
+                        <option value="ppt">PPT</option>
+                    </select>
+                    <button class="primary" onclick="exportFile()">导出文件</button>
+                    <p class="notice">提示：首次生成图片可能需要5-10秒</p> <!-- Updated time -->
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="markdown-body" id="preview"></div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Load/Save Markdown Modal -->
+    <div id="loadModal" class="modal">
+        <div class="modal-content">
+             <div class="modal-header">
+                 <h2 id="modalTitle">加载已保存的 Markdown</h2>
+                 <button class="modal-close-btn" onclick="hideLoadModal()" title="关闭">&times;</button>
+             </div>
+             <div class="modal-toolbar">
+                <input type="search" id="searchInput" placeholder="按名称搜索..." oninput="filterSavedItems()">
+                <button id="saveNewButton" class="primary" onclick="handleSaveNew()">另存为新...</button>
+             </div>
+            <ul id="savedItemList" class="saved-item-list">
+                <!-- Items will be loaded here by JavaScript -->
+                 <li class="no-items">没有找到已保存的文档。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 独立示例内容 -->
+    <script id="sampleMarkdown" type="text/template">
+# 现代化文档转换工具
+
+## 功能特性
+
+✅ ​**​实时HTML预览​**​
+✅ 多格式导出支持 (HTML, 图片, PPT)
+✅ 专业样式渲染 (GitHub Markdown CSS + Highlight.js)
+✅ 内容本地存储 (IndexedDB) - 支持搜索、更新、删除
+
+```javascript
+// 完整的代码示例
+function calculate(a, b) {
+    return a + b;
+}
+console.log(calculate(2, 3)); // 输出: 5
+```
+
+## 使用指南
+
+1.  在左侧 **编辑器** 中输入或粘贴Markdown文本。
+2.  右侧将 **实时预览** 渲染后的效果。
+3.  点击编辑器上方的 **保存** 按钮:
+    *   在弹出窗口中点击 **另存为新...** 以创建新条目。
+    *   点击列表中某一项旁的 **更新** 按钮以覆盖现有条目。
+4.  点击编辑器上方的 **加载** 按钮:
+    *   使用 **搜索框** 快速查找。
+    *   点击列表中某一项旁的 **加载** 按钮将其内容填入编辑器。
+    *   点击 **删除** 按钮移除条目。
+5.  在预览区上方选择 **导出格式** (HTML, 图片, PPT)，然后点击 **导出文件** 下载。
+
+> 专业的技术文档与演示解决方案，提供更完善的本地管理功能！
+
+---
+
+## 宽内容测试
+
+### 表格
+
+| Header 1 | Header 2 | Header 3 | Header 4 | Header 5 | Header 6 | Header 7 | Header 8 | Header 9 | Header 10 | Header 11 | Header 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Data 1 | Data 2 | Data 3 | Data 4 | Data 5 | Data 6 | Data 7 | Data 8 | Data 9 | Data 10 | Data 11 | Data 12 |
+| Long Data Entry Cell Number One | Long Data Entry Cell Number Two | Long Data Entry Cell Number Three | Long Data Entry Cell Number Four | Long Data Entry Cell Number Five | Long Data Entry Cell Number Six | Long Data Entry Cell Number Seven | Long Data Entry Cell Number Eight | Long Data Entry Cell Number Nine | Long Data Entry Cell Number Ten | Long Data Entry Cell Number Eleven | Long Data Entry Cell Number Twelve |
+
+### 长代码块
+
+```text
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+```
+    </script>
+    <script>
+        // --- Toast Notification ---
+		function showToast(message, duration = 3000) {
+		  // Remove existing toasts first
+          document.querySelectorAll('.toast-message').forEach(t => t.remove());
+
+          const toast = document.createElement('div');
+          toast.textContent = message;
+		  toast.className = 'toast-message'; // Use class for styling
+
+		  document.body.appendChild(toast);
+
+		  // Trigger fade in
+		  requestAnimationFrame(() => {
+              requestAnimationFrame(() => { // Double requestAnimationFrame ensures transition triggers
+                  toast.classList.add('show');
+              });
+          });
+
+		  // Set timer for fade out
+		  setTimeout(() => {
+		    toast.classList.remove('show');
+		    // Remove element after fade out transition completes
+		    toast.addEventListener('transitionend', () => toast.remove());
+		  }, duration);
+		}
+
+        // --- Editor & Indentation ---
+        const editor = document.getElementById('editor');
+
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) { // Check for modifiers
+                e.preventDefault();
+                handleIndentation('indent');
+            } else if (e.key === 'Tab' && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+                handleIndentation('unindent');
+            }
+        });
+
+
+        function handleIndentation(action) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const value = editor.value;
+            const tab = '    '; // 4 spaces for tab
+
+            // If no selection, handle single line or cursor position
+            if (start === end) {
+                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                if (action === 'indent') {
+                    editor.setRangeText(tab, start, start, 'end');
+                } else { // Unindent
+                    const line = value.substring(lineStart, start);
+                    if (line.startsWith(tab)) {
+                        editor.setRangeText('', lineStart, lineStart + tab.length, 'end');
+                    } else if (line.startsWith('\t')) { // Handle actual tab character if present
+                        editor.setRangeText('', lineStart, lineStart + 1, 'end');
+                    } else {
+                         // Remove up to 4 spaces if not a full tab
+                         const leadingSpaces = line.match(/^[ ]{1,4}/);
+                         if (leadingSpaces) {
+                             editor.setRangeText('', lineStart, lineStart + leadingSpaces[0].length, 'end');
+                         }
+                    }
+                }
+            } else { // Handle selection
+                const selectedLines = value.substring(start, end);
+                // Find the start of the first selected line
+                const selectionLineStart = value.lastIndexOf('\n', start - 1) + 1;
+                // Include the full lines in the operation
+                const textToModify = value.substring(selectionLineStart, end);
+                let modifiedText = '';
+                let lineShiftFirst = 0; // Track cursor shift for the first line
+
+                const lines = textToModify.split('\n');
+
+                lines.forEach((line, index) => {
+                    let currentLineShift = 0;
+                    if (action === 'indent') {
+                        modifiedText += tab + line;
+                        currentLineShift = tab.length;
+                    } else { // Unindent
+                        if (line.startsWith(tab)) {
+                            modifiedText += line.substring(tab.length);
+                            currentLineShift = -tab.length;
+                        } else if (line.startsWith('\t')) {
+                            modifiedText += line.substring(1);
+                             currentLineShift = -1;
+                        } else {
+                             const leadingSpaces = line.match(/^[ ]{1,4}/);
+                             if (leadingSpaces) {
+                                 modifiedText += line.substring(leadingSpaces[0].length);
+                                 currentLineShift = -leadingSpaces[0].length;
+                             } else {
+                                 modifiedText += line; // No change
+                             }
+                        }
+                    }
+                    if (index < lines.length - 1) {
+                        modifiedText += '\n';
+                    }
+                    if (index === 0) {
+                        // Only adjust if the selection didn't start exactly at the beginning of the line
+                         if (start > selectionLineStart) {
+                            lineShiftFirst = currentLineShift > 0 ? tab.length : Math.max(currentLineShift, -(start - selectionLineStart));
+                         } else {
+                             lineShiftFirst = currentLineShift;
+                         }
+                    }
+                });
+
+                // Replace the text
+                editor.setRangeText(modifiedText, selectionLineStart, end, 'select');
+
+                // Adjust selection
+                const finalStart = Math.max(selectionLineStart, start + lineShiftFirst);
+                // Calculate new end (can be complex, this is an approximation)
+                const lengthDifference = modifiedText.length - textToModify.length;
+                const finalEnd = end + lengthDifference;
+                editor.setSelectionRange(finalStart, finalEnd);
+            }
+            updatePreview(); // Update preview after indentation change
+        }
+    </script>
+    
+    <script>
+        // --- Core Editor and Preview Logic ---
+        const preview = document.getElementById('preview');
+        const sampleContent = document.getElementById('sampleMarkdown').textContent.trim(); // Trim whitespace
+
+        // Markdown解析配置
+        marked.setOptions({
+            highlight: (code, lang) => {
+                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                try {
+                    // Explicitly check for null/undefined language before highlighting
+                     if (language) {
+                        return hljs.highlight(code, { language, ignoreIllegals: true }).value;
+                     }
+                } catch (e) {
+                     console.error(`Highlighting error for lang ${lang}:`, e);
+                }
+                // Fallback to auto-highlight or plaintext if language invalid or error occurs
+                try {
+                    return hljs.highlightAuto(code).value;
+                } catch (autoError) {
+                    console.error("Auto highlighting failed:", autoError);
+                    // Safest fallback: escape HTML entities
+                    const escapedCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    return `<pre><code class="hljs">${escapedCode}</code></pre>`;
+                }
+            },
+            breaks: true,
+            gfm: true
+        });
+
+
+        // 加载示例内容
+        function loadSample() {
+            editor.value = sampleContent;
+            updatePreview();
+            showToast("示例内容已加载");
+        }
+
+        // 实时更新预览
+        function updatePreview() {
+            try {
+                 preview.innerHTML = marked.parse(editor.value);
+            } catch (e) {
+                 console.error("Markdown Parsing Error:", e);
+                 preview.innerHTML = `<p style="color: red;">Error parsing Markdown. Check console for details.</p>`;
+            } finally {
+				hljs.highlightAll();
+			}
+        }
+
+        // 导出功能处理
+        async function exportFile() {
+            const format = document.getElementById('format').value;
+            const markdownInput = editor.value; // Use current editor value
+            const previewElement = document.getElementById('preview');
+            const exportButton = event.target; // Get the button that was clicked
+            const originalButtonText = exportButton.textContent; // Use textContent
+            exportButton.disabled = true;
+            exportButton.textContent = '导出中...';
+
+
+            // Ensure preview is up-to-date for export
+            try {
+                previewElement.innerHTML = marked.parse(markdownInput);
+				hljs.highlightAll();
+            } catch (e) {
+                showToast(`Markdown 解析错误，无法导出: ${e.message}`);
+                console.error("Markdown Parsing Error on Export:", e);
+                exportButton.disabled = false;
+                exportButton.textContent = originalButtonText;
+                return; // Stop export if parsing fails
+            }
+
+
+            // Clone the preview element for manipulation without affecting display
+            const elementToExport = previewElement.cloneNode(true);
+
+            // Temporarily append to body to ensure styles are computed for html2canvas
+            const captureContainer = document.createElement('div');
+            captureContainer.className = 'markdown-body'; // Apply same base class
+            Object.assign(captureContainer.style, {
+                position: 'absolute',
+                left: '-9999px', // Position off-screen
+                top: '0px',
+                padding: '2rem', // Ensure padding is included in capture
+                background: 'var(--preview-bg)', // Match background
+                 // Use scrollWidth to capture potentially overflowing content better
+                width: previewElement.scrollWidth + 'px',
+                minWidth: '600px', // Ensure a minimum width for better layout capture
+                height: 'auto', // Let content define height
+                overflow: 'visible', // Ensure all content is rendered
+                boxSizing: 'content-box' // IMPORTANT: padding adds to width for html2canvas
+            });
+            captureContainer.appendChild(elementToExport);
+            document.body.appendChild(captureContainer);
+
+
+            // Wait for styles and layout (crucial for html2canvas)
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Increased delay slightly
+
+            try {
+                switch(format) {
+                    case 'image':
+                        console.log('Exporting as Image...');
+                        const canvas = await html2canvas(captureContainer, { // Capture the styled container
+                            scale: window.devicePixelRatio || 2, // Use device pixel ratio for sharpness
+                            useCORS: true,
+                            logging: false, // Reduce console noise unless debugging
+                            scrollX: 0, // Ensure capture starts at the left edge
+                            scrollY: 0, // Ensure capture starts at the top edge
+                            windowWidth: captureContainer.scrollWidth,
+                            windowHeight: captureContainer.scrollHeight,
+                            backgroundColor: getComputedStyle(captureContainer).backgroundColor // Use computed background
+                        });
+                        console.log('Canvas generated');
+                        triggerDownload(canvas.toDataURL('image/png'), 'export.png');
+                        showToast('图片导出成功！');
+                        break;
+
+                    case 'html':
+                        console.log('Exporting as HTML...');
+                        const htmlContent = marked.parse(markdownInput); // Re-parse for clean HTML
+                        const fullHTML = `
+                            <!DOCTYPE html>
+                            <html lang="zh-CN">
+                            <head>
+                                <meta charset="UTF-8">
+                                <title>Exported Markdown</title>
+                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/github.min.css">
+                                <style>
+                                    body { padding: 2rem; margin: 0; background-color: var(--bg-color, #f8f9fa); } /* Use body for padding, add bg */
+                                    .markdown-body {
+                                         box-sizing: border-box;
+                                         min-width: 200px;
+                                         max-width: 980px; /* Typical GitHub max-width */
+                                         margin: 0 auto; /* Center content */
+                                         padding: 45px; /* GitHub standard padding */
+                                         background: var(--preview-bg, #ffffff); /* Ensure white background */
+                                         border: 1px solid var(--border-color, #e1e4e8); /* Add subtle border */
+                                         border-radius: 8px; /* Add radius */
+                                         box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Add shadow */
+                                    }
+                                     @media (max-width: 767px) {
+                                        .markdown-body { padding: 15px; }
+                                        body { padding: 1rem; }
+                                    }
+                                </style>
+                                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"><\/script>
+                                <script>document.addEventListener('DOMContentLoaded', (event) => {
+                                    document.querySelectorAll('pre code').forEach((block) => {
+                                        hljs.highlightElement(block);
+                                    });
+                                });<\/script>
+                            </head>
+                            <body><article class="markdown-body">${htmlContent}</article></body>
+                            </html>
+                        `;
+                        triggerDownload(
+                            URL.createObjectURL(new Blob([fullHTML], { type: 'text/html;charset=UTF-8' })),
+                            'export.html'
+                        );
+                        showToast('HTML导出成功！');
+                        break;
+
+                    case 'ppt':
+                        console.log('Exporting as PPT...');
+                        const pptx = new PptxGenJS();
+                        // Split by H1 or H2, keep delimiter using lookahead
+                        const sections = markdownInput.split(/(?=^#{1,2}\s)/m);
+
+                        if (sections.length === 0 || (sections.length === 1 && sections[0].trim() === '')) {
+                             // Handle empty input or input without H1/H2
+                             const slide = pptx.addSlide();
+                             const slideHtmlContent = marked.parse(markdownInput);
+                             slide.addText(htmlToPlainText(slideHtmlContent), { x: 0.5, y: 0.25, w: '90%', h: '90%', fontSize: 12, autoFit: true });
+                        } else {
+                            sections.forEach((section) => {
+                                if (section.trim() === '') return;
+                                const slide = pptx.addSlide();
+                                const slideHtmlContent = marked.parse(section.trim());
+
+                                // Attempt to extract title (H1/H2) for slide title
+                                const titleMatch = section.trim().match(/^#{1,2}\s+(.*)/);
+                                const slideTitle = titleMatch ? titleMatch[1] : 'Slide'; // Fallback title
+
+                                // PptxGenJS doesn't directly parse HTML well. Add simplified content.
+                                // We'll add the title separately if found, and the rest as text.
+                                const plainTextContent = htmlToPlainText(slideHtmlContent);
+
+                                // Add title object (if we had one) - basic example
+                                if (titleMatch) {
+                                     slide.addText(slideTitle, { x:0.5, y:0.2, w:'90%', h:0.5, fontSize: 24, bold: true });
+                                     // Add remaining text below title
+                                     const remainingText = htmlToPlainText(marked.parse(section.trim().substring(titleMatch[0].length).trim()));
+                                     if (remainingText) {
+                                         slide.addText(remainingText, { x: 0.5, y: 0.8, w: '90%', h: '80%', fontSize: 12, autoFit: true });
+                                     }
+                                } else {
+                                    // Add all text if no title found
+                                    slide.addText(plainTextContent, { x: 0.5, y: 0.25, w: '90%', h: '90%', fontSize: 12, autoFit: true });
+                                }
+                            });
+                        }
+
+                        await pptx.writeFile({ fileName: 'export.pptx' }); // Use await for async write
+                        showToast('PPT导出成功！');
+                        break;
+                }
+            } catch (error) {
+                showToast(`导出失败: ${error.message}`);
+                console.error("Export Error:", error);
+            } finally {
+                if (document.body.contains(captureContainer)) {
+                    document.body.removeChild(captureContainer); // Clean up the temporary element
+                }
+                exportButton.disabled = false; // Re-enable button
+                exportButton.textContent = originalButtonText; // Restore original text
+            }
+        }
+
+        // 通用下载方法
+        function triggerDownload(dataURL, filename) {
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            // Revoke Object URL for HTML/Blob export to free memory
+            if (dataURL.startsWith('blob:')) {
+                setTimeout(() => URL.revokeObjectURL(dataURL), 100); // Delay revoke slightly
+            }
+        }
+
+       // HTML转纯文本 (Improved slightly)
+        function htmlToPlainText(html) {
+            const temp = document.createElement('div');
+            // Replace block elements with newlines for better structure
+            html = html.replace(/<\/(p|h[1-6]|li|blockquote|pre|tr|div)>/gi, '\n');
+            // Replace <br> with newlines
+            html = html.replace(/<br\s*\/?>/gi, '\n');
+             // Replace table cells with spaces for basic formatting
+            html = html.replace(/<\/td>\s*<td[^>]*>/gi, '  |  '); // Separator between cells
+            html = html.replace(/<\/th>\s*<th[^>]*>/gi, '  |  '); // Separator between header cells
+            temp.innerHTML = html;
+            // Extract text content, normalize whitespace
+            let text = temp.textContent || temp.innerText || '';
+            text = text.replace(/^[ \t\r\n]+/gm, ''); // Remove leading space/tab/newlines from each line
+            text = text.replace(/[ \t]{2,}/g, ' '); // Collapse multiple spaces/tabs to one space
+            text = text.replace(/\n{3,}/g, '\n\n'); // Collapse multiple newlines to max 2
+            return text.trim();
+        }
+
+        // --- IndexedDB Logic ---
+        const DB_NAME = 'markdownDB';
+        const STORE_NAME = 'savedMarkdown';
+        let db; // Database instance
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                if (db) {
+                    return resolve(db);
+                }
+                const request = indexedDB.open(DB_NAME, 1);
+
+                request.onerror = (event) => {
+                    console.error("Database error:", event.target.error);
+                    reject("Database error: " + event.target.error);
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log("Database opened successfully");
+                    resolve(db);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    console.log("Database upgrade needed");
+                    const tempDb = event.target.result;
+                    if (!tempDb.objectStoreNames.contains(STORE_NAME)) {
+                        const objectStore = tempDb.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        objectStore.createIndex('name', 'name', { unique: false });
+                        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        console.log("Object store created");
+                    }
+                };
+            });
+        }
+
+        // Save as NEW item
+        async function saveMarkdown(name, content) {
+            try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const timestamp = new Date();
+                const request = store.add({ name, content, timestamp });
+
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => {
+                        console.log("Markdown saved successfully with id:", request.result);
+                        resolve(request.result); // Return the new ID
+                    };
+                    request.onerror = (event) => {
+                        console.error("Error saving markdown:", event.target.error);
+                        reject("Error saving markdown: " + event.target.error);
+                    };
+                     transaction.oncomplete = () => {
+                        console.log("Save transaction completed.");
+                    };
+                    transaction.onerror = (event) => {
+                        console.error("Save transaction error:", event.target.error);
+                        reject("Save transaction error: " + event.target.error);
+                    };
+                });
+            } catch (error) {
+                console.error("Failed to initiate save:", error);
+                showToast(`保存失败: ${error}`);
+                throw error; // Re-throw error for upstream handling
+            }
+        }
+
+        // UPDATE existing item by ID
+        async function updateMarkdown(id, name, content) {
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const timestamp = new Date();
+                // 'put' will overwrite existing item with same key (id) or add if not present
+                const request = store.put({ id, name, content, timestamp });
+
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => {
+                        console.log("Markdown updated successfully for id:", id);
+                        resolve(id);
+                    };
+                    request.onerror = (event) => {
+                        console.error("Error updating markdown:", event.target.error);
+                        reject("Error updating markdown: " + event.target.error);
+                    };
+                     transaction.oncomplete = () => {
+                        console.log("Update transaction completed.");
+                    };
+                    transaction.onerror = (event) => {
+                        console.error("Update transaction error:", event.target.error);
+                        reject("Update transaction error: " + event.target.error);
+                    };
+                });
+            } catch (error) {
+                console.error("Failed to initiate update:", error);
+                showToast(`更新失败: ${error}`);
+                throw error; // Re-throw error
+            }
+        }
+
+
+        async function loadAllMarkdown() {
+            try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const index = store.index('timestamp'); // Use timestamp index
+                const request = index.getAll(); // Get all items
+
+                return new Promise((resolve, reject) => {
+                     request.onsuccess = () => {
+                         // Sort by timestamp descending explicitly
+                         const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
+                         console.log("Loaded all markdown:", sortedResults);
+                         resolve(sortedResults);
+                     };
+                     request.onerror = (event) => {
+                         console.error("Error loading all markdown:", event.target.error);
+                         reject("Error loading markdown: " + event.target.error);
+                     };
+                     transaction.oncomplete = () => {
+                         console.log("Load all transaction completed.");
+                     };
+                      transaction.onerror = (event) => {
+                        console.error("Load all transaction error:", event.target.error);
+                        reject("Load all transaction error: " + event.target.error);
+                    };
+                });
+            } catch (error) {
+                console.error("Failed to initiate load all:", error);
+                 showToast(`加载列表失败: ${error}`);
+                return []; // Return empty array on failure
+            }
+        }
+
+        async function loadMarkdownById(id) {
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(id);
+
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => {
+                        console.log("Loaded markdown by id:", request.result);
+                        resolve(request.result); // Returns the object or undefined
+                    };
+                    request.onerror = (event) => {
+                        console.error("Error loading markdown by id:", event.target.error);
+                        reject("Error loading markdown: " + event.target.error);
+                    };
+                    transaction.oncomplete = () => {
+                        console.log("Load by ID transaction completed.");
+                    };
+                     transaction.onerror = (event) => {
+                        console.error("Load by ID transaction error:", event.target.error);
+                        reject("Load by ID transaction error: " + event.target.error);
+                    };
+                });
+            } catch (error) {
+                console.error("Failed to initiate load by id:", error);
+                showToast(`加载文档失败: ${error}`);
+                return null;
+            }
+        }
+
+        async function deleteMarkdownById(id) {
+            try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => {
+                        console.log("Deleted markdown with id:", id);
+                        resolve(true);
+                    };
+                    request.onerror = (event) => {
+                        console.error("Error deleting markdown:", event.target.error);
+                        reject("Error deleting markdown: " + event.target.error);
+                    };
+                    transaction.oncomplete = () => {
+                        console.log("Delete transaction completed.");
+                    };
+                     transaction.onerror = (event) => {
+                        console.error("Delete transaction error:", event.target.error);
+                        reject("Delete transaction error: " + event.target.error);
+                    };
+                });
+            } catch (error) {
+                console.error("Failed to initiate delete:", error);
+                 showToast(`删除失败: ${error}`);
+                return false;
+            }
+        }
+
+
+        // --- UI Interaction for Save/Load/Search ---
+        const loadModal = document.getElementById('loadModal');
+        const savedItemList = document.getElementById('savedItemList');
+        const searchInput = document.getElementById('searchInput');
+        const modalTitle = document.getElementById('modalTitle');
+        const saveNewButton = document.getElementById('saveNewButton');
+
+        // Triggered by main "Save" button
+        function showSaveModal() {
+            populateModal(true); // Populate for saving/updating
+        }
+
+        // Triggered by main "Load" button
+        function showLoadModal() {
+             populateModal(false); // Populate for loading
+        }
+
+        // Populate and show the modal
+        async function populateModal(isSavingMode = false) {
+            modalTitle.textContent = isSavingMode ? "保存或更新 Markdown" : "加载已保存的 Markdown";
+            saveNewButton.style.display = isSavingMode ? 'inline-flex' : 'none'; // Show/hide Save New button
+
+            searchInput.value = ''; // Clear search on modal open
+
+            try {
+                const items = await loadAllMarkdown();
+                savedItemList.innerHTML = ''; // Clear previous items
+                const noItemsLi = '<li class="no-items">没有找到已保存的文档。</li>';
+
+                if (items && items.length > 0) {
+                    items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'saved-item';
+                        li.dataset.id = item.id; // Store ID on the element
+                        li.dataset.name = item.name; // Store name for searching
+
+                        li.innerHTML = `
+                            <div class="item-info">
+                                <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                                <span class="item-timestamp">保存于: ${formatTimestamp(item.timestamp)}</span>
+                            </div>
+                            <div class="item-actions">
+                                <button class="small" onclick="handleUpdateItem(event, ${item.id})" title="使用当前编辑器内容覆盖此项">更新</button>
+                                <button class="small" onclick="handleLoadItem(${item.id})" title="加载此项到编辑器">加载</button>
+                                <button class="small danger" onclick="handleDeleteItem(event, ${item.id})" title="删除此项">删除</button>
+                            </div>
+                        `;
+                        savedItemList.appendChild(li);
+                    });
+                    // Ensure the "no items" message is not shown initially if there are items
+                    const existingNoItems = savedItemList.querySelector('.no-items');
+                    if(existingNoItems) existingNoItems.remove();
+
+                } else {
+                    savedItemList.innerHTML = noItemsLi;
+                }
+                 filterSavedItems(); // Apply filter (in case search was pre-filled somehow, unlikely but safe)
+                 loadModal.style.display = 'block';
+            } catch (error) {
+                showToast(`加载列表失败: ${error}`);
+                savedItemList.innerHTML = '<li class="no-items" style="color:red;">加载列表时出错。</li>';
+                loadModal.style.display = 'block'; // Show modal even if error occurs loading items
+            }
+        }
+
+
+        function hideLoadModal() {
+            loadModal.style.display = 'none';
+        }
+
+        // Filter list based on search input
+        function filterSavedItems() {
+            const filter = searchInput.value.toLowerCase();
+            const items = savedItemList.querySelectorAll('li.saved-item');
+            let visibleCount = 0;
+            const noItemsMessage = savedItemList.querySelector('.no-items') || document.createElement('li'); // Get or create placeholder
+            noItemsMessage.className = 'no-items';
+            noItemsMessage.textContent = filter ? '没有匹配的文档。' : '没有找到已保存的文档。';
+
+
+            items.forEach(item => {
+                // const name = item.querySelector('.item-name').textContent.toLowerCase();
+                const name = item.dataset.name ? item.dataset.name.toLowerCase() : ''; // Use dataset name
+                if (name.includes(filter)) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Handle "no items" message display
+            if (visibleCount === 0 && items.length > 0) { // Show if filtering hid all items
+                 if (!savedItemList.contains(noItemsMessage)) { // Add if not present
+                     savedItemList.appendChild(noItemsMessage);
+                 }
+                 noItemsMessage.style.display = 'block';
+            } else if (visibleCount > 0) { // Hide if items are visible
+                if (savedItemList.contains(noItemsMessage)) {
+                    noItemsMessage.style.display = 'none'; // Just hide, don't remove yet
+                }
+            } else if (items.length === 0) { // Show default if list was empty initially
+                 if (!savedItemList.contains(noItemsMessage)) {
+                     savedItemList.innerHTML = ''; // Clear just in case
+                     savedItemList.appendChild(noItemsMessage);
+                 }
+                 noItemsMessage.style.display = 'block';
+            }
+
+        }
+
+        // --- Action Handlers ---
+
+        // Called by "Save as New..." button in modal
+        async function handleSaveNew() {
+            const content = editor.value;
+            if (!content.trim()) {
+                showToast("编辑器内容为空，无法保存。");
+                return;
+            }
+            const name = prompt("请输入新文档的名称:", `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`);
+            if (name === null || name.trim() === "") {
+                showToast("已取消保存或名称无效。");
+                return;
+            }
+
+            try {
+                 await saveMarkdown(name.trim(), content);
+                 showToast(`"${name.trim()}" 已成功保存！`);
+                 hideLoadModal(); // Close modal after saving
+            } catch (error) {
+                 // Toast shown in saveMarkdown
+                 // Optionally keep modal open on error? For now, it closes.
+                 console.error("Save new failed:", error);
+            }
+        }
+
+        // Called by "Update" button next to an item
+        async function handleUpdateItem(event, id) {
+            event.stopPropagation();
+            const content = editor.value;
+            if (!content.trim()) {
+                showToast("编辑器内容为空，无法更新。");
+                return;
+            }
+
+            try {
+                const itemToUpdate = await loadMarkdownById(id); // Get current data first
+                if (!itemToUpdate) {
+                    showToast("找不到要更新的项目，可能已被删除。");
+                    populateModal(true); // Refresh list in save mode
+                    return;
+                }
+
+                if (confirm(`确定要用当前编辑器内容覆盖 "${itemToUpdate.name}" 吗？`)) {
+                    // Optionally allow changing name on update
+                    const newName = prompt("请输入更新后的名称（留空则保留原名）:", itemToUpdate.name);
+                    if (newName === null) { // User cancelled the prompt
+                        showToast("更新已取消。");
+                        return;
+                    }
+                    const finalName = (newName.trim() === "") ? itemToUpdate.name : newName.trim();
+
+                    await updateMarkdown(id, finalName, content);
+                    showToast(`"${finalName}" 已成功更新！`);
+                    hideLoadModal(); // Close modal after update
+                } else {
+                    showToast("更新已取消。");
+                }
+            } catch (error) {
+                 // Toast shown in updateMarkdown or loadMarkdownById
+                 console.error("Update failed:", error);
+            }
+        }
+
+        // Called by "Load" button next to an item
+        async function handleLoadItem(id) {
+            console.log(`Attempting to load item with ID: ${id}`);
+             try {
+                 const item = await loadMarkdownById(id);
+                 if (item) {
+                     editor.value = item.content;
+                     updatePreview();
+                     hideLoadModal();
+                     editor.scrollTop = 0; // Scroll editor to top
+					 showToast(`已加载: ${item.name}`);
+                 } else {
+                    showToast("无法找到该项目，可能已被删除。");
+                    // Refresh list in case it's out of sync (optional, might be annoying)
+                    // populateModal(false);
+                 }
+             } catch (error) {
+                 // Toast shown in loadMarkdownById
+                 console.error("Load item failed:", error);
+             }
+        }
+
+        // Called by "Delete" button next to an item
+        async function handleDeleteItem(event, id) {
+             event.stopPropagation(); // Prevent triggering load/update
+             console.log(`Attempting to delete item with ID: ${id}`);
+             const itemElement = savedItemList.querySelector(`li[data-id='${id}']`);
+             const itemName = itemElement ? itemElement.dataset.name : '此项目';
+
+             if (confirm(`确定要删除 "${itemName}" 吗？此操作无法撤销。`)) {
+                 try {
+                     const success = await deleteMarkdownById(id);
+                     if (success && itemElement) {
+                         itemElement.style.transition = 'opacity 0.3s ease-out, height 0.3s ease-out, margin 0.3s ease-out, padding 0.3s ease-out';
+                         itemElement.style.opacity = '0';
+                         itemElement.style.height = '0';
+                         itemElement.style.margin = '0';
+                         itemElement.style.padding = '0';
+                         itemElement.style.border = 'none'; // Remove border during transition
+
+                         setTimeout(() => {
+                            if (itemElement.parentNode) { // Check if still attached
+                                itemElement.remove();
+                            }
+                             filterSavedItems(); // Update visibility of 'no items' message
+                         }, 300); // Remove after fade out
+                         showToast(`"${itemName}" 已删除。`);
+                     } else if (!success) {
+                         showToast(`删除 "${itemName}" 失败。`);
+                     }
+                 } catch (error) {
+                     // Toast shown in deleteMarkdownById
+                     console.error("Delete failed:", error);
+                 }
+             }
+        }
+
+        // Close modal if user clicks outside the content area
+        window.onclick = function(event) {
+            if (event.target == loadModal) {
+                hideLoadModal();
+            }
+        }
+
+        // Simple HTML escaping function
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+         }
+
+         // Format timestamp utility
+         function formatTimestamp(date) {
+             if (!(date instanceof Date)) {
+                 date = new Date(date); // Attempt conversion if not already Date object
+             }
+             if (isNaN(date)) { return "Invalid Date"; } // Handle invalid date strings
+             try {
+                 return date.toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+             } catch (e) {
+                 console.error("Error formatting date:", e);
+                 return "Error Date";
+             }
+        }
+
+
+        // --- Initialization ---
+        editor.addEventListener('input', updatePreview);
+        // Load sample or initialize DB on page load
+        loadSample(); // Load sample by default
+        initDB().catch(err => console.error("Initial DB connection failed:", err)); // Initialize DB connection early
+
+    </script>
+</body>
+</html>
