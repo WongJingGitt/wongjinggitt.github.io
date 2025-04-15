@@ -1357,5 +1357,20 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
         initDB().catch(err => console.error("Initial DB connection failed:", err)); // Initialize DB connection early
 
     </script>
+	<script>
+		let isSyncing = false;
+		function syncScroll(source, target) {
+			if (isSyncing) return;
+			isSyncing = true;
+			
+			// 按比例同步（如果内容高度不同）
+			const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight);
+			target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
+			
+			isSyncing = false;
+		}
+		editor.addEventListener('scroll', () => syncScroll(editor, preview));
+		preview.addEventListener('scroll', () => syncScroll(preview, editor));
+	</script>
 </body>
 </html>
