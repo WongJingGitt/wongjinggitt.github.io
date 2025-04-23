@@ -5,12 +5,17 @@
     <title>Markdown转换工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- PDF/Image Export Libs -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <script src="https://unpkg.com/pptxgenjs@3.10.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- DOCX Export Lib -->
+    <script src="https://unpkg.com/html-to-docx-ts@1.8.0/dist/browser/html-to-docx.js"></script>
+    <!-- Highlight JS -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css" integrity="sha512-jYtlOKxyOGJQxuHAR9h4PK04vh9HzaxI0dHVXx/kqICgw82nv3UpzWkaef+Fg8g4XJEvf/W+sPOnaeYQp5SRaQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        :root {
+        /* --- [Existing Root & Body Styles] --- */
+         :root {
             --bg-color: #f8f9fa;
             --preview-bg: #ffffff;
             --border-color: #e1e4e8;
@@ -37,6 +42,7 @@
             color: var(--text-color);
         }
 
+        /* --- [Existing Container, Box, Markdown Styles] --- */
         .container {
             padding: 2rem;
             display: grid;
@@ -68,6 +74,7 @@
             overflow: auto; /* Use combined overflow property */
         }
 
+        /* --- [Existing Toolbar, Button, Form Styles] --- */
         .title-toolbar {
             display: flex;
             gap: 0.75rem; /* Slightly reduced gap */
@@ -123,7 +130,8 @@
             font-size: 0.8em;
          }
 
-        .notice {
+        /* --- [Existing Card & Title Styles] --- */
+         .notice {
             color: var(--secondary-text-color);
             font-size: 0.9em;
             margin-top: 0; /* Adjusted margin */
@@ -170,9 +178,11 @@
             padding: 0.5rem 0.8rem; /* Adjust padding */
             white-space: nowrap; /* Prevent text wrapping */
 		}
-    </style>
-    <style>
-        /* Editor specific styles */
+        /* Style for History Icon Button */
+        .icon-button svg {
+            vertical-align: middle;
+        }
+        /* --- [Existing Editor Styles] --- */
         .editor {
             width: 100%;
             font-family: 'Fira Code', 'Consolas', monospace;
@@ -214,9 +224,8 @@
             width: 100%;
             user-select: none; /* Prevent text selection */
         }
-    </style>
-    <style>
-        /* Modal Styles */
+
+        /* --- [Existing Modal Styles] --- */
         .modal {
             display: none; /* Hidden by default */
             position: fixed; /* Stay in place */
@@ -261,9 +270,6 @@
 
         .modal-close-btn {
             color: #aaa;
-            /* position: absolute; */ /* Removed absolute positioning */
-            /* top: 10px; */
-            /* right: 15px; */
             font-size: 28px;
             font-weight: bold;
             line-height: 1;
@@ -290,16 +296,15 @@
             align-items: center;
             flex-wrap: wrap; /* Allow wrapping */
         }
-        #searchInput {
+        #searchInput, #historySearchInput { /* Apply to both search inputs */
             flex-grow: 1; /* Allow search to take available space */
             min-width: 200px; /* Minimum width */
         }
         #saveNewButton {
              display: none; /* Hidden by default, shown via JS */
-             /* Styles inherited or can add specific ones */
         }
 
-        .saved-item-list {
+        .saved-item-list, .history-item-list { /* Style both lists */
             list-style: none;
             padding: 0;
             margin: 0;
@@ -309,7 +314,8 @@
             border-radius: 6px;
         }
 
-        .saved-item {
+        /* Style for both saved items and history items */
+        .saved-item, .history-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -318,10 +324,10 @@
             transition: background-color 0.15s ease-in-out;
             gap: 10px; /* Space between info and actions */
         }
-        .saved-item:last-child {
+        .saved-item:last-child, .history-item:last-child {
             border-bottom: none;
         }
-        .saved-item:hover {
+        .saved-item:hover, .history-item:hover {
             background-color: #f6f8fa;
         }
 
@@ -333,12 +339,21 @@
             min-width: 0; /* Prevent overflow issues */
         }
 
-        .item-name {
+        .item-name { /* Specific to saved items */
             font-weight: 500;
             color: var(--text-color);
             white-space: nowrap; /* Prevent wrapping */
             overflow: hidden; /* Hide overflow */
             text-overflow: ellipsis; /* Add ellipsis */
+        }
+        .item-content-preview { /* Specific to history items */
+            font-size: 0.9em;
+            color: var(--secondary-text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 350px; /* Limit preview width */
+            display: inline-block; /* Needed for ellipsis */
         }
 
         .item-timestamp {
@@ -362,7 +377,8 @@
         .no-items:hover {
              background-color: transparent !important; /* No hover effect */
         }
-        .toast-message { /* Simple toast styling */
+        /* --- [Existing Toast Styles] --- */
+        .toast-message {
             position: fixed;
             top: 20px;
             left: 50%;
@@ -392,15 +408,19 @@
             <div class="card-title">
                 <div class="text-title">Markdown 编辑器</div>
                 <div class="title-button-group">
-                    <button onclick="showLoadModal()" title="Load saved markdown" class="title-button-item">
-						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-history"><path d="M1.643 3.143L.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684zM7.75 4a.75.75 0 0 1 .75.75v4.336l3.47 2.023a.75.75 0 0 1-.74 1.298l-3.75-2.165A.75.75 0 0 1 7 9.75V4.75a.75.75 0 0 1 .75-.75z"></path></svg>
+                    <button onclick="showLoadModal()" title="Load saved markdown" class="title-button-item icon-button">
+						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-download"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 11.75a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 1.5 0v9.5a.75.75 0 0 1-.75.75Zm-4.28-4.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.31V9.5a.75.75 0 0 1-1.5 0V4.31L3.78 7.47a.75.75 0 0 1-1.06 0Z"></path></svg>
 						加载
 					</button>
-                    <button class="primary title-button-item" onclick="showSaveModal()" title="Save or update markdown"> <!-- Changed onclick -->
-						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-download"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 11.75a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 1.5 0v9.5a.75.75 0 0 1-.75.75Zm-4.28-4.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.31V9.5a.75.75 0 0 1-1.5 0V4.31L3.78 7.47a.75.75 0 0 1-1.06 0Z"></path></svg>
+                    <button class="primary title-button-item icon-button" onclick="showSaveModal()" title="Save or update markdown">
+						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-file-directory-fill"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.09L5.95 1.36A.75.75 0 0 0 5.41 1H1.75Z"></path></svg>
 						保存
 					</button>
-                    <button class="title-button-item" onclick="loadSample()" >加载示例</button> <!-- Adjusted style -->
+                    <button onclick="showHistoryModal()" title="View edit history" class="title-button-item icon-button">
+						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-history"><path d="M1.643 3.143L.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684zM7.75 4a.75.75 0 0 1 .75.75v4.336l3.47 2.023a.75.75 0 0 1-.74 1.298l-3.75-2.165A.75.75 0 0 1 7 9.75V4.75a.75.75 0 0 1 .75-.75z"></path></svg>
+						历史
+					</button>
+                    <button class="title-button-item" onclick="loadSample()" >加载示例</button>
                 </div>
             </div>
             <div class="card-body">
@@ -420,11 +440,12 @@
                 <div class="title-toolbar">
                     <select id="format">
                         <option value="html">HTML</option>
-                        <option value="image" selected>图片</option>
-                        <option value="ppt">PPT</option>
+                        <option value="image">图片</option>
+                        <option value="pdf">PDF</option> <!-- Added PDF -->
+                        <option value="docx">DOCX</option> <!-- Added DOCX -->
                     </select>
-                    <button class="primary" onclick="exportFile()">导出文件</button>
-                    <p class="notice">提示：首次生成图片可能需要5-10秒</p> <!-- Updated time -->
+                    <button class="primary" onclick="exportFile(event)">导出文件</button> <!-- Pass event -->
+                    <p class="notice">提示：生成图片/PDF可能需5-10秒</p> <!-- Updated notice -->
                 </div>
             </div>
             <div class="card-body">
@@ -451,24 +472,60 @@
         </div>
     </div>
 
+    <!-- Edit History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+             <div class="modal-header">
+                 <h2 id="historyModalTitle">编辑历史记录</h2>
+                 <button class="modal-close-btn" onclick="hideHistoryModal()" title="关闭">&times;</button>
+             </div>
+             <!-- Optional: Add search for history if needed -->
+             <!-- <div class="modal-toolbar">
+                <input type="search" id="historySearchInput" placeholder="搜索历史记录..." oninput="filterHistoryItems()">
+             </div> -->
+            <ul id="historyItemList" class="history-item-list">
+                <!-- History items will be loaded here -->
+                 <li class="no-items">没有编辑历史记录。</li>
+            </ul>
+        </div>
+    </div>
+
     <!-- 独立示例内容 -->
     <script id="sampleMarkdown" type="text/template">
-# 现代化文档转换工具
+# 现代化文档转换工具 (v2)
 
 ## 功能特性
 
 - [x] ​**​实时HTML预览​**​
-- [x] 多格式导出支持 (HTML, 图片, PPT)
+- [x] 多格式导出支持 (HTML, 图片, **PDF**, **DOCX**)
 - [x] 专业样式渲染 (GitHub Markdown CSS + Highlight.js)
 - [x] 内容本地存储 (IndexedDB) - 支持搜索、更新、删除
+- [x] ​**​编辑历史记录​**​ (自动保存，上限50条)
 - [ ] <span style="color: #A0A1A7;">更多功能敬请期待...</span>
 
 ```javascript
-// 完整的代码示例
-function calculate(a, b) {
-    return a + b;
+// 完整的代码示例 (JS)
+function greet(name) {
+    // Uses template literals
+    return `Hello, ${name}! Welcome to the editor.`;
 }
-console.log(calculate(2, 3)); // 输出: 5
+console.log(greet('Developer'));
+// Expected Output: Hello, Developer! Welcome to the editor.
+
+/* Multi-line comment test
+   Still works! */
+```
+
+```python
+# Python Code Block Example
+import sys
+
+def check_version():
+  """Prints the Python version."""
+  print(f"Python Version: {sys.version}")
+
+if __name__ == "__main__":
+  check_version()
 ```
 
 ## 使用指南
@@ -482,9 +539,13 @@ console.log(calculate(2, 3)); // 输出: 5
     *   使用 **搜索框** 快速查找。
     *   点击列表中某一项旁的 **加载** 按钮将其内容填入编辑器。
     *   点击 **删除** 按钮移除条目。
-5.  在预览区上方选择 **导出格式** (HTML, 图片, PPT)，然后点击 **导出文件** 下载。
+5.  点击编辑器上方的 **历史** 按钮:
+    *   查看自动保存的编辑记录 (最近优先)。
+    *   点击 **恢复** 将该版本内容加载到编辑器。
+    *   点击 **删除** 移除该条历史记录。
+6.  在预览区上方选择 **导出格式** (HTML, 图片, PDF, DOCX)，然后点击 **导出文件** 下载。 *PDF导出将保留视觉样式，但文本不可选。DOCX会尝试转换结构和基本样式。*
 
-> 专业的技术文档与演示解决方案，提供更完善的本地管理功能！
+> 专业的技术文档与演示解决方案，提供更完善的本地管理和追溯功能！
 
 ---
 
@@ -503,47 +564,55 @@ console.log(calculate(2, 3)); // 输出: 5
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 ```
     </script>
+
     <script>
+        // --- Global Variables & Constants ---
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const sampleContent = document.getElementById('sampleMarkdown').textContent.trim();
+        const loadModal = document.getElementById('loadModal');
+        const savedItemList = document.getElementById('savedItemList');
+        const searchInput = document.getElementById('searchInput');
+        const modalTitle = document.getElementById('modalTitle');
+        const saveNewButton = document.getElementById('saveNewButton');
+        const historyModal = document.getElementById('historyModal');
+        const historyItemList = document.getElementById('historyItemList');
+
+        const DB_NAME = 'markdownDB';
+        const SAVED_STORE_NAME = 'savedMarkdown';
+        const HISTORY_STORE_NAME = 'editHistory'; // New store name
+        const HISTORY_LIMIT = 50; // Max number of history entries
+        let db; // Database instance
+        let historySaveTimeout; // Timeout for debounced history saving
+        let lastSavedHistoryContent = null; // Track last saved history content to avoid duplicates
+        let isSyncing = false; // For scroll sync
+
+
         // --- Toast Notification ---
 		function showToast(message, duration = 3000) {
-		  // Remove existing toasts first
-          document.querySelectorAll('.toast-message').forEach(t => t.remove());
-
-          const toast = document.createElement('div');
-          toast.textContent = message;
-		  toast.className = 'toast-message'; // Use class for styling
-
-		  document.body.appendChild(toast);
-
-		  // Trigger fade in
-		  requestAnimationFrame(() => {
-              requestAnimationFrame(() => { // Double requestAnimationFrame ensures transition triggers
-                  toast.classList.add('show');
-              });
-          });
-
-		  // Set timer for fade out
-		  setTimeout(() => {
-		    toast.classList.remove('show');
-		    // Remove element after fade out transition completes
-		    toast.addEventListener('transitionend', () => toast.remove());
-		  }, duration);
+		    document.querySelectorAll('.toast-message').forEach(t => t.remove()); // Remove existing
+            const toast = document.createElement('div');
+            toast.textContent = message;
+		    toast.className = 'toast-message';
+		    document.body.appendChild(toast);
+		    requestAnimationFrame(() => {
+                requestAnimationFrame(() => { toast.classList.add('show'); }); // Ensure transition triggers
+            });
+		    setTimeout(() => {
+		        toast.classList.remove('show');
+		        toast.addEventListener('transitionend', () => toast.remove());
+		    }, duration);
 		}
 
-        // --- Editor & Indentation ---
-        const editor = document.getElementById('editor');
-
+        // --- Editor & Indentation Logic ---
         editor.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) { // Check for modifiers
-                e.preventDefault();
-                handleIndentation('indent');
+            if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault(); handleIndentation('indent');
             } else if (e.key === 'Tab' && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
-                e.preventDefault();
-                handleIndentation('unindent');
+                e.preventDefault(); handleIndentation('unindent');
             }
         });
-
-
+        // [handleIndentation function remains the same as provided previously]
         function handleIndentation(action) {
             const start = editor.selectionStart;
             const end = editor.selectionEnd;
@@ -625,170 +694,137 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 const finalEnd = end + lengthDifference;
                 editor.setSelectionRange(finalStart, finalEnd);
             }
-            updatePreview(); // Update preview after indentation change
+            // No need to call updatePreview here, as the 'input' event listener will handle it.
+            // Trigger history save immediately after programmatic change like indentation
+            triggerHistorySave();
         }
-    </script>
-    
-    <script>
-        // --- Core Editor and Preview Logic ---
-        const preview = document.getElementById('preview');
-        const sampleContent = document.getElementById('sampleMarkdown').textContent.trim(); // Trim whitespace
 
-        // Markdown解析配置
+        // --- Core Editor and Preview Logic ---
+        // Initialize marked
         marked.setOptions({
             highlight: (code, lang) => {
                 const language = hljs.getLanguage(lang) ? lang : 'plaintext';
                 try {
-                    // Explicitly check for null/undefined language before highlighting
                      if (language) {
                         return hljs.highlight(code, { language, ignoreIllegals: true }).value;
                      }
-                } catch (e) {
-                     console.error(`Highlighting error for lang ${lang}:`, e);
-                }
-                // Fallback to auto-highlight or plaintext if language invalid or error occurs
-                try {
-                    return hljs.highlightAuto(code).value;
-                } catch (autoError) {
+                } catch (e) { console.error(`Highlighting error for lang ${lang}:`, e); }
+                try { return hljs.highlightAuto(code).value; }
+                catch (autoError) {
                     console.error("Auto highlighting failed:", autoError);
-                    // Safest fallback: escape HTML entities
                     const escapedCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     return `<pre><code class="hljs">${escapedCode}</code></pre>`;
                 }
             },
-            breaks: true,
-            gfm: true
+            breaks: true, gfm: true
         });
 
-
-        // 加载示例内容
         function loadSample() {
             editor.value = sampleContent;
             updatePreview();
             showToast("示例内容已加载");
+            triggerHistorySave(); // Save sample load to history
         }
 
-        // 实时更新预览
         function updatePreview() {
             try {
                  preview.innerHTML = marked.parse(editor.value);
+                 hljs.highlightAll(); // Re-apply highlighting after parsing
             } catch (e) {
                  console.error("Markdown Parsing Error:", e);
                  preview.innerHTML = `<p style="color: red;">Error parsing Markdown. Check console for details.</p>`;
-            } finally {
-				hljs.highlightAll();
-			}
+            }
         }
 
-        // 导出功能处理
-        async function exportFile() {
+        // --- Export Logic ---
+        async function exportFile(event) {
             const format = document.getElementById('format').value;
-            const markdownInput = editor.value; // Use current editor value
+            const markdownInput = editor.value;
             const previewElement = document.getElementById('preview');
-            const exportButton = event.target; // Get the button that was clicked
-            const originalButtonText = exportButton.textContent; // Use textContent
+            const exportButton = event.target;
+            const originalButtonText = exportButton.textContent;
             exportButton.disabled = true;
             exportButton.textContent = '导出中...';
-
 
             // Ensure preview is up-to-date for export
             try {
                 previewElement.innerHTML = marked.parse(markdownInput);
-				hljs.highlightAll();
+                hljs.highlightAll();
             } catch (e) {
                 showToast(`Markdown 解析错误，无法导出: ${e.message}`);
                 console.error("Markdown Parsing Error on Export:", e);
                 exportButton.disabled = false;
                 exportButton.textContent = originalButtonText;
-                return; // Stop export if parsing fails
+                return;
             }
 
-
-            // Clone the preview element for manipulation without affecting display
-            const elementToExport = previewElement.cloneNode(true);
-
-            // Temporarily append to body to ensure styles are computed for html2canvas
             const captureContainer = document.createElement('div');
-            captureContainer.className = 'markdown-body'; // Apply same base class
+            captureContainer.className = 'markdown-body';
             Object.assign(captureContainer.style, {
-                position: 'absolute',
-                left: '-9999px', // Position off-screen
-                top: '0px',
-                padding: '2rem', // Ensure padding is included in capture
-                background: 'var(--preview-bg)', // Match background
-                 // Use scrollWidth to capture potentially overflowing content better
-                width: previewElement.scrollWidth + 'px',
-                minWidth: '600px', // Ensure a minimum width for better layout capture
-                height: 'auto', // Let content define height
-                overflow: 'visible', // Ensure all content is rendered
-                boxSizing: 'content-box' // IMPORTANT: padding adds to width for html2canvas
+                position: 'absolute', left: '-9999px', top: '0px',
+                padding: '2rem', background: 'var(--preview-bg)',
+                width: previewElement.scrollWidth + 'px', // Use scrollWidth
+                minWidth: '600px', height: 'auto', overflow: 'visible',
+                boxSizing: 'content-box'
             });
-            captureContainer.appendChild(elementToExport);
+            captureContainer.appendChild(previewElement.cloneNode(true));
             document.body.appendChild(captureContainer);
 
-
-            // Wait for styles and layout (crucial for html2canvas)
+            // Wait for styles and layout
             await new Promise(resolve => requestAnimationFrame(resolve));
-            await new Promise(resolve => setTimeout(resolve, 100)); // Increased delay slightly
+            await new Promise(resolve => setTimeout(resolve, 150)); // Slightly increased delay
 
             try {
                 switch(format) {
                     case 'image':
-                        console.log('Exporting as Image...');
-                        const canvas = await html2canvas(captureContainer, { // Capture the styled container
-                            scale: window.devicePixelRatio || 2, // Use device pixel ratio for sharpness
-                            useCORS: true,
-                            logging: false, // Reduce console noise unless debugging
-                            scrollX: 0, // Ensure capture starts at the left edge
-                            scrollY: 0, // Ensure capture starts at the top edge
+                    case 'pdf': // PDF uses html2canvas as well
+                        console.log(`Exporting as ${format.toUpperCase()}...`);
+                        const scale = window.devicePixelRatio || 2;
+                        const canvas = await html2canvas(captureContainer, {
+                            scale: scale, useCORS: true, logging: false, scrollX: 0, scrollY: 0,
                             windowWidth: captureContainer.scrollWidth,
                             windowHeight: captureContainer.scrollHeight,
-                            backgroundColor: getComputedStyle(captureContainer).backgroundColor // Use computed background
+                            backgroundColor: getComputedStyle(captureContainer).backgroundColor
                         });
                         console.log('Canvas generated');
-                        triggerDownload(canvas.toDataURL('image/png'), 'export.png');
-                        showToast('图片导出成功！');
+
+                        if (format === 'image') {
+                            triggerDownload(canvas.toDataURL('image/png'), 'export.png');
+                            showToast('图片导出成功！');
+                        } else { // PDF Export
+                            const { jsPDF } = window.jspdf;
+                            const imgData = canvas.toDataURL('image/png');
+                            const imgProps = { width: canvas.width / scale, height: canvas.height / scale }; // Use scaled dimensions
+                            const pdf = new jsPDF({
+                                orientation: imgProps.width > imgProps.height ? 'l' : 'p', // Landscape or Portrait
+                                unit: 'px', // Use pixels for easier mapping
+                                format: [imgProps.width, imgProps.height] // Set PDF page size to image size initially
+                            });
+
+                             // A4 dimensions in pixels at 72 DPI (approx)
+                             // Portrait: 595 x 842
+                             // Landscape: 842 x 595
+                             // We'll fit the image proportionally instead of using fixed A4
+                            const pdfWidth = pdf.internal.pageSize.getWidth();
+                            const pdfHeight = pdf.internal.pageSize.getHeight();
+                            const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+                            const imgPdfWidth = imgProps.width * ratio;
+                            const imgPdfHeight = imgProps.height * ratio;
+                            const x = (pdfWidth - imgPdfWidth) / 2; // Center image
+                            const y = 0; // Start from top
+
+                            // This simplified version adds the entire canvas as one potentially large image
+                            // For multi-page, you'd slice the canvas and add parts per page.
+                            pdf.addImage(imgData, 'PNG', x, y, imgPdfWidth, imgPdfHeight);
+                            pdf.save('export.pdf');
+                            showToast('PDF导出成功！(作为单页图片)');
+                        }
                         break;
 
                     case 'html':
                         console.log('Exporting as HTML...');
-                        const htmlContent = marked.parse(markdownInput); // Re-parse for clean HTML
-                        const fullHTML = `
-                            <!DOCTYPE html>
-                            <html lang="zh-CN">
-                            <head>
-                                <meta charset="UTF-8">
-                                <title>Exported Markdown</title>
-                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
-                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/github.min.css">
-                                <style>
-                                    body { padding: 2rem; margin: 0; background-color: var(--bg-color, #f8f9fa); } /* Use body for padding, add bg */
-                                    .markdown-body {
-                                         box-sizing: border-box;
-                                         min-width: 200px;
-                                         max-width: 980px; /* Typical GitHub max-width */
-                                         margin: 0 auto; /* Center content */
-                                         padding: 45px; /* GitHub standard padding */
-                                         background: var(--preview-bg, #ffffff); /* Ensure white background */
-                                         border: 1px solid var(--border-color, #e1e4e8); /* Add subtle border */
-                                         border-radius: 8px; /* Add radius */
-                                         box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Add shadow */
-                                    }
-                                     @media (max-width: 767px) {
-                                        .markdown-body { padding: 15px; }
-                                        body { padding: 1rem; }
-                                    }
-                                </style>
-                                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"><\/script>
-                                <script>document.addEventListener('DOMContentLoaded', (event) => {
-                                    document.querySelectorAll('pre code').forEach((block) => {
-                                        hljs.highlightElement(block);
-                                    });
-                                });<\/script>
-                            </head>
-                            <body><article class="markdown-body">${htmlContent}</article></body>
-                            </html>
-                        `;
+                        const htmlContent = marked.parse(markdownInput);
+                        const fullHTML = createFullHtml(htmlContent); // Use helper function
                         triggerDownload(
                             URL.createObjectURL(new Blob([fullHTML], { type: 'text/html;charset=UTF-8' })),
                             'export.html'
@@ -796,48 +832,23 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                         showToast('HTML导出成功！');
                         break;
 
-                    case 'ppt':
-                        console.log('Exporting as PPT...');
-                        const pptx = new PptxGenJS();
-                        // Split by H1 or H2, keep delimiter using lookahead
-                        const sections = markdownInput.split(/(?=^#{1,2}\s)/m);
+                    case 'docx':
+                        console.log('Exporting as DOCX...');
+                        // Prepare HTML specifically for docx conversion (include styles)
+                        const docxHtmlContent = marked.parse(markdownInput);
+                        const htmlString = createFullHtml(docxHtmlContent); // Use the same styled HTML structure
 
-                        if (sections.length === 0 || (sections.length === 1 && sections[0].trim() === '')) {
-                             // Handle empty input or input without H1/H2
-                             const slide = pptx.addSlide();
-                             const slideHtmlContent = marked.parse(markdownInput);
-                             slide.addText(htmlToPlainText(slideHtmlContent), { x: 0.5, y: 0.25, w: '90%', h: '90%', fontSize: 12, autoFit: true });
-                        } else {
-                            sections.forEach((section) => {
-                                if (section.trim() === '') return;
-                                const slide = pptx.addSlide();
-                                const slideHtmlContent = marked.parse(section.trim());
+                        // Use html-to-docx-ts
+                        const fileBuffer = await htmlToDocx.generate(htmlString, {
+                            orientation: htmlToDocx.PageOrientation.PORTRAIT,
+                            margins: { top: 720, right: 720, bottom: 720, left: 720 } // Standard 1 inch margins in twentieths of a point
+                        });
 
-                                // Attempt to extract title (H1/H2) for slide title
-                                const titleMatch = section.trim().match(/^#{1,2}\s+(.*)/);
-                                const slideTitle = titleMatch ? titleMatch[1] : 'Slide'; // Fallback title
-
-                                // PptxGenJS doesn't directly parse HTML well. Add simplified content.
-                                // We'll add the title separately if found, and the rest as text.
-                                const plainTextContent = htmlToPlainText(slideHtmlContent);
-
-                                // Add title object (if we had one) - basic example
-                                if (titleMatch) {
-                                     slide.addText(slideTitle, { x:0.5, y:0.2, w:'90%', h:0.5, fontSize: 24, bold: true });
-                                     // Add remaining text below title
-                                     const remainingText = htmlToPlainText(marked.parse(section.trim().substring(titleMatch[0].length).trim()));
-                                     if (remainingText) {
-                                         slide.addText(remainingText, { x: 0.5, y: 0.8, w: '90%', h: '80%', fontSize: 12, autoFit: true });
-                                     }
-                                } else {
-                                    // Add all text if no title found
-                                    slide.addText(plainTextContent, { x: 0.5, y: 0.25, w: '90%', h: '90%', fontSize: 12, autoFit: true });
-                                }
-                            });
-                        }
-
-                        await pptx.writeFile({ fileName: 'export.pptx' }); // Use await for async write
-                        showToast('PPT导出成功！');
+                        triggerDownload(
+                            URL.createObjectURL(fileBuffer),
+                            'export.docx'
+                        );
+                        showToast('DOCX导出成功！(样式可能有限)');
                         break;
                 }
             } catch (error) {
@@ -845,14 +856,53 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 console.error("Export Error:", error);
             } finally {
                 if (document.body.contains(captureContainer)) {
-                    document.body.removeChild(captureContainer); // Clean up the temporary element
+                    document.body.removeChild(captureContainer);
                 }
-                exportButton.disabled = false; // Re-enable button
-                exportButton.textContent = originalButtonText; // Restore original text
+                exportButton.disabled = false;
+                exportButton.textContent = originalButtonText;
             }
         }
 
-        // 通用下载方法
+        // Helper to create full HTML structure for export
+        function createFullHtml(bodyContent) {
+            // Include necessary CSS links and highlight script for self-contained HTML
+            return `
+                <!DOCTYPE html>
+                <html lang="zh-CN">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Exported Markdown</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css">
+                    <style>
+                        :root {
+                            --preview-bg: #ffffff;
+                            --border-color: #e1e4e8;
+                        }
+                        body { padding: 2rem; margin: 0; background-color: #f8f9fa; }
+                        .markdown-body {
+                             box-sizing: border-box; min-width: 200px; max-width: 980px;
+                             margin: 0 auto; padding: 45px;
+                             background: var(--preview-bg, #ffffff);
+                             border: 1px solid var(--border-color, #e1e4e8);
+                             border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                        }
+                         @media (max-width: 767px) {
+                            .markdown-body { padding: 15px; } body { padding: 1rem; }
+                        }
+                        /* Ensure code blocks render correctly in standalone HTML */
+                        pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}
+                    </style>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+                    <script>document.addEventListener('DOMContentLoaded', (event) => { hljs.highlightAll(); });<\/script>
+                </head>
+                <body><article class="markdown-body">${bodyContent}</article></body>
+                </html>
+            `;
+        }
+
+
+        // Universal download trigger
         function triggerDownload(dataURL, filename) {
             const link = document.createElement('a');
             link.href = dataURL;
@@ -860,255 +910,314 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            // Revoke Object URL for HTML/Blob export to free memory
             if (dataURL.startsWith('blob:')) {
-                setTimeout(() => URL.revokeObjectURL(dataURL), 100); // Delay revoke slightly
+                setTimeout(() => URL.revokeObjectURL(dataURL), 100);
             }
         }
 
-       // HTML转纯文本 (Improved slightly)
-        function htmlToPlainText(html) {
-            const temp = document.createElement('div');
-            // Replace block elements with newlines for better structure
-            html = html.replace(/<\/(p|h[1-6]|li|blockquote|pre|tr|div)>/gi, '\n');
-            // Replace <br> with newlines
-            html = html.replace(/<br\s*\/?>/gi, '\n');
-             // Replace table cells with spaces for basic formatting
-            html = html.replace(/<\/td>\s*<td[^>]*>/gi, '  |  '); // Separator between cells
-            html = html.replace(/<\/th>\s*<th[^>]*>/gi, '  |  '); // Separator between header cells
-            temp.innerHTML = html;
-            // Extract text content, normalize whitespace
-            let text = temp.textContent || temp.innerText || '';
-            text = text.replace(/^[ \t\r\n]+/gm, ''); // Remove leading space/tab/newlines from each line
-            text = text.replace(/[ \t]{2,}/g, ' '); // Collapse multiple spaces/tabs to one space
-            text = text.replace(/\n{3,}/g, '\n\n'); // Collapse multiple newlines to max 2
-            return text.trim();
-        }
-
         // --- IndexedDB Logic ---
-        const DB_NAME = 'markdownDB';
-        const STORE_NAME = 'savedMarkdown';
-        let db; // Database instance
-
         function initDB() {
             return new Promise((resolve, reject) => {
-                if (db) {
-                    return resolve(db);
-                }
-                const request = indexedDB.open(DB_NAME, 1);
+                if (db) return resolve(db);
+                const request = indexedDB.open(DB_NAME, 2); // Version 2 for history store
 
-                request.onerror = (event) => {
-                    console.error("Database error:", event.target.error);
-                    reject("Database error: " + event.target.error);
-                };
-
+                request.onerror = (event) => reject("Database error: " + event.target.error);
                 request.onsuccess = (event) => {
                     db = event.target.result;
-                    console.log("Database opened successfully");
+                    console.log("Database opened successfully (v2)");
+                     // Fetch last history content on successful load
+                     getLastHistoryEntryContent().then(content => {
+                         lastSavedHistoryContent = content;
+                         console.log("Last history content loaded for duplicate check.");
+                     }).catch(err => console.error("Error getting initial last history entry:", err));
                     resolve(db);
                 };
-
                 request.onupgradeneeded = (event) => {
                     console.log("Database upgrade needed");
                     const tempDb = event.target.result;
-                    if (!tempDb.objectStoreNames.contains(STORE_NAME)) {
-                        const objectStore = tempDb.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                        objectStore.createIndex('name', 'name', { unique: false });
-                        objectStore.createIndex('timestamp', 'timestamp', { unique: false });
-                        console.log("Object store created");
+                    // Create Saved Store (if not exists - from v1)
+                    if (!tempDb.objectStoreNames.contains(SAVED_STORE_NAME)) {
+                        const savedStore = tempDb.createObjectStore(SAVED_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        savedStore.createIndex('name', 'name', { unique: false });
+                        savedStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        console.log("Object store 'savedMarkdown' created");
+                    }
+                    // Create History Store (new in v2)
+                    if (!tempDb.objectStoreNames.contains(HISTORY_STORE_NAME)) {
+                        const historyStore = tempDb.createObjectStore(HISTORY_STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        historyStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        console.log("Object store 'editHistory' created");
                     }
                 };
             });
         }
 
-        // Save as NEW item
-        async function saveMarkdown(name, content) {
-            try {
-                const dbInstance = await initDB();
-                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const timestamp = new Date();
-                const request = store.add({ name, content, timestamp });
-
-                return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        console.log("Markdown saved successfully with id:", request.result);
-                        resolve(request.result); // Return the new ID
-                    };
-                    request.onerror = (event) => {
-                        console.error("Error saving markdown:", event.target.error);
-                        reject("Error saving markdown: " + event.target.error);
-                    };
-                     transaction.oncomplete = () => {
-                        console.log("Save transaction completed.");
-                    };
-                    transaction.onerror = (event) => {
-                        console.error("Save transaction error:", event.target.error);
-                        reject("Save transaction error: " + event.target.error);
-                    };
-                });
-            } catch (error) {
-                console.error("Failed to initiate save:", error);
-                showToast(`保存失败: ${error}`);
-                throw error; // Re-throw error for upstream handling
-            }
-        }
-
-        // UPDATE existing item by ID
-        async function updateMarkdown(id, name, content) {
+        // --- Save/Load/Update/Delete for NAMED Documents (savedMarkdown store) ---
+        async function saveMarkdown(name, content) { /* ... unchanged ... */
              try {
                 const dbInstance = await initDB();
-                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
+                const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(SAVED_STORE_NAME);
                 const timestamp = new Date();
-                // 'put' will overwrite existing item with same key (id) or add if not present
-                const request = store.put({ id, name, content, timestamp });
-
+                const request = store.add({ name, content, timestamp });
                 return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        console.log("Markdown updated successfully for id:", id);
-                        resolve(id);
-                    };
-                    request.onerror = (event) => {
-                        console.error("Error updating markdown:", event.target.error);
-                        reject("Error updating markdown: " + event.target.error);
-                    };
-                     transaction.oncomplete = () => {
-                        console.log("Update transaction completed.");
-                    };
-                    transaction.onerror = (event) => {
-                        console.error("Update transaction error:", event.target.error);
-                        reject("Update transaction error: " + event.target.error);
-                    };
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject("Error saving: " + event.target.error);
+                    transaction.onerror = (event) => reject("Save transaction error: " + event.target.error);
                 });
+            } catch (error) { showToast(`保存失败: ${error}`); throw error; }
+        }
+        async function updateMarkdown(id, name, content) { /* ... unchanged ... */
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(SAVED_STORE_NAME);
+                const timestamp = new Date();
+                const request = store.put({ id, name, content, timestamp });
+                 return new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve(id);
+                    request.onerror = (event) => reject("Error updating: " + event.target.error);
+                    transaction.onerror = (event) => reject("Update transaction error: " + event.target.error);
+                });
+            } catch (error) { showToast(`更新失败: ${error}`); throw error; }
+        }
+        async function loadAllMarkdown() { /* ... unchanged (uses SAVED_STORE_NAME) ... */
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(SAVED_STORE_NAME);
+                const index = store.index('timestamp');
+                const request = index.getAll();
+                 return new Promise((resolve, reject) => {
+                     request.onsuccess = () => {
+                         const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
+                         resolve(sortedResults);
+                     };
+                     request.onerror = (event) => reject("Error loading all: " + event.target.error);
+                     transaction.onerror = (event) => reject("Load all transaction error: " + event.target.error);
+                });
+            } catch (error) { showToast(`加载列表失败: ${error}`); return []; }
+        }
+        async function loadMarkdownById(id) { /* ... unchanged (uses SAVED_STORE_NAME) ... */
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(SAVED_STORE_NAME);
+                const request = store.get(id);
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve(request.result); // Returns object or undefined
+                    request.onerror = (event) => reject("Error loading by ID: " + event.target.error);
+                     transaction.onerror = (event) => reject("Load ID transaction error: " + event.target.error);
+                });
+            } catch (error) { showToast(`加载文档失败: ${error}`); return null; }
+        }
+        async function deleteMarkdownById(id) { /* ... unchanged (uses SAVED_STORE_NAME) ... */
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(SAVED_STORE_NAME);
+                const request = store.delete(id);
+                 return new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve(true);
+                    request.onerror = (event) => reject("Error deleting: " + event.target.error);
+                     transaction.onerror = (event) => reject("Delete transaction error: " + event.target.error);
+                });
+            } catch (error) { showToast(`删除失败: ${error}`); return false; }
+        }
+
+        // --- EDIT HISTORY Logic (editHistory store) ---
+
+        // Debounced call to save history
+        function scheduleHistorySave() {
+            clearTimeout(historySaveTimeout);
+            historySaveTimeout = setTimeout(() => {
+                saveCurrentStateToHistory();
+            }, 2000); // 2-second delay
+        }
+
+        // Force immediate history save (e.g., on paste)
+        function triggerHistorySave() {
+             clearTimeout(historySaveTimeout); // Clear any pending timeout
+             // Use setTimeout 0 to ensure it runs after current event loop tasks (like paste finishing)
+             setTimeout(() => {
+                  saveCurrentStateToHistory();
+             }, 0);
+        }
+
+        // Core function to add entry to history store and prune
+        async function saveCurrentStateToHistory() {
+            const content = editor.value;
+	    if (content === sampleContent) return;
+            if (!content.trim() || content === lastSavedHistoryContent) {
+                // console.log("History save skipped (empty or duplicate)");
+                return; // Don't save empty or identical content
+            }
+
+            console.log("Saving to history...");
+            try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(HISTORY_STORE_NAME);
+                const timestamp = new Date();
+                const request = store.add({ content, timestamp });
+
+                request.onsuccess = () => {
+                    console.log("History entry saved successfully with id:", request.result);
+                    lastSavedHistoryContent = content; // Update tracker
+                    pruneHistory(); // Check and prune after successful save
+                };
+                request.onerror = (event) => {
+                    console.error("Error saving history entry:", event.target.error);
+                    showToast("无法保存编辑历史");
+                };
+                transaction.onerror = (event) => {
+                     console.error("History save transaction error:", event.target.error);
+                     // Don't necessarily show toast here, request.onerror is more specific
+                };
             } catch (error) {
-                console.error("Failed to initiate update:", error);
-                showToast(`更新失败: ${error}`);
-                throw error; // Re-throw error
+                console.error("Failed to initiate history save:", error);
+                showToast(`编辑历史保存失败: ${error}`);
             }
         }
 
-
-        async function loadAllMarkdown() {
+        // Function to prune old history entries if limit is exceeded
+        async function pruneHistory() {
             try {
                 const dbInstance = await initDB();
-                const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
+                const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(HISTORY_STORE_NAME);
+                const countRequest = store.count();
+
+                countRequest.onsuccess = () => {
+                    const count = countRequest.result;
+                    if (count > HISTORY_LIMIT) {
+                        console.log(`History limit (${HISTORY_LIMIT}) exceeded (${count}). Pruning...`);
+                        const itemsToDelete = count - HISTORY_LIMIT;
+                        let deletedCount = 0;
+
+                        // Open cursor on the index, ordered by timestamp ASC (oldest first)
+                        const index = store.index('timestamp');
+                        const cursorRequest = index.openCursor(null, 'next'); // 'next' gives oldest first
+
+                        cursorRequest.onsuccess = (event) => {
+                            const cursor = event.target.result;
+                            if (cursor && deletedCount < itemsToDelete) {
+                                console.log("Deleting old history entry:", cursor.primaryKey);
+                                cursor.delete();
+                                deletedCount++;
+                                cursor.continue();
+                            } else {
+                                console.log(`Pruning complete. Deleted ${deletedCount} entries.`);
+                            }
+                        };
+                        cursorRequest.onerror = (event) => {
+                            console.error("Error opening cursor for pruning:", event.target.error);
+                        }
+                    }
+                };
+                countRequest.onerror = (event) => {
+                    console.error("Error counting history items for pruning:", event.target.error);
+                };
+                 transaction.onerror = (event) => {
+                     console.error("History prune transaction error:", event.target.error);
+                 };
+
+            } catch (error) {
+                console.error("Failed to initiate history pruning:", error);
+            }
+        }
+
+        // Load all history entries
+        async function loadAllHistory() {
+             try {
+                const dbInstance = await initDB();
+                const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(HISTORY_STORE_NAME);
                 const index = store.index('timestamp'); // Use timestamp index
                 const request = index.getAll(); // Get all items
 
                 return new Promise((resolve, reject) => {
                      request.onsuccess = () => {
-                         // Sort by timestamp descending explicitly
+                         // Sort by timestamp descending (most recent first)
                          const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
-                         console.log("Loaded all markdown:", sortedResults);
+                         console.log("Loaded all history:", sortedResults.length);
                          resolve(sortedResults);
                      };
-                     request.onerror = (event) => {
-                         console.error("Error loading all markdown:", event.target.error);
-                         reject("Error loading markdown: " + event.target.error);
-                     };
-                     transaction.oncomplete = () => {
-                         console.log("Load all transaction completed.");
-                     };
-                      transaction.onerror = (event) => {
-                        console.error("Load all transaction error:", event.target.error);
-                        reject("Load all transaction error: " + event.target.error);
-                    };
+                     request.onerror = (event) => reject("Error loading history: " + event.target.error);
+                     transaction.onerror = (event) => reject("Load history transaction error: " + event.target.error);
                 });
-            } catch (error) {
-                console.error("Failed to initiate load all:", error);
-                 showToast(`加载列表失败: ${error}`);
-                return []; // Return empty array on failure
-            }
+            } catch (error) { showToast(`加载历史失败: ${error}`); return []; }
         }
 
-        async function loadMarkdownById(id) {
+        // Load specific history entry by ID
+        async function loadHistoryById(id) {
              try {
                 const dbInstance = await initDB();
-                const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
+                const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
+                const store = transaction.objectStore(HISTORY_STORE_NAME);
                 const request = store.get(id);
-
                 return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        console.log("Loaded markdown by id:", request.result);
-                        resolve(request.result); // Returns the object or undefined
-                    };
-                    request.onerror = (event) => {
-                        console.error("Error loading markdown by id:", event.target.error);
-                        reject("Error loading markdown: " + event.target.error);
-                    };
-                    transaction.oncomplete = () => {
-                        console.log("Load by ID transaction completed.");
-                    };
-                     transaction.onerror = (event) => {
-                        console.error("Load by ID transaction error:", event.target.error);
-                        reject("Load by ID transaction error: " + event.target.error);
-                    };
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject("Error loading history ID: " + event.target.error);
+                     transaction.onerror = (event) => reject("Load history ID transaction error: " + event.target.error);
                 });
-            } catch (error) {
-                console.error("Failed to initiate load by id:", error);
-                showToast(`加载文档失败: ${error}`);
-                return null;
-            }
+            } catch (error) { showToast(`加载历史条目失败: ${error}`); return null; }
         }
 
-        async function deleteMarkdownById(id) {
-            try {
+        // Delete specific history entry by ID
+        async function deleteHistoryById(id) {
+             try {
                 const dbInstance = await initDB();
-                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
+                const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(HISTORY_STORE_NAME);
                 const request = store.delete(id);
-
-                return new Promise((resolve, reject) => {
-                    request.onsuccess = () => {
-                        console.log("Deleted markdown with id:", id);
-                        resolve(true);
-                    };
-                    request.onerror = (event) => {
-                        console.error("Error deleting markdown:", event.target.error);
-                        reject("Error deleting markdown: " + event.target.error);
-                    };
-                    transaction.oncomplete = () => {
-                        console.log("Delete transaction completed.");
-                    };
-                     transaction.onerror = (event) => {
-                        console.error("Delete transaction error:", event.target.error);
-                        reject("Delete transaction error: " + event.target.error);
-                    };
+                 return new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve(true);
+                    request.onerror = (event) => reject("Error deleting history: " + event.target.error);
+                     transaction.onerror = (event) => reject("Delete history transaction error: " + event.target.error);
                 });
-            } catch (error) {
-                console.error("Failed to initiate delete:", error);
-                 showToast(`删除失败: ${error}`);
-                return false;
-            }
+            } catch (error) { showToast(`删除历史失败: ${error}`); return false; }
         }
 
+        // Get only the content of the most recent history entry
+         async function getLastHistoryEntryContent() {
+             return new Promise(async (resolve, reject) => {
+                 try {
+                    const dbInstance = await initDB();
+                    const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(HISTORY_STORE_NAME);
+                    const index = store.index('timestamp');
+                    // Open cursor in reverse order, limit to 1
+                    const cursorRequest = index.openCursor(null, 'prev'); // 'prev' for newest first
 
-        // --- UI Interaction for Save/Load/Search ---
-        const loadModal = document.getElementById('loadModal');
-        const savedItemList = document.getElementById('savedItemList');
-        const searchInput = document.getElementById('searchInput');
-        const modalTitle = document.getElementById('modalTitle');
-        const saveNewButton = document.getElementById('saveNewButton');
+                    cursorRequest.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            resolve(cursor.value.content); // Resolve with content
+                        } else {
+                            resolve(null); // No entries found
+                        }
+                    };
+                    cursorRequest.onerror = (event) => reject("Error getting last history entry: " + event.target.error);
+                    transaction.onerror = (event) => reject("Last history transaction error: " + event.target.error);
+                 } catch (error) {
+                     reject("Failed to initiate get last history: " + error);
+                 }
+             });
+         }
 
-        // Triggered by main "Save" button
-        function showSaveModal() {
-            populateModal(true); // Populate for saving/updating
-        }
 
-        // Triggered by main "Load" button
-        function showLoadModal() {
-             populateModal(false); // Populate for loading
-        }
+        // --- UI Interaction for Modals ---
 
-        // Populate and show the modal
+        // Load/Save Modal
+        function showLoadModal() { populateModal(false); }
+        function showSaveModal() { populateModal(true); }
+        function hideLoadModal() { loadModal.style.display = 'none'; }
+
         async function populateModal(isSavingMode = false) {
             modalTitle.textContent = isSavingMode ? "保存或更新 Markdown" : "加载已保存的 Markdown";
-            saveNewButton.style.display = isSavingMode ? 'inline-flex' : 'none'; // Show/hide Save New button
-
-            searchInput.value = ''; // Clear search on modal open
+            saveNewButton.style.display = isSavingMode ? 'inline-flex' : 'none';
+            searchInput.value = '';
 
             try {
                 const items = await loadAllMarkdown();
@@ -1119,259 +1228,269 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                     items.forEach(item => {
                         const li = document.createElement('li');
                         li.className = 'saved-item';
-                        li.dataset.id = item.id; // Store ID on the element
-                        li.dataset.name = item.name; // Store name for searching
-
+                        li.dataset.id = item.id; li.dataset.name = item.name;
                         li.innerHTML = `
                             <div class="item-info">
                                 <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
                                 <span class="item-timestamp">保存于: ${formatTimestamp(item.timestamp)}</span>
                             </div>
                             <div class="item-actions">
-                                <button class="small" onclick="handleUpdateItem(event, ${item.id})" title="使用当前编辑器内容覆盖此项">更新</button>
+                                ${isSavingMode ? `<button class="small" onclick="handleUpdateItem(event, ${item.id})" title="使用当前编辑器内容覆盖此项">更新</button>` : ''}
                                 <button class="small" onclick="handleLoadItem(${item.id})" title="加载此项到编辑器">加载</button>
-                                <button class="small danger" onclick="handleDeleteItem(event, ${item.id})" title="删除此项">删除</button>
-                            </div>
-                        `;
+                                <button class="small danger" onclick="handleDeleteItem(event, ${item.id}, 'saved')" title="删除此项">删除</button>
+                            </div>`; // Added type 'saved'
                         savedItemList.appendChild(li);
                     });
-                    // Ensure the "no items" message is not shown initially if there are items
                     const existingNoItems = savedItemList.querySelector('.no-items');
                     if(existingNoItems) existingNoItems.remove();
-
                 } else {
                     savedItemList.innerHTML = noItemsLi;
                 }
-                 filterSavedItems(); // Apply filter (in case search was pre-filled somehow, unlikely but safe)
+                 filterSavedItems();
                  loadModal.style.display = 'block';
             } catch (error) {
                 showToast(`加载列表失败: ${error}`);
                 savedItemList.innerHTML = '<li class="no-items" style="color:red;">加载列表时出错。</li>';
-                loadModal.style.display = 'block'; // Show modal even if error occurs loading items
+                loadModal.style.display = 'block';
             }
         }
 
-
-        function hideLoadModal() {
-            loadModal.style.display = 'none';
-        }
-
-        // Filter list based on search input
         function filterSavedItems() {
             const filter = searchInput.value.toLowerCase();
             const items = savedItemList.querySelectorAll('li.saved-item');
             let visibleCount = 0;
-            const noItemsMessage = savedItemList.querySelector('.no-items') || document.createElement('li'); // Get or create placeholder
+            const noItemsMessage = savedItemList.querySelector('.no-items') || document.createElement('li');
             noItemsMessage.className = 'no-items';
             noItemsMessage.textContent = filter ? '没有匹配的文档。' : '没有找到已保存的文档。';
 
-
             items.forEach(item => {
-                // const name = item.querySelector('.item-name').textContent.toLowerCase();
-                const name = item.dataset.name ? item.dataset.name.toLowerCase() : ''; // Use dataset name
+                const name = item.dataset.name ? item.dataset.name.toLowerCase() : '';
                 if (name.includes(filter)) {
-                    item.style.display = 'flex';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
+                    item.style.display = 'flex'; visibleCount++;
+                } else { item.style.display = 'none'; }
             });
 
-            // Handle "no items" message display
-            if (visibleCount === 0 && items.length > 0) { // Show if filtering hid all items
-                 if (!savedItemList.contains(noItemsMessage)) { // Add if not present
-                     savedItemList.appendChild(noItemsMessage);
-                 }
+             if (visibleCount === 0 && items.length > 0) {
+                 if (!savedItemList.contains(noItemsMessage)) savedItemList.appendChild(noItemsMessage);
                  noItemsMessage.style.display = 'block';
-            } else if (visibleCount > 0) { // Hide if items are visible
-                if (savedItemList.contains(noItemsMessage)) {
-                    noItemsMessage.style.display = 'none'; // Just hide, don't remove yet
-                }
-            } else if (items.length === 0) { // Show default if list was empty initially
-                 if (!savedItemList.contains(noItemsMessage)) {
-                     savedItemList.innerHTML = ''; // Clear just in case
-                     savedItemList.appendChild(noItemsMessage);
-                 }
+            } else if (visibleCount > 0) {
+                if (savedItemList.contains(noItemsMessage)) noItemsMessage.style.display = 'none';
+            } else if (items.length === 0) {
+                 if (!savedItemList.contains(noItemsMessage)) { savedItemList.innerHTML = ''; savedItemList.appendChild(noItemsMessage); }
                  noItemsMessage.style.display = 'block';
             }
-
         }
 
-        // --- Action Handlers ---
 
-        // Called by "Save as New..." button in modal
-        async function handleSaveNew() {
+        // History Modal
+        function showHistoryModal() { populateHistoryModal(); }
+        function hideHistoryModal() { historyModal.style.display = 'none'; }
+
+        async function populateHistoryModal() {
+             try {
+                const items = await loadAllHistory();
+                historyItemList.innerHTML = ''; // Clear previous items
+                const noItemsLi = '<li class="no-items">没有编辑历史记录。</li>';
+
+                if (items && items.length > 0) {
+                    items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'history-item'; // Use history-item class
+                        li.dataset.id = item.id;
+                        const previewText = item.content.substring(0, 60).replace(/\n/g, ' ') + (item.content.length > 60 ? '...' : ''); // Simple preview
+                        li.innerHTML = `
+                            <div class="item-info">
+                                <span class="item-timestamp">记录于: ${formatTimestamp(item.timestamp)}</span>
+                                <span class="item-content-preview" title="${escapeHtml(item.content.substring(0, 200))}">${escapeHtml(previewText)}</span>
+                            </div>
+                            <div class="item-actions">
+                                <button class="small primary" onclick="handleRestoreHistory(${item.id})" title="恢复此版本到编辑器">恢复</button>
+                                <button class="small danger" onclick="handleDeleteItem(event, ${item.id}, 'history')" title="删除此历史记录">删除</button>
+                            </div>`; // Added type 'history'
+                        historyItemList.appendChild(li);
+                    });
+                     const existingNoItems = historyItemList.querySelector('.no-items');
+                    if(existingNoItems) existingNoItems.remove();
+                } else {
+                    historyItemList.innerHTML = noItemsLi;
+                }
+                 historyModal.style.display = 'block';
+            } catch (error) {
+                showToast(`加载历史列表失败: ${error}`);
+                historyItemList.innerHTML = '<li class="no-items" style="color:red;">加载历史列表时出错。</li>';
+                historyModal.style.display = 'block';
+            }
+        }
+
+        // --- Action Handlers (Load/Save/Update/Delete/History) ---
+
+        async function handleSaveNew() { /* ... unchanged ... */
             const content = editor.value;
-            if (!content.trim()) {
-                showToast("编辑器内容为空，无法保存。");
-                return;
-            }
-            const name = prompt("请输入新文档的名称:", `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`);
-            if (name === null || name.trim() === "") {
-                showToast("已取消保存或名称无效。");
-                return;
-            }
-
+            if (!content.trim()) { showToast("编辑器内容为空，无法保存。"); return; }
+            const defaultName = `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+            const name = prompt("请输入新文档的名称:", defaultName);
+            if (name === null || name.trim() === "") { showToast("已取消保存或名称无效。"); return; }
             try {
                  await saveMarkdown(name.trim(), content);
                  showToast(`"${name.trim()}" 已成功保存！`);
-                 hideLoadModal(); // Close modal after saving
-            } catch (error) {
-                 // Toast shown in saveMarkdown
-                 // Optionally keep modal open on error? For now, it closes.
-                 console.error("Save new failed:", error);
-            }
+                 hideLoadModal();
+            } catch (error) { console.error("Save new failed:", error); /* Toast shown in saveMarkdown */ }
         }
 
-        // Called by "Update" button next to an item
-        async function handleUpdateItem(event, id) {
+        async function handleUpdateItem(event, id) { /* ... unchanged ... */
             event.stopPropagation();
             const content = editor.value;
-            if (!content.trim()) {
-                showToast("编辑器内容为空，无法更新。");
-                return;
-            }
-
+            if (!content.trim()) { showToast("编辑器内容为空，无法更新。"); return; }
             try {
-                const itemToUpdate = await loadMarkdownById(id); // Get current data first
+                const itemToUpdate = await loadMarkdownById(id);
                 if (!itemToUpdate) {
-                    showToast("找不到要更新的项目，可能已被删除。");
-                    populateModal(true); // Refresh list in save mode
-                    return;
+                    showToast("找不到要更新的项目。"); populateModal(true); return;
                 }
-
                 if (confirm(`确定要用当前编辑器内容覆盖 "${itemToUpdate.name}" 吗？`)) {
-                    // Optionally allow changing name on update
                     const newName = prompt("请输入更新后的名称（留空则保留原名）:", itemToUpdate.name);
-                    if (newName === null) { // User cancelled the prompt
-                        showToast("更新已取消。");
-                        return;
-                    }
+                     if (newName === null) { showToast("更新已取消。"); return; }
                     const finalName = (newName.trim() === "") ? itemToUpdate.name : newName.trim();
-
                     await updateMarkdown(id, finalName, content);
                     showToast(`"${finalName}" 已成功更新！`);
-                    hideLoadModal(); // Close modal after update
-                } else {
-                    showToast("更新已取消。");
-                }
-            } catch (error) {
-                 // Toast shown in updateMarkdown or loadMarkdownById
-                 console.error("Update failed:", error);
-            }
+                    hideLoadModal();
+                } else { showToast("更新已取消。"); }
+            } catch (error) { console.error("Update failed:", error); /* Toast potentially shown */ }
         }
 
-        // Called by "Load" button next to an item
-        async function handleLoadItem(id) {
-            console.log(`Attempting to load item with ID: ${id}`);
+        async function handleLoadItem(id) { /* ... unchanged ... */
+            console.log(`Attempting to load saved item ID: ${id}`);
              try {
                  const item = await loadMarkdownById(id);
                  if (item) {
                      editor.value = item.content;
                      updatePreview();
                      hideLoadModal();
-                     editor.scrollTop = 0; // Scroll editor to top
+                     editor.scrollTop = 0;
 					 showToast(`已加载: ${item.name}`);
-                 } else {
-                    showToast("无法找到该项目，可能已被删除。");
-                    // Refresh list in case it's out of sync (optional, might be annoying)
-                    // populateModal(false);
-                 }
-             } catch (error) {
-                 // Toast shown in loadMarkdownById
-                 console.error("Load item failed:", error);
-             }
+                     triggerHistorySave(); // Save loaded content as a history point
+                 } else { showToast("无法找到该项目。"); }
+             } catch (error) { console.error("Load item failed:", error); /* Toast shown */ }
         }
 
-        // Called by "Delete" button next to an item
-        async function handleDeleteItem(event, id) {
-             event.stopPropagation(); // Prevent triggering load/update
-             console.log(`Attempting to delete item with ID: ${id}`);
-             const itemElement = savedItemList.querySelector(`li[data-id='${id}']`);
-             const itemName = itemElement ? itemElement.dataset.name : '此项目';
+        async function handleRestoreHistory(id) {
+            console.log(`Attempting to restore history ID: ${id}`);
+             try {
+                 const item = await loadHistoryById(id);
+                 if (item) {
+                     editor.value = item.content;
+                     updatePreview();
+                     hideHistoryModal();
+                     editor.scrollTop = 0;
+					 showToast(`已从 ${formatTimestamp(item.timestamp)} 恢复`);
+                     // Do NOT trigger history save here, as we just restored *to* this state
+                     // Update lastSavedHistoryContent to prevent immediate re-saving of the restored content
+                     lastSavedHistoryContent = item.content;
+                 } else { showToast("无法找到该历史记录。"); }
+             } catch (error) { console.error("Restore history failed:", error); /* Toast shown */ }
+        }
+
+        // Unified Delete Handler
+        async function handleDeleteItem(event, id, type) { // type is 'saved' or 'history'
+             event.stopPropagation();
+             console.log(`Attempting to delete ${type} item ID: ${id}`);
+             const listElement = (type === 'saved') ? savedItemList : historyItemList;
+             const itemElement = listElement.querySelector(`li[data-id='${id}']`);
+             const itemName = (type === 'saved' && itemElement) ? itemElement.dataset.name : `此${type === 'saved' ? '文档' : '历史记录'}`;
+             const deleteFunction = (type === 'saved') ? deleteMarkdownById : deleteHistoryById;
+             const listRefresher = (type === 'saved') ? filterSavedItems : populateHistoryModal; // How to update the list view
 
              if (confirm(`确定要删除 "${itemName}" 吗？此操作无法撤销。`)) {
                  try {
-                     const success = await deleteMarkdownById(id);
-                     if (success && itemElement) {
-                         itemElement.style.transition = 'opacity 0.3s ease-out, height 0.3s ease-out, margin 0.3s ease-out, padding 0.3s ease-out';
-                         itemElement.style.opacity = '0';
-                         itemElement.style.height = '0';
-                         itemElement.style.margin = '0';
-                         itemElement.style.padding = '0';
-                         itemElement.style.border = 'none'; // Remove border during transition
-
-                         setTimeout(() => {
-                            if (itemElement.parentNode) { // Check if still attached
-                                itemElement.remove();
-                            }
-                             filterSavedItems(); // Update visibility of 'no items' message
-                         }, 300); // Remove after fade out
-                         showToast(`"${itemName}" 已删除。`);
-                     } else if (!success) {
+                     const success = await deleteFunction(id);
+                     if (success) {
+                        if (itemElement) {
+                            itemElement.style.transition = 'opacity 0.3s ease-out, height 0.3s ease-out, margin 0.3s ease-out, padding 0.3s ease-out, border 0.3s ease-out'; // Added border
+                            itemElement.style.opacity = '0';
+                            itemElement.style.height = '0';
+                            itemElement.style.margin = '0';
+                            itemElement.style.padding = '0';
+                            itemElement.style.border = 'none';
+                            setTimeout(() => {
+                                if (itemElement.parentNode) itemElement.remove();
+                                // Refresh the correct list/view after removing element
+                                if (type === 'saved') {
+                                    filterSavedItems(); // Re-apply filter/check no-items message
+                                } else {
+                                    // For history, check if list is now empty
+                                    if (historyItemList.querySelectorAll('.history-item').length === 0) {
+                                        historyItemList.innerHTML = '<li class="no-items">没有编辑历史记录。</li>';
+                                    }
+                                }
+                            }, 300);
+                        }
+                        showToast(`"${itemName}" 已删除。`);
+                     } else {
                          showToast(`删除 "${itemName}" 失败。`);
                      }
                  } catch (error) {
-                     // Toast shown in deleteMarkdownById
-                     console.error("Delete failed:", error);
+                     console.error(`Delete ${type} failed:`, error); /* Toast shown in delete function */
                  }
              }
         }
 
-        // Close modal if user clicks outside the content area
+
+        // Close modals on outside click
         window.onclick = function(event) {
-            if (event.target == loadModal) {
-                hideLoadModal();
-            }
+            if (event.target == loadModal) hideLoadModal();
+            if (event.target == historyModal) hideHistoryModal();
         }
 
-        // Simple HTML escaping function
-        function escapeHtml(unsafe) {
+        // --- Utility Functions ---
+        function escapeHtml(unsafe) { /* ... unchanged ... */
             if (typeof unsafe !== 'string') return '';
-            return unsafe
-                 .replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
          }
-
-         // Format timestamp utility
-         function formatTimestamp(date) {
-             if (!(date instanceof Date)) {
-                 date = new Date(date); // Attempt conversion if not already Date object
-             }
-             if (isNaN(date)) { return "Invalid Date"; } // Handle invalid date strings
-             try {
-                 return date.toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-             } catch (e) {
-                 console.error("Error formatting date:", e);
-                 return "Error Date";
-             }
+         function formatTimestamp(date) { /* ... unchanged ... */
+             if (!(date instanceof Date)) date = new Date(date);
+             if (isNaN(date)) return "Invalid Date";
+             try { return date.toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); } // Added seconds
+             catch (e) { console.error("Error formatting date:", e); return "Error Date"; }
         }
+        // [htmlToPlainText function removed as it wasn't needed for the final export logic]
 
-
-        // --- Initialization ---
-        editor.addEventListener('input', updatePreview);
-        // Load sample or initialize DB on page load
-        loadSample(); // Load sample by default
-        initDB().catch(err => console.error("Initial DB connection failed:", err)); // Initialize DB connection early
-
-    </script>
-	<script>
-		let isSyncing = false;
+        // --- Scroll Sync ---
 		function syncScroll(source, target) {
 			if (isSyncing) return;
 			isSyncing = true;
-			
-			// 按比例同步（如果内容高度不同）
-			const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight);
+            // Basic ratio sync (can be improved for perfect mapping)
+			const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight || 1); // Avoid division by zero
 			target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
-			
-			isSyncing = false;
+			requestAnimationFrame(() => { isSyncing = false; }); // Release lock in next frame
 		}
 		editor.addEventListener('scroll', () => syncScroll(editor, preview));
 		preview.addEventListener('scroll', () => syncScroll(preview, editor));
-	</script>
+
+        // --- Initialization ---
+        editor.addEventListener('input', () => {
+            updatePreview();
+            scheduleHistorySave(); // Schedule history save on user input
+        });
+        editor.addEventListener('paste', () => {
+             // Update preview immediately after paste settles
+            setTimeout(() => {
+                updatePreview();
+                triggerHistorySave(); // Force history save on paste
+            }, 0);
+        });
+        editor.addEventListener('blur', () => {
+            // Optionally save history immediately on blur if needed
+            // triggerHistorySave();
+             clearTimeout(historySaveTimeout); // Clear timeout if focus lost before timeout fired
+        });
+
+        // Load sample and initialize DB on page load
+        loadSample();
+        initDB().then(() => {
+            console.log("DB Initialized.");
+            // Optionally prune history on startup in case of unclean shutdown
+            pruneHistory();
+        }).catch(err => console.error("Initial DB connection failed:", err));
+
+    </script>
 </body>
 </html>
