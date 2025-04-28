@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <title>文本对比工具</title>
+        <!-- Link to the CSS file -->
+        <style>
+            /* --- Root Variables (Adapted from Markdown Editor) --- */
+            :root {
+                --bg-color: #f8f9fa;
+                --panel-bg: #ffffff;
+                --border-color: #e1e4e8;
+                --text-color: #24292e;
+                --secondary-text-color: #6a737d;
+                --input-bg: #fafafa; /* Slightly different background for inputs */
+                --diff-added-bg: #e6ffed;
+                --diff-added-text: #22863a;
+                --diff-removed-bg: #fff8c5; /* Using a more orange/yellow tone */
+                --diff-removed-text: #b08800; /* Corresponding darker text */
+                --diff-removed-decoration: line-through; /* Strikethrough for removed */
+            }
+
+            /* --- Basic Body & Layout --- */
+            html, body {
+                height: 100%;
+                width: 100%;
+                margin: 0;
+                overflow: hidden; /* Prevent body scrollbars */
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-color);
+                font-size: 14px; /* Base font size */
+            }
+
+            .container {
+                padding: 1.5rem; /* Slightly reduced padding */
+                display: grid;
+                grid-template-columns: 1fr 2fr; /* Equal split */
+                gap: 1.5rem;
+                height: calc(100vh - 3rem); /* Full height minus padding */
+                box-sizing: border-box;
+            }
+
+            /* --- Panel Styling (Input & Preview) --- */
+            .panel {
+                background: var(--panel-bg);
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                padding: 1.5rem;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                overflow: hidden; /* Let children handle scroll */
+                min-width: 0; /* Allow grid item to shrink */
+            }
+
+            .panel-title {
+                font-size: 1.1em; /* Slightly smaller title */
+                font-weight: 600;
+                color: var(--text-color);
+                padding-bottom: 0.8rem;
+                border-bottom: 1px solid var(--border-color);
+                margin-bottom: 0.5rem; /* Space below title */
+                flex-shrink: 0; /* Prevent title shrinking */
+                /* user-select: none; */
+            }
+
+            /* --- Input Panel Specifics --- */
+            .input-panel {
+                /* Uses default panel styles */
+                gap: 1.5rem; /* Space between the two input boxes */
+            }
+
+            .input-box {
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1; /* Make boxes share space */
+                min-height: 0; /* Allow shrinking */
+                overflow: hidden; /* Clip content within box */
+            }
+
+            .input-textarea {
+                width: 100%;
+                flex-grow: 1; /* Textarea fills the box */
+                padding: 15px;
+                font-size: 1em; /* Use base font size */
+                line-height: 1.6;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--input-bg);
+                resize: none; /* Disable manual resizing */
+                overflow-y: auto; /* Allow vertical scroll */
+                box-sizing: border-box;
+                font-family: 'Fira Code', 'Consolas', monospace; /* Monospaced font for code/text */
+                tab-size: 4;
+            }
+
+            .input-textarea:focus {
+                outline: none;
+                border-color: var(--primary-color); /* Highlight focus */
+                box-shadow: 0 0 0 2px rgba(3, 102, 214, 0.3);
+            }
+
+            /* --- Preview Panel Specifics --- */
+            .preview-panel {
+                /* Uses default panel styles */
+            }
+
+            .diff-output {
+                flex-grow: 1; /* Output area fills the panel body */
+                overflow-y: auto; /* Allow vertical scroll */
+                padding: 10px; /* Padding inside the output area */
+                border: 1px solid var(--border-color); /* Optional border */
+                border-radius: 6px;
+                background-color: #fff; /* White background for contrast */
+                font-family: 'Fira Code', 'Consolas', monospace; /* Match input font */
+                line-height: 1.6;
+                white-space: pre-wrap; /* Important: Preserve whitespace and wrap lines */
+                word-wrap: break-word; /* Ensure long words break */
+            }
+
+            /* --- Diff Highlighting Styles --- */
+            .diff-added {
+                background-color: var(--diff-added-bg);
+                color: var(--diff-added-text);
+                text-decoration: none; /* Remove potential underlines */
+                /* Add subtle padding/border for better visual separation if needed */
+                /* padding: 0 2px; */
+                /* border-radius: 3px; */
+            }
+
+            .diff-removed {
+                background-color: var(--diff-removed-bg);
+                color: var(--diff-removed-text);
+                text-decoration: var(--diff-removed-decoration);
+                /* padding: 0 2px; */
+                /* border-radius: 3px; */
+            }
+
+            /* Style for unchanged text (optional) */
+            /* .diff-common { */
+                /* color: var(--text-color); */
+            /* } */
+        </style>
+        <!-- JSDiff Library -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js" crossorigin="anonymous" defer></script>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Input Panel (Left) -->
+            <div class="panel input-panel">
+                <div class="input-box">
+                    <div class="panel-title">原始文本 (Original Text)</div>
+                    <textarea
+                        id="originalText"
+                        class="input-textarea"
+                        placeholder="在此处粘贴或输入原始文本..."
+                        spellcheck="true"
+                        lang="en-US"
+                    ></textarea>
+                </div>
+                <div class="input-box">
+                    <div class="panel-title">对比文本 (Comparison Text)</div>
+                    <textarea
+                        id="comparisonText"
+                        class="input-textarea"
+                        placeholder="在此处粘贴或输入要对比的文本..."
+                        spellcheck="true"
+                        lang="en-US"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Preview Panel (Right) -->
+            <div class="panel preview-panel">
+                <div class="panel-title">对比结果 (Comparison Result)</div>
+                <div id="diffOutput" class="diff-output">
+                    <!-- Diff results will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Get references to the DOM elements
+            const originalTextArea = document.getElementById('originalText');
+            const comparisonTextArea = document.getElementById('comparisonText');
+            const diffOutputDiv = document.getElementById('diffOutput');
+
+            function escapeHtml(unsafe) {
+                if (typeof unsafe !== 'string') return '';
+                return unsafe
+                    .replace(/&/g, "&")
+                    .replace(/</g, "<")
+                    .replace(/>/g, ">")
+                    .replace(/"/g, "\"")
+                    .replace(/'/g, "'");
+            }
+
+
+            function updateDiff() {
+                const originalText = originalTextArea.value;
+                const comparisonText = comparisonTextArea.value;
+
+                // Clear previous output
+                diffOutputDiv.innerHTML = '';
+
+                // Perform the diff (using diffWords for better readability with text)
+                // Other options: diffChars, diffLines, diffJson, etc.
+                const diff = Diff.diffChars(originalText, comparisonText); // Using JsDiff global
+
+                // Create a document fragment to build the output efficiently
+                const fragment = document.createDocumentFragment();
+
+                diff.forEach((part) => {
+                    // Determine the CSS class based on the diff type
+                    const cssClass = part.added ? 'diff-added' :
+                                    part.removed ? 'diff-removed' : 'diff-common'; // 'diff-common' is optional
+
+                    // Create a span for the part
+                    const span = document.createElement('span');
+                    span.className = cssClass; // Apply the class (even for common parts if styled)
+                    // Escape the text content before adding it
+                    span.appendChild(document.createTextNode(part.value));
+
+                    // Append the span to the fragment
+                    fragment.appendChild(span);
+                });
+
+                // Append the completed fragment to the output div
+                diffOutputDiv.appendChild(fragment);
+            }
+            originalTextArea.addEventListener('input', updateDiff);
+            originalTextArea.oninput = updateDiff;
+            comparisonTextArea.addEventListener('input', updateDiff);
+            comparisonTextArea.oninput = updateDiff;
+        </script>
+        
+    </body>
+</html>
