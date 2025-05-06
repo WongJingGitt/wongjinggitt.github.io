@@ -5,7 +5,7 @@
             { "url": "https://translate.google.com", "name": "Google 翻译" },
             { "url": "https://tinypng.com/", "name": "TinyPNG 图片压缩" },
             { "url": "https://fanyi.baidu.com", "name": "百度翻译"  },
-            { "url": "https://wongjinggitt.github.io/public/web_tools/MarkdownEditor.html", "name": "在线Markdown编辑器" },
+            { "url": "https://wongjinggitt.github.io/public/web_tools/MarkdownEditor.html", "name": "在线Markdown编辑器", "info": "支持在线预览，导出为图片/PDF/HTML，本地存储模板等功能。" },
             { "url": "https://wongjinggitt.github.io/public/web_tools/DiffString.html", "name": "在线字符串对比" }
         ]
     },
@@ -23,12 +23,12 @@
         "index": 2,
         "tools": [
             { "url": "https://chatgpt.com/", "name": "Chat GPT", "info": "需要翻墙", "icon": "https://cdn.oaistatic.com/assets/favicon-miwirzcw.ico" },
-            { "url": "https://aistudio.google.com/app/prompts/new_chat", "name": "Google AI Studio", "info": "需要翻墙"},
-            { "url": "https://gemini.google.com", "name": "Gemini" },
+            { "url": "https://aistudio.google.com/app/prompts/new_chat", "name": "Google AI Studio", "info": "需要翻墙，可以免费白嫖无限次数的Gemini最新模型。"},
+            { "url": "https://gemini.google.com", "name": "Gemini", "info": "需要翻墙" },
             { "url": "https://yuanbao.tencent.com/", "name": "腾讯元宝" },
             { "url": "https://chat.deepseek.com/", "name": "DeepSeek" },
             { "url": "https://kimi.moonshot.cn/", "name": "KIMI" },
-            { "url": "https://claude.ai/new", "name": "Claude" },
+            { "url": "https://claude.ai/new", "name": "Claude", "info": "需要翻墙" },
             { "url": "https://www.tongyi.com/qianwen/", "name": "通义千问" },
             { "url": "https://chatglm.cn/", "name": "智谱轻言" },
             { "url": "https://yiyan.baidu.com/", "name": "文心一言" },

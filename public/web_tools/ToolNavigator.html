@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工具导航</title>
     <style>
-        /* --- CSS Styles (remain unchanged from the previous version) --- */
+        /* --- Base Styles (mostly unchanged) --- */
         :root {
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
@@ -17,6 +17,8 @@
             --hover-bg: #e9ecef;
             --danger-color: #dc3545;
             --warning-color: #ffc107;
+            --tooltip-bg: #343a40;
+            --tooltip-text: #ffffff;
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,8 +50,8 @@
         .toggle-icon { font-size: 1rem; font-weight: bold; transition: transform 0.3s ease; display: inline-block; }
         .toggle-icon::before { content: '▼'; }
         .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; padding: 1.5rem; max-height: 1000px; overflow: hidden; transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out; }
-        .tool-card { position: relative; display: block; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; text-decoration: none; color: var(--text-color); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease; overflow: hidden; text-align: center; }
-        .tool-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px var(--shadow-color); background-color: var(--hover-bg); color: var(--link-color); }
+        .tool-card { position: relative; display: block; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; text-decoration: none; color: var(--text-color); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease; overflow: visible; /* Allow tooltip to overflow */ text-align: center; }
+        .tool-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px var(--shadow-color); background-color: var(--hover-bg); color: var(--link-color); z-index: 10; /* Ensure hovered card is above others for tooltip */ }
         .tool-card .tool-name { font-weight: 500; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 0.5rem; }
         .tool-card-actions { display: flex; justify-content: center; gap: 5px; margin-top: 8px; }
         .category-section.collapsed .tools-grid { max-height: 0; padding-top: 0; padding-bottom: 0; }
@@ -61,9 +63,45 @@
         #tool-modal h2 { margin-top: 0; margin-bottom: 1.5rem; color: var(--heading-color); text-align: center; }
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        .form-group input[type="text"], .form-group input[type="url"], .form-group input[type="number"] { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; }
+        .form-group input[type="text"], .form-group input[type="url"], .form-group input[type="number"], .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; font-family: inherit; /* Ensure textarea uses same font */ }
+        .form-group textarea { min-height: 60px; resize: vertical; } /* Basic textarea styling */
         .form-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem; }
-        @media (max-width: 768px) { header h1 { font-size: 2rem; } .category-title { font-size: 1.1rem; padding: 0.7rem 1rem; } .tools-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); padding: 1rem; gap: 0.8rem; } .tool-card { padding: 0.8rem; } .toggle-icon { font-size: 0.9rem; } #tool-modal { width: 90%; padding: 1rem 1.5rem;} }
+
+        /* --- NEW: Tooltip Styles --- */
+        .tool-card[data-tooltip] {
+            position: relative; /* Needed for absolute positioning of pseudo-element */
+        }
+        .tool-card[data-tooltip]::after {
+            content: attr(data-tooltip); /* Display text from data-tooltip attribute */
+            position: absolute;
+            bottom: 105%; /* Position above the card */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            background-color: var(--tooltip-bg);
+            color: var(--tooltip-text);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: nowrap; /* Prevent wrapping initially */
+            max-width: 300px; /* Limit width */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Add ellipsis if too long */
+            z-index: 100; /* Ensure tooltip is above everything */
+            opacity: 0; /* Hidden by default */
+            visibility: hidden;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+            pointer-events: none; /* Tooltip itself shouldn't be interactive */
+        }
+        /* Show tooltip on hover */
+        .tool-card[data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+            white-space: normal; /* Allow wrapping when visible */
+            text-overflow: clip; /* Remove ellipsis when visible */
+        }
+
+        @media (max-width: 768px) { header h1 { font-size: 2rem; } .category-title { font-size: 1.1rem; padding: 0.7rem 1rem; } .tools-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); padding: 1rem; gap: 0.8rem; } .tool-card { padding: 0.8rem; } .toggle-icon { font-size: 0.9rem; } #tool-modal { width: 90%; padding: 1rem 1.5rem;} .tool-card[data-tooltip]::after { font-size: 0.8rem; padding: 0.3rem 0.6rem; } }
         @media (max-width: 480px) { .tools-grid { grid-template-columns: 1fr; } .tool-card .tool-name { font-size: 0.9rem; } }
     </style>
 </head>
@@ -91,21 +129,26 @@
             <div class="form-group"> <label for="tool-url">网址 (URL):</label> <input type="url" id="tool-url" name="url" required placeholder="https://example.com"> </div>
             <div class="form-group"> <label for="tool-type">分类:</label> <input type="text" id="tool-type" name="type" required placeholder="例如: 开发工具"> </div>
             <div class="form-group"> <label for="tool-index">分类排序 Index:</label> <input type="number" id="tool-index" name="index" required value="9999"> </div>
+            <!-- NEW: Info Field -->
+            <div class="form-group">
+                <label for="tool-info">说明 (Info - 可选):</label>
+                <textarea id="tool-info" name="info" placeholder="关于此工具的简短说明..."></textarea>
+            </div>
             <div class="form-actions"> <button type="button" id="cancel-btn" class="btn btn-secondary">取消</button> <button type="submit" id="save-btn" class="btn">保存</button> </div>
         </form>
     </dialog>
 
     <script>
-        // --- 配置 ---
+        // --- Config ---
         const API_ENDPOINT = `https://wongjinggitt.github.io/public/tool_list.json?_v=${new Date().getTime()}`;
         const DB_NAME = 'userToolsDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'tools';
-        const DEFAULT_CATEGORY_INDEX = 9999; // 如果API或本地都未提供index，使用的默认值
+        const DEFAULT_CATEGORY_INDEX = 9999;
 
-        // --- IndexedDB Helper Functions (remain unchanged) ---
+        // --- IndexedDB Helpers (Unchanged structurally, ensure 'info' is handled if needed during upgrades) ---
         let db;
-        async function dbSetup() { /* ... (same as before) ... */
+        async function dbSetup() { /* ... same ... */
             return new Promise((resolve, reject) => {
                 if (db) { resolve(db); return; }
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -114,45 +157,49 @@
                 request.onupgradeneeded = (event) => {
                     const dbInstance = event.target.result; console.log("Upgrading database...");
                     if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-                        dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        // If creating fresh, ensure 'info' could be indexed if needed later
+                        const store = dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        // Example: store.createIndex('by_type', 'type', { unique: false });
                         console.log(`Object store "${STORE_NAME}" created.`);
                     }
+                    // Handle potential future addition of 'info' index here in upgrades
                 };
             });
-         }
-        async function addLocalTool(tool) { /* ... (same as before) ... */
-            await dbSetup();
+        }
+        // Add/Update/Delete/GetAll now implicitly handle 'info' as part of the tool object
+        async function addLocalTool(tool) { /* ... same ... */
+             await dbSetup();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 delete tool.id;
-                const request = store.add(tool);
-                request.onsuccess = (event) => { console.log("Tool added successfully with id:", event.target.result); resolve(event.target.result); };
-                request.onerror = (event) => { console.error("Error adding tool:", event.target.error); reject("Error adding tool: " + event.target.error); };
+                const request = store.add(tool); // tool object now includes 'info'
+                request.onsuccess = (event) => resolve(event.target.result);
+                request.onerror = (event) => reject("Error adding tool: " + event.target.error);
             });
         }
-        async function updateLocalTool(tool) { /* ... (same as before) ... */
-            await dbSetup();
+        async function updateLocalTool(tool) { /* ... same ... */
+             await dbSetup();
              return new Promise((resolve, reject) => {
-                 if (!tool.id) { return reject("Cannot update tool without an ID."); }
+                 if (!tool.id) return reject("Cannot update tool without an ID.");
                  const transaction = db.transaction([STORE_NAME], 'readwrite');
                  const store = transaction.objectStore(STORE_NAME);
-                 const request = store.put(tool);
-                 request.onsuccess = () => { console.log("Tool updated successfully with id:", tool.id); resolve(); };
-                 request.onerror = (event) => { console.error("Error updating tool:", event.target.error); reject("Error updating tool: " + event.target.error); };
+                 const request = store.put(tool); // tool object now includes 'info'
+                 request.onsuccess = () => resolve();
+                 request.onerror = (event) => reject("Error updating tool: " + event.target.error);
              });
         }
-        async function deleteLocalTool(id) { /* ... (same as before) ... */
+        async function deleteLocalTool(id) { /* ... same ... */
             await dbSetup();
              return new Promise((resolve, reject) => {
                  const transaction = db.transaction([STORE_NAME], 'readwrite');
                  const store = transaction.objectStore(STORE_NAME);
                  const request = store.delete(id);
-                 request.onsuccess = () => { console.log("Tool deleted successfully with id:", id); resolve(); };
-                 request.onerror = (event) => { console.error("Error deleting tool:", event.target.error); reject("Error deleting tool: " + event.target.error); };
+                 request.onsuccess = () => resolve();
+                 request.onerror = (event) => reject("Error deleting tool: " + event.target.error);
              });
-        }
-        async function getAllLocalTools() { /* ... (same as before, returns flat array) ... */
+         }
+        async function getAllLocalTools() { /* ... same, 'info' is part of the result object ... */
              await dbSetup();
              return new Promise((resolve, reject) => {
                  const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -160,14 +207,13 @@
                  const request = store.getAll();
                  request.onsuccess = (event) => {
                      const localTools = event.target.result.map(tool => ({
-                         ...tool,
-                         index: Number(tool.index), // User-defined category index
+                         ...tool, // Includes 'info' if it was saved
+                         index: Number(tool.index),
                          isLocal: true
                      }));
-                     console.log("Retrieved local tools:", localTools);
                      resolve(localTools);
                  };
-                 request.onerror = (event) => { console.error("Error getting all tools:", event.target.error); reject("Error getting tools: " + event.target.error); };
+                 request.onerror = (event) => reject("Error getting tools: " + event.target.error);
              });
         }
 
@@ -182,28 +228,29 @@
         const toolIdInput = document.getElementById('tool-id');
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchAndRenderTools(); // Initial load
+            fetchAndRenderTools();
 
-            // Event listeners for buttons and form (remain largely unchanged)
-            addToolBtn.addEventListener('click', () => { /* ... (same as before) ... */
+            addToolBtn.addEventListener('click', () => {
                 modalTitle.textContent = "添加网址";
                 toolForm.reset();
-                // Set default index explicitly on add
                 document.getElementById('tool-index').value = DEFAULT_CATEGORY_INDEX;
                 toolIdInput.value = '';
                 toolModal.showModal();
             });
+
             cancelBtn.addEventListener('click', () => toolModal.close());
-            toolForm.addEventListener('submit', async (event) => { /* ... (same as before, collects name, url, type, index) ... */
+
+            // UPDATED: Form submission to include 'info'
+            toolForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 const formData = new FormData(toolForm);
                 const toolData = {
                     name: formData.get('name'),
                     url: formData.get('url'),
                     type: formData.get('type'),
+                    info: formData.get('info') || '' // Get info, default to empty string if null/undefined
                 };
                 const rawIndex = parseInt(formData.get('index'), 10);
-                // Use default if parsing fails or input is empty
                 toolData.index = isNaN(rawIndex) ? DEFAULT_CATEGORY_INDEX : rawIndex;
                 const currentToolId = toolIdInput.value;
 
@@ -217,15 +264,15 @@
                         alert('网址添加成功！');
                     }
                     toolModal.close();
-                    fetchAndRenderTools(); // Re-render
+                    fetchAndRenderTools();
                 } catch (error) {
                     console.error("Error saving tool:", error);
                     alert(`保存失败: ${error}`);
                 }
             });
 
-            // Event Delegation for Edit/Delete/Toggle (remain largely unchanged)
-            navigationContainer.addEventListener('click', async (event) => { /* ... (same as before) ... */
+            // UPDATED: Event Delegation to handle 'info' in edit mode
+            navigationContainer.addEventListener('click', async (event) => {
                 const target = event.target;
                 const titleElement = target.closest('.category-title');
                 if (titleElement && !target.closest('.btn')) {
@@ -235,13 +282,14 @@
                 }
                 if (target.classList.contains('edit-btn')) {
                     const toolCard = target.closest('.tool-card');
-                    // Populate modal using dataset attributes (still works)
                     modalTitle.textContent = "编辑网址";
                     toolIdInput.value = toolCard.dataset.id;
                     document.getElementById('tool-name').value = toolCard.dataset.name;
                     document.getElementById('tool-url').value = toolCard.dataset.url;
                     document.getElementById('tool-type').value = toolCard.dataset.type;
-                    document.getElementById('tool-index').value = toolCard.dataset.index; // Populate category index
+                    document.getElementById('tool-index').value = toolCard.dataset.index;
+                    // Populate the info field
+                    document.getElementById('tool-info').value = toolCard.dataset.info || ''; // Use default if not present
                     toolModal.showModal();
                 }
                 if (target.classList.contains('delete-btn')) {
@@ -259,130 +307,86 @@
             });
         });
 
-        // --- *** Core Rendering Logic (Adapted for New Structure) *** ---
+        // --- Core Rendering Logic ---
         async function fetchAndRenderTools() {
             if(loadingMessage) loadingMessage.style.display = 'block';
             navigationContainer.innerHTML = '';
             navigationContainer.appendChild(loadingMessage);
 
             try {
-                // 1. Fetch API Data (already grouped)
+                // 1. Fetch API Data
                 let apiGroupedData = {};
                 try {
                     const response = await fetch(API_ENDPOINT);
                     if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    // Assuming API returns the new structure directly
                     apiGroupedData = await response.json() || {};
-                    console.log("API Data:", apiGroupedData);
+                    // Ensure API data tools also have an 'info' field (even if empty) for consistency, optional
+                    // for (const type in apiGroupedData) {
+                    //     if (apiGroupedData[type].tools) {
+                    //         apiGroupedData[type].tools = apiGroupedData[type].tools.map(t => ({ ...t, info: t.info || '' }));
+                    //     }
+                    // }
                 } catch (apiError) {
                     console.warn("Failed to fetch from API, proceeding with local data only.", apiError);
-                    console.error(apiError)
+                     console.error(apiError); // Log the actual error
                 }
 
-                // 2. Fetch Local Data (flat array)
+                // 2. Fetch Local Data
                 let localToolsArray = [];
-                try {
-                    localToolsArray = await getAllLocalTools();
-                } catch(dbError) {
-                    console.error("Failed to fetch from IndexedDB.", dbError);
-                }
+                try { localToolsArray = await getAllLocalTools(); }
+                catch(dbError) { console.error("Failed to fetch from IndexedDB.", dbError); }
 
-                // 3. *** Merge Data ***
-                // Start with a deep clone of API data or an empty object
-                // Using structuredClone for safe deep copy if available, otherwise a simple loop
-                let combinedGroupedData = typeof structuredClone === 'function'
+                // 3. Merge Data (Logic remains the same, 'info' is just another property)
+                 let combinedGroupedData = typeof structuredClone === 'function'
                                           ? structuredClone(apiGroupedData)
-                                          : JSON.parse(JSON.stringify(apiGroupedData)); // Basic deep clone fallback
-
-                // Ensure all API groups have a 'tools' array
+                                          : JSON.parse(JSON.stringify(apiGroupedData));
                  for (const type in combinedGroupedData) {
-                     if (!combinedGroupedData[type].tools) {
-                         combinedGroupedData[type].tools = [];
-                     }
-                     // Ensure API group index is a number
+                     if (!combinedGroupedData[type].tools) combinedGroupedData[type].tools = [];
                       const apiIndex = parseInt(combinedGroupedData[type].index, 10);
                       combinedGroupedData[type].index = isNaN(apiIndex) ? DEFAULT_CATEGORY_INDEX : apiIndex;
                  }
-
-
-                // Integrate local tools
                 localToolsArray.forEach(localTool => {
-                    const type = localTool.type;
-                    const localIndex = localTool.index; // User defined index for this category
-
+                    const type = localTool.type; const localIndex = localTool.index;
                     if (!combinedGroupedData[type]) {
-                        // Create new group if it doesn't exist
-                        combinedGroupedData[type] = {
-                            index: localIndex, // Use local index for new group
-                            tools: []
-                        };
-                        console.log(`Created new group from local data: ${type} with index ${localIndex}`);
+                        combinedGroupedData[type] = { index: localIndex, tools: [] };
                     } else {
-                        // Group exists, update index if local index is smaller (priority)
-                         // Ensure existing index is numeric before comparison
                          const existingIndex = parseInt(combinedGroupedData[type].index, 10);
                          combinedGroupedData[type].index = isNaN(existingIndex) ? DEFAULT_CATEGORY_INDEX : existingIndex;
-
                         if (localIndex < combinedGroupedData[type].index) {
-                            console.log(`Updating index for group ${type} from ${combinedGroupedData[type].index} to ${localIndex} (local priority)`);
                             combinedGroupedData[type].index = localIndex;
                         }
                     }
-                    // Add the local tool to the group's tools array
-                    combinedGroupedData[type].tools.push(localTool); // localTool already has isLocal: true
+                    combinedGroupedData[type].tools.push(localTool);
                 });
-                 console.log("Combined Data after merge:", combinedGroupedData);
 
-
-                // 4. Prepare for Sorting: Convert merged object to array
+                // 4. Prepare for Sorting
                 const groupInfoArray = Object.entries(combinedGroupedData).map(([type, groupData]) => ({
                     type: type,
-                    // Ensure index is a number before sorting
                     sortIndex: Number(groupData.index) || DEFAULT_CATEGORY_INDEX,
-                    tools: groupData.tools || [] // Ensure tools array exists
+                    tools: groupData.tools || []
                 }));
-
-                 // Check if array is empty after processing
                  if (groupInfoArray.length === 0) {
                      loadingMessage.textContent = '未能加载工具列表或列表为空。';
-                     return; // Exit if nothing to render
+                     return;
                  }
 
-                // 5. Sort groups by sortIndex
+                // 5. Sort groups
                 groupInfoArray.sort((a, b) => a.sortIndex - b.sortIndex);
-                console.log("Sorted Group Array:", groupInfoArray);
 
                 // 6. Clear container
                 navigationContainer.innerHTML = '';
 
                 // 7. Render sorted groups and tools
                 for (const groupInfo of groupInfoArray) {
-                    // Skip rendering if a group somehow ended up with no tools
-                    if (!groupInfo.tools || groupInfo.tools.length === 0) {
-                        console.warn(`Skipping empty group: ${groupInfo.type}`);
-                        continue;
-                    }
-
+                    if (!groupInfo.tools || groupInfo.tools.length === 0) continue; // Skip empty
                     const { type, tools } = groupInfo;
-
-                    const section = document.createElement('section');
-                    section.className = 'category-section';
-
-                    const title = document.createElement('h2');
-                    title.className = 'category-title';
-                    const titleText = document.createElement('span');
-                    titleText.textContent = type;
-                    const toggleIcon = document.createElement('span');
-                    toggleIcon.className = 'toggle-icon';
-                    title.appendChild(titleText);
-                    title.appendChild(toggleIcon);
-                    section.appendChild(title);
-
-                    const grid = document.createElement('div');
-                    grid.className = 'tools-grid';
-
-                    // Sort tools within the group by name (Optional)
-                    tools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+                    const section = document.createElement('section'); section.className = 'category-section';
+                    const title = document.createElement('h2'); title.className = 'category-title';
+                    const titleText = document.createElement('span'); titleText.textContent = type;
+                    const toggleIcon = document.createElement('span'); toggleIcon.className = 'toggle-icon';
+                    title.appendChild(titleText); title.appendChild(toggleIcon); section.appendChild(title);
+                    const grid = document.createElement('div'); grid.className = 'tools-grid';
+                    tools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')); // Sort tools by name
 
                     tools.forEach(tool => {
                         const toolLink = document.createElement('a');
@@ -391,33 +395,30 @@
                         toolLink.target = '_blank';
                         toolLink.rel = 'noopener noreferrer';
 
+                        // *** ADD TOOLTIP DATA ATTRIBUTE ***
+                        if (tool.info && tool.info.trim() !== '') {
+                            toolLink.dataset.tooltip = tool.info;
+                        }
+
                         const toolName = document.createElement('span');
                         toolName.className = 'tool-name';
                         toolName.textContent = tool.name;
-                        toolName.title = tool.name;
+                        // Use title attribute as a fallback or alternative simple tooltip
+                        // toolLink.title = tool.info || tool.name;
                         toolLink.appendChild(toolName);
 
-                        // Add data attributes and buttons ONLY for local tools
                         if (tool.isLocal) {
                             toolLink.dataset.id = tool.id;
                             toolLink.dataset.name = tool.name;
                             toolLink.dataset.url = tool.url;
                             toolLink.dataset.type = tool.type;
-                            // Store the category index associated with this local tool
                             toolLink.dataset.index = tool.index;
+                            toolLink.dataset.info = tool.info || ''; // Store info for editing
 
-                            const actionsDiv = document.createElement('div');
-                            actionsDiv.className = 'tool-card-actions';
-                            const editBtn = document.createElement('button');
-                            editBtn.textContent = '编辑';
-                            editBtn.className = 'btn btn-sm btn-warning edit-btn';
-                            editBtn.addEventListener('click', (e) => e.preventDefault());
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.textContent = '删除';
-                            deleteBtn.className = 'btn btn-sm btn-danger delete-btn';
-                            deleteBtn.addEventListener('click', (e) => e.preventDefault());
-                            actionsDiv.appendChild(editBtn);
-                            actionsDiv.appendChild(deleteBtn);
+                            const actionsDiv = document.createElement('div'); actionsDiv.className = 'tool-card-actions';
+                            const editBtn = document.createElement('button'); editBtn.textContent = '编辑'; editBtn.className = 'btn btn-sm btn-warning edit-btn'; editBtn.addEventListener('click', (e) => e.preventDefault());
+                            const deleteBtn = document.createElement('button'); deleteBtn.textContent = '删除'; deleteBtn.className = 'btn btn-sm btn-danger delete-btn'; deleteBtn.addEventListener('click', (e) => e.preventDefault());
+                            actionsDiv.appendChild(editBtn); actionsDiv.appendChild(deleteBtn);
                             toolLink.appendChild(actionsDiv);
                         }
                         grid.appendChild(toolLink);
@@ -434,11 +435,6 @@
                  if(finalLoadingMsg) finalLoadingMsg.style.display = 'none';
             }
         }
-
-        // Helper: Group by Key (Might not be needed anymore, but keep for potential future use)
-        // function groupBy(array, key) { ... }
-
     </script>
-
 </body>
 </html>
