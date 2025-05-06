@@ -32,7 +32,7 @@
             { "url": "https://www.tongyi.com/qianwen/", "name": "通义千问" },
             { "url": "https://chatglm.cn/", "name": "智谱轻言" },
             { "url": "https://yiyan.baidu.com/", "name": "文心一言" },
-            { "url": "https://chat.baidu.com/", "name": "百度AI搜索" },
+            { "url": "https://chat.baidu.com/", "name": "百度AI搜索" }
         ]
     },
     "搜索引擎": {
