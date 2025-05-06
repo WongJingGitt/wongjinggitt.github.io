@@ -1,0 +1,59 @@
+{
+    "常用工具": {
+        "index": 0,
+        "tools": [
+            { "url": "https://translate.google.com", "name": "Google 翻译" },
+            { "url": "https://tinypng.com/", "name": "TinyPNG 图片压缩" },
+            { "url": "https://fanyi.baidu.com", "name": "百度翻译"  },
+            { "url": "https://wongjinggitt.github.io/public/web_tools/MarkdownEditor.html", "name": "在线Markdown编辑器" },
+            { "url": "https://wongjinggitt.github.io/public/web_tools/DiffString.html", "name": "在线字符串对比" }
+        ]
+    },
+    "开发工具": {
+        "index": 1,
+        "tools": [
+            { "url": "https://www.github.com", "name": "GitHub" },
+            { "url": "https://www.stackoverflow.com", "name": "Stack Overflow" },
+            { "url": "https://developer.mozilla.org", "name": "MDN Web Docs" },
+            { "url": "https://jsonformatter.curiousconcept.com/", "name": "JSON Formatter" },
+            { "url": "https://regex101.com/", "name": "Regex101 正则测试" }
+        ]
+    },
+    "AI工具": {
+        "index": 2,
+        "tools": [
+            { "url": "https://chatgpt.com/", "name": "Chat GPT", "info": "需要翻墙", "icon": "https://cdn.oaistatic.com/assets/favicon-miwirzcw.ico" },
+            { "url": "https://aistudio.google.com/app/prompts/new_chat", "name": "Google AI Studio", "info": "需要翻墙"},
+            { "url": "https://gemini.google.com", "name": "Gemini" },
+            { "url": "https://yuanbao.tencent.com/", "name": "腾讯元宝" },
+            { "url": "https://chat.deepseek.com/", "name": "DeepSeek" },
+            { "url": "https://kimi.moonshot.cn/", "name": "KIMI" },
+            { "url": "https://claude.ai/new", "name": "Claude" },
+            { "url": "https://www.tongyi.com/qianwen/", "name": "通义千问" },
+            { "url": "https://chatglm.cn/", "name": "智谱轻言" },
+            { "url": "https://yiyan.baidu.com/", "name": "文心一言" },
+            { "url": "https://chat.baidu.com/", "name": "百度AI搜索" },
+        ]
+    },
+    "搜索引擎": {
+        "index": 3,
+        "tools": [
+            { "url": "https://www.google.com", "name": "Google 搜索" },
+            { "url": "https://www.bing.com", "name": "Bing 搜索" }
+        ]
+    },
+    "设计工具": {
+        "index": 20,
+        "tools": [
+            { "url": "https://www.canva.com", "name": "Canva 设计" },
+            { "url": "https://www.figma.com", "name": "Figma" }
+        ]
+    },
+    "娱乐": {
+        "index": 100,
+        "tools": [
+            { "url": "https://www.bilibili.com", "name": "Bilibili" },
+            { "url": "https://www.youtube.com", "name": "YouTube" }
+        ]
+    }
+}
