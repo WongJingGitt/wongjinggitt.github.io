@@ -1,6 +1,6 @@
 {
     "常用工具": {
-        "index": 0,
+        "index": -1,
         "tools": [
             { "url": "https://translate.google.com", "name": "Google 翻译" },
             { "url": "https://tinypng.com/", "name": "TinyPNG 图片压缩" },
