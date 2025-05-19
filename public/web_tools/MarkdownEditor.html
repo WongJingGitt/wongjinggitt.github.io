@@ -8,14 +8,14 @@
     <!-- PDF/Image Export Libs -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- *** NEW DOCX Export Lib *** -->
+    <!-- DOCX Export Lib -->
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
-    <!-- *** Removed old html-to-docx-ts script *** -->
     <!-- Highlight JS -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css" integrity="sha512-jYtlOKxyOGJQxuHAR9h4PK04vh9HzaxI0dHVXx/kqICgw82nv3UpzWkaef+Fg8g4XJEvf/W+sPOnaeYQp5SRaQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Diff Lib (jsdiff) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/7.0.0/diff.min.js"></script>
     <style>
-        /* --- [All Existing CSS Styles Remain the Same] --- */
          :root {
             --bg-color: #f8f9fa;
             --preview-bg: #ffffff;
@@ -28,13 +28,15 @@
             --danger-hover-color: #cb2431;
             --modal-overlay-bg: rgba(0,0,0,0.6);
             --modal-content-bg: #ffffff;
+            --diff-enabled-color: #28a745; /* Bootstrap Success Green */
+            --diff-disabled-color: #6c757d; /* Bootstrap Secondary Grey */
         }
 
         html, body {
             height: 100%;
             width: 100%;
             margin: 0;
-            overflow: hidden; /* Prevent body scrollbars */
+            overflow: hidden;
         }
 
         body {
@@ -49,8 +51,8 @@
             grid-template-columns: 1fr 2fr;
             gap: 2rem;
             margin: 0 auto;
-            height: calc(100vh - 1rem); /* Full height minus padding */
-            box-sizing: border-box; /* Include padding in height calculation */
+            height: calc(100vh - 1rem);
+            box-sizing: border-box;
         }
 
         .editor-box, .preview-box {
@@ -61,33 +63,103 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            overflow: hidden; /* Prevent box itself from overflowing */
-            min-width: 0; /* Fix Issue 2: Allow grid item to shrink */
+            overflow: hidden;
+            min-width: 0;
         }
 
         .markdown-body {
             background: var(--preview-bg) !important;
             padding: 1.5rem !important;
-            width: 100%; /* Use full width */
-            height: 100%; /* Use full height */
-            box-sizing: border-box; /* Include padding in dimensions */
-            overflow: auto; /* Use combined overflow property */
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            overflow: auto;
         }
 
         .title-toolbar {
             display: flex;
-            gap: 0.75rem; /* Slightly reduced gap */
+            gap: 0.75rem;
             align-items: center;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            flex-wrap: wrap;
+        }
+        
+        .preview-title-extra { 
+            margin-left: auto; 
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        select, button, input[type="search"] { /* Added search input */
+        #diffStatusIndicator {
+            font-size: 0.8em; 
+            font-weight: 500;
+            padding: 0.2em 0.6em; 
+            border-radius: 4px;
+            color: white;
+            line-height: 1.5; 
+            white-space: nowrap;
+        }
+        #diffStatusIndicator.enabled {
+            background-color: var(--diff-enabled-color);
+        }
+        #diffStatusIndicator.disabled {
+            background-color: var(--diff-disabled-color);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px; 
+            height: 20px; 
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px; 
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; 
+            width: 14px;  
+            left: 3px;    
+            bottom: 3px;  
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px); 
+        }
+
+
+        select, button, input[type="search"], input[type="number"], input[type="range"] {
             padding: 0.5rem 1rem;
-            border-radius: 6px; /* Slightly rounder */
+            border-radius: 6px;
             border: 1px solid var(--border-color);
             background: white;
-            font-size: 0.9em; /* Consistent font size */
+            font-size: 0.9em;
             box-sizing: border-box;
+        }
+        input[type="range"] {
+            padding: 0; 
         }
         button {
             cursor: pointer;
@@ -107,7 +179,7 @@
         button.primary {
             background: var(--primary-color);
             color: white;
-            border: 1px solid var(--primary-color); /* Fixed border color */
+            border: 1px solid var(--primary-color);
         }
 
         button.primary:hover {
@@ -132,77 +204,90 @@
          .notice {
             color: var(--secondary-text-color);
             font-size: 0.9em;
-            margin-top: 0; /* Adjusted margin */
-            margin-left: auto; /* Push notice to the right if space allows */
+            margin-top: 0;
         }
         .card-title {
-            padding: 10px 0; /* Adjusted padding */
+            padding: 10px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            flex-shrink: 0; /* Prevent title from shrinking */
+            flex-shrink: 0;
             box-sizing: border-box;
-            flex-wrap: wrap; /* Allow wrapping */
-            gap: 10px; /* Add gap for wrapped items */
-            border-bottom: 1px solid var(--border-color); /* Add subtle separator */
-            margin-bottom: 0.5rem; /* Space below title */
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
         }
         .card-body {
-            flex-grow: 1; /* Allow body to take remaining space */
-            overflow: hidden; /* Important: Let children handle scroll */
-            display: flex; /* Use flex for inner content */
-            flex-direction: column; /* Stack children vertically */
+            flex-grow: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         .text-title {
-            font-size: 1.25em; /* Adjusted size */
-            font-weight: 600; /* Bolder */
-            margin-right: auto; /* Push buttons to the right */
-            white-space: nowrap; /* Prevent title breaking */
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-right: 1rem; 
+            white-space: nowrap;
+            display: flex; 
+            align-items: center; 
+        }
+        #activeDocIndicatorText { 
+            font-weight: normal;
+            font-size: 0.8em;
+            color: var(--secondary-text-color);
+            margin-left: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px; 
         }
         .title-button-group {
              display: flex;
              gap: 0.5rem;
              align-items: center;
-             margin-left: 1rem; /* Space between title and buttons */
+			 width: 100%;
+			 justify-content: flex-end;
         }
-		.title-button-item { /* Applied to buttons */
+		.title-button-item {
 			height: 35px;
 			min-width: 75px;
-			display: inline-flex; /* Use inline-flex for button content */
+			display: inline-flex;
 			align-items: center;
-			justify-content: center; /* Center content */
-            gap: 0.4em; /* Space between icon and text */
-            padding: 0.5rem 0.8rem; /* Adjust padding */
-            white-space: nowrap; /* Prevent text wrapping */
+			justify-content: center;
+            gap: 0.4em;
+            padding: 0.5rem 0.8rem;
+            white-space: nowrap;
 		}
         .icon-button svg {
             vertical-align: middle;
+            flex-shrink: 0;
         }
         .editor {
             width: 100%;
             font-family: 'Fira Code', 'Consolas', monospace;
-            border-radius: 6px; /* Match button radius */
-            overflow: hidden; /* Keep this */
-            display: flex; /* Fix Issue 1: Use flex */
-            flex-direction: column; /* Fix Issue 1: Stack toolbar and textarea */
-            flex-grow: 1; /* Make editor container fill card-body */
-            border: 1px solid var(--border-color); /* Use variable */
-            background: #fafafa; /* Background for the whole editor area */
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            border: 1px solid var(--border-color);
+            background: #fafafa;
         }
 
-        #editor { /* Textarea */
-            width: 100%; /* Use full width */
-            flex-grow: 1; /* Fix Issue 1: Allow textarea to fill space */
-            padding: 15px; /* Adjusted padding */
+        #editor {
+            width: 100%;
+            flex-grow: 1;
+            padding: 15px;
             font-size: 14px;
             line-height: 1.6;
             border: none;
-            background: transparent; /* Inherit background or set specific */
+            background: transparent;
             resize: none;
             tab-size: 4;
-            overflow-y: auto; /* Keep vertical scroll */
-            box-sizing: border-box; /* Include padding in dimensions */
+            overflow-y: auto;
+            box-sizing: border-box;
         }
 
         #editor:focus {
@@ -210,44 +295,44 @@
         }
 
         .toolbar {
-            padding: 8px 15px; /* Match textarea horizontal padding */
-            background: #f6f8fa; /* Lighter toolbar */
-            border-bottom: 1px solid var(--border-color); /* Use variable */
-            font-size: 0.85em; /* Slightly smaller */
-            color: var(--secondary-text-color); /* Use variable */
-            flex-shrink: 0; /* Fix Issue 1: Prevent toolbar from shrinking */
+            padding: 8px 15px;
+            background: #f6f8fa;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85em;
+            color: var(--secondary-text-color);
+            flex-shrink: 0;
             box-sizing: border-box;
             width: 100%;
-            user-select: none; /* Prevent text selection */
+            user-select: none;
         }
 
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
+            display: none;
+            position: fixed;
+            z-index: 1000;
             left: 0;
             top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: var(--modal-overlay-bg); /* Black w/ opacity */
-            backdrop-filter: blur(3px); /* Optional blur effect */
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: var(--modal-overlay-bg);
+            backdrop-filter: blur(3px);
         }
 
         .modal-content {
             background-color: var(--modal-content-bg);
-            margin: 8% auto; /* Reduced top margin slightly */
+            margin: 8% auto;
             padding: 25px;
             border: 1px solid var(--border-color);
-            width: 85%; /* Slightly wider */
-            max-width: 650px; /* Slightly wider max */
+            width: 85%;
+            max-width: 650px;
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            position: relative; /* For close button positioning */
+            position: relative;
             animation: fadeIn 0.3s ease-out;
-            display: flex; /* Use flex for layout */
-            flex-direction: column; /* Stack vertically */
-            gap: 1rem; /* Space between elements */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
         @keyframes fadeIn {
@@ -270,7 +355,7 @@
             line-height: 1;
             background: none;
             border: none;
-            padding: 0 5px; /* Add some clickable area */
+            padding: 0 5px;
             cursor: pointer;
         }
 
@@ -281,31 +366,31 @@
         }
 
         .modal h2 {
-            margin: 0; /* Reset margin */
+            margin: 0;
             font-weight: 600;
             font-size: 1.3em;
         }
-        .modal-toolbar { /* Container for search and save new button */
+        .modal-toolbar {
             display: flex;
             gap: 1rem;
             align-items: center;
-            flex-wrap: wrap; /* Allow wrapping */
+            flex-wrap: wrap;
         }
-        #searchInput, #historySearchInput { /* Apply to both search inputs */
-            flex-grow: 1; /* Allow search to take available space */
-            min-width: 200px; /* Minimum width */
+        #searchInput, #historySearchInput {
+            flex-grow: 1;
+            min-width: 200px;
         }
         #saveNewButton {
-             display: none; /* Hidden by default, shown via JS */
+             display: none;
         }
 
-        .saved-item-list, .history-item-list { /* Style both lists */
+        .saved-item-list, .history-item-list {
             list-style: none;
             padding: 0;
             margin: 0;
-            max-height: 50vh; /* Increased max height */
+            max-height: 50vh;
             overflow-y: auto;
-            border: 1px solid var(--border-color); /* Add border around list */
+            border: 1px solid var(--border-color);
             border-radius: 6px;
         }
 
@@ -313,10 +398,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 15px; /* Adjust padding */
+            padding: 10px 15px;
             border-bottom: 1px solid #eee;
-            transition: background-color 0.15s ease-in-out;
-            gap: 10px; /* Space between info and actions */
+            transition: background-color 0.15s ease-in-out, border-left 0.15s ease-in-out; 
+            gap: 10px;
         }
         .saved-item:last-child, .history-item:last-child {
             border-bottom: none;
@@ -324,30 +409,39 @@
         .saved-item:hover, .history-item:hover {
             background-color: #f6f8fa;
         }
+        .saved-item.highlighted-active-doc {
+            background-color: #e6f7ff; 
+            border-left: 4px solid var(--primary-color);
+            font-weight: 500;
+        }
+        .saved-item.highlighted-active-doc .item-name {
+            color: var(--primary-hover-color);
+        }
+
 
         .item-info {
             display: flex;
             flex-direction: column;
-            gap: 3px; /* Increased gap */
-            flex-grow: 1; /* Allow info to take space */
-            min-width: 0; /* Prevent overflow issues */
+            gap: 3px;
+            flex-grow: 1;
+            min-width: 0;
         }
 
-        .item-name { /* Specific to saved items */
+        .item-name {
             font-weight: 500;
             color: var(--text-color);
-            white-space: nowrap; /* Prevent wrapping */
-            overflow: hidden; /* Hide overflow */
-            text-overflow: ellipsis; /* Add ellipsis */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .item-content-preview { /* Specific to history items */
+        .item-content-preview {
             font-size: 0.9em;
             color: var(--secondary-text-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 350px; /* Limit preview width */
-            display: inline-block; /* Needed for ellipsis */
+            max-width: 350px;
+            display: inline-block;
         }
 
         .item-timestamp {
@@ -356,8 +450,8 @@
         }
         .item-actions {
             display: flex;
-            gap: 8px; /* Consistent gap */
-            flex-shrink: 0; /* Prevent shrinking */
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .no-items {
@@ -365,11 +459,11 @@
              color: var(--secondary-text-color);
              padding: 2rem 0;
              font-style: italic;
-             border-bottom: none !important; /* Ensure no border */
-             display: block !important; /* Ensure it takes full width */
+             border-bottom: none !important;
+             display: block !important;
         }
         .no-items:hover {
-             background-color: transparent !important; /* No hover effect */
+             background-color: transparent !important;
         }
         .toast-message {
             position: fixed;
@@ -380,17 +474,42 @@
             background: rgba(0, 0, 0, 0.75);
             color: #fff;
             border-radius: 6px;
-            z-index: 1050; /* Above modal overlay */
+            z-index: 1050;
             font-family: sans-serif;
             font-size: 14px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
             text-align: center;
-            pointer-events: none; /* Prevent interaction */
+            pointer-events: none;
         }
         .toast-message.show {
             opacity: 1;
+        }
+        /* Styles for Diff Config Modal */
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .config-item label {
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+        .config-item .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .config-item input[type="number"] {
+            width: 80px; 
+        }
+        .config-item input[type="range"] {
+            flex-grow: 1;
+        }
+        .config-note {
+            font-size: 0.8em;
+            color: var(--secondary-text-color);
         }
     </style>
 </head>
@@ -399,8 +518,15 @@
         <!-- 编辑区 -->
         <div class="editor-box">
             <div class="card-title">
-                <div class="text-title">Markdown 编辑器</div>
+                <div class="text-title">
+                    Markdown 编辑器
+                    <span id="activeDocIndicatorText"></span>
+                </div>
                 <div class="title-button-group">
+                    <button onclick="importMarkdownFile()" title="Import Markdown file" class="title-button-item icon-button">
+						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-upload"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 1.75a.75.75 0 0 1 .75.75v6.51L11.03 6.78a.75.75 0 0 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.5a.75.75 0 0 1 .75-.75Z"></path></svg>
+						导入
+					</button>
                     <button onclick="showLoadModal()" title="Load saved markdown" class="title-button-item icon-button">
 						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-download"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 11.75a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 1.5 0v9.5a.75.75 0 0 1-.75.75Zm-4.28-4.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.31V9.5a.75.75 0 0 1-1.5 0V4.31L3.78 7.47a.75.75 0 0 1-1.06 0Z"></path></svg>
 						加载
@@ -413,6 +539,10 @@
 						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-history"><path d="M1.643 3.143L.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684zM7.75 4a.75.75 0 0 1 .75.75v4.336l3.47 2.023a.75.75 0 0 1-.74 1.298l-3.75-2.165A.75.75 0 0 1 7 9.75V4.75a.75.75 0 0 1 .75-.75z"></path></svg>
 						历史
 					</button>
+                    <button onclick="showDiffConfigModal()" title="Configure Diff Tracking" class="title-button-item icon-button">
+                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-gear"><path fill-rule="evenodd" d="M8 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 1.5a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM5.44 8A2.56 2.56 0 0 1 8 5.44v.035a.75.75 0 0 1 0 1.5v-.035A.97.97 0 0 0 8 6.91a.97.97 0 0 0-.97.97.97.97 0 0 0 .97.97.97.97 0 0 0 .97-.97V8a2.56 2.56 0 0 1-2.56 2.56H5.47a.75.75 0 0 1 0-1.5h.005A2.524 2.524 0 0 1 5.44 8Zm4.12-2.56A2.56 2.56 0 0 1 10.53 8h.005a.75.75 0 0 1 0 1.5H10.5A2.56 2.56 0 0 1 8 10.56v-.035a.75.75 0 0 1 0-1.5v.035A.97.97 0 0 0 8 9.09a.97.97 0 0 0 .97-.97A.97.97 0 0 0 8 7.15.97.97 0 0 0 7.03 8.12V8A2.56 2.56 0 0 1 9.56 5.44Zm2.06.7a.75.75 0 0 1 1.06-.02l.003.004 1.5 1.5.003.003a.75.75 0 0 1 .02 1.06l-.003.004-1.5 1.5-.004.003a.75.75 0 0 1-1.06.02l.004-.003-1.5-1.5-.004-.003a.75.75 0 0 1-.02-1.06l.003-.004 1.5-1.5Zm-8.24 4.12a.75.75 0 0 1 1.06.02l-.003-.004 1.5 1.5-.003-.003a.75.75 0 0 1 .02 1.06l.003.004-1.5 1.5.004.003a.75.75 0 0 1-1.06.02l-.004-.003-1.5-1.5.004-.003a.75.75 0 0 1-.02-1.06l-.003.004 1.5-1.5Z"></path></svg>
+                        Diff配置
+                    </button>
                     <button class="title-button-item" onclick="loadSample()" >加载示例</button>
                 </div>
             </div>
@@ -430,15 +560,23 @@
                 <div class="text-title">
                     实时预览
                 </div>
+                 <div class="preview-title-extra"> 
+                    <span id="diffStatusIndicator">追踪关闭</span>
+                    <label class="toggle-switch" title="切换Diff内容追踪功能">
+                        <input type="checkbox" id="diffTrackingToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <div class="title-toolbar">
                     <select id="format">
                         <option value="image" selected>图片</option>
                         <option value="html">HTML</option>
-                        <option value="pdf">PDF</option> <!-- Added PDF -->
-                        <option value="docx">DOCX</option> <!-- Added DOCX -->
+                        <option value="pdf">PDF</option>
+                        <option value="docx">DOCX</option>
+                        <option value="markdown">Markdown (.md)</option>
                     </select>
-                    <button class="primary" onclick="exportFile(event)">导出文件</button> <!-- Pass event -->
-                    <p class="notice">提示：生成图片/PDF可能需5-10秒</p> <!-- Updated notice -->
+                    <button class="primary" onclick="exportFile(event)">导出文件</button>
+                    <p class="notice">提示：生成图片/PDF可能需5-10秒</p>
                 </div>
             </div>
             <div class="card-body">
@@ -459,7 +597,6 @@
                 <button id="saveNewButton" class="primary" onclick="handleSaveNew()">另存为新...</button>
              </div>
             <ul id="savedItemList" class="saved-item-list">
-                <!-- Items will be loaded here by JavaScript -->
                  <li class="no-items">没有找到已保存的文档。</li>
             </ul>
         </div>
@@ -472,28 +609,52 @@
                  <h2 id="historyModalTitle">编辑历史记录</h2>
                  <button class="modal-close-btn" onclick="hideHistoryModal()" title="关闭">&times;</button>
              </div>
-             <!-- Optional: Add search for history if needed -->
-             <!-- <div class="modal-toolbar">
-                <input type="search" id="historySearchInput" placeholder="搜索历史记录..." oninput="filterHistoryItems()">
-             </div> -->
             <ul id="historyItemList" class="history-item-list">
-                <!-- History items will be loaded here -->
                  <li class="no-items">没有编辑历史记录。</li>
             </ul>
         </div>
     </div>
 
+    <!-- Diff Config Modal -->
+    <div id="diffConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Diff追踪配置</h2>
+                <button class="modal-close-btn" onclick="hideDiffConfigModal()" title="关闭">&times;</button>
+            </div>
+            <div class="config-item">
+                <label for="diffDebounceTimeInput">防抖触发时间 (毫秒)</label>
+                <div class="input-group">
+                    <input type="number" id="diffDebounceTimeInput" min="1000" step="100">
+                </div>
+                <p class="config-note">编辑器内容停止变化后，等待此时间再进行Diff计算。最小值1000毫秒。</p>
+            </div>
+            <div class="config-item">
+                <label for="diffMatchThresholdInput">匹配容忍度 (%)</label>
+                <div class="input-group">
+                    <input type="range" id="diffMatchThresholdRange" min="50" max="100" step="1">
+                    <input type="number" id="diffMatchThresholdInput" min="50" max="100" step="1" style="width: 70px;"> %
+                </div>
+                <p class="config-note">原始文档内容在此百分比以上仍然存在于当前编辑内容中时，判定为追踪。范围50% - 100%。</p>
+            </div>
+            <button class="primary" onclick="handleSaveDiffSettings()">保存配置</button>
+        </div>
+    </div>
+
+
     <!-- 独立示例内容 -->
     <script id="sampleMarkdown" type="text/template">
-# 现代化文档转换工具 (v2)
+# 现代化文档转换工具 (v2.2)
 
 ## 功能特性
 
 - [x] ​**​实时HTML预览​**​
-- [x] 多格式导出支持 (HTML, 图片, **PDF**, **DOCX**)
+- [x] 多格式导出支持 (HTML, 图片, **PDF**, **DOCX**, **Markdown**)
 - [x] 专业样式渲染 (GitHub Markdown CSS + Highlight.js)
 - [x] 内容本地存储 (IndexedDB) - 支持搜索、更新、删除
 - [x] ​**​编辑历史记录​**​ (自动保存，上限50条)
+- [x] ​**​Markdown文件导入​**
+- [x] ​**​可配置的Diff内容追踪，持续追踪当前选中的方案。​**
 - [ ] <span style="color: #A0A1A7;">更多功能敬请期待...</span>
 
 ```javascript
@@ -523,20 +684,24 @@ if __name__ == "__main__":
 
 ## 使用指南
 
-1.  在左侧 **编辑器** 中输入或粘贴Markdown文本。
+1.  在左侧 **编辑器** 中输入或粘贴Markdown文本，或点击 **导入** 按钮加载本地 `.md` / `.txt` 文件。
 2.  右侧将 **实时预览** 渲染后的效果。
-3.  点击编辑器上方的 **保存** 按钮:
+3.  可配置 **Diff追踪** 功能（预览区右上角开关及编辑器上方“Diff配置”按钮）：
+    *   开启后，当编辑器内容与当前加载的已保存文档（活动文档）的原始内容保留度高于设定阈值（即使增加了许多新内容），系统仍会认为您在编辑该活动文档的扩展版本。
+    *   **导出文件名**：若判定为追踪活动文档，将使用该文档名。
+    *   **保存弹窗**：若判定为追踪活动文档，将在保存列表中高亮并滚动到该文档。
+4.  点击编辑器上方的 **保存** 按钮:
     *   在弹出窗口中点击 **另存为新...** 以创建新条目。
     *   点击列表中某一项旁的 **更新** 按钮以覆盖现有条目。
-4.  点击编辑器上方的 **加载** 按钮:
+5.  点击编辑器上方的 **加载** 按钮:
     *   使用 **搜索框** 快速查找。
-    *   点击列表中某一项旁的 **加载** 按钮将其内容填入编辑器。
+    *   点击列表中某一项旁的 **加载** 按钮将其内容填入编辑器（这将成为新的活动文档）。
     *   点击 **删除** 按钮移除条目。
-5.  点击编辑器上方的 **历史** 按钮:
+6.  点击编辑器上方的 **历史** 按钮:
     *   查看自动保存的编辑记录 (最近优先)。
-    *   点击 **恢复** 将该版本内容加载到编辑器。
+    *   点击 **恢复** 将该版本内容加载到编辑器（这会清除活动文档状态）。
     *   点击 **删除** 移除该条历史记录。
-6.  在预览区上方选择 **导出格式** (HTML, 图片, PDF, DOCX)，然后点击 **导出文件** 下载。 *PDF导出将保留视觉样式，但文本不可选。DOCX会尝试转换结构和基本样式。*
+7.  在预览区上方选择 **导出格式** (HTML, 图片, PDF, DOCX, Markdown)，然后点击 **导出文件** 下载。 *PDF导出将保留视觉样式，但文本不可选。DOCX会尝试转换结构和基本样式。Markdown将导出纯文本。*
 
 > 专业的技术文档与演示解决方案，提供更完善的本地管理和追溯功能！
 
@@ -562,7 +727,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
         // --- Global Variables & Constants ---
         const editor = document.getElementById('editor');
         const preview = document.getElementById('preview');
-        const sampleContent = document.getElementById('sampleMarkdown').textContent.trim(); // Keep this line
+        const sampleContent = document.getElementById('sampleMarkdown').textContent.trim();
         const loadModal = document.getElementById('loadModal');
         const savedItemList = document.getElementById('savedItemList');
         const searchInput = document.getElementById('searchInput');
@@ -570,26 +735,48 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
         const saveNewButton = document.getElementById('saveNewButton');
         const historyModal = document.getElementById('historyModal');
         const historyItemList = document.getElementById('historyItemList');
+        const activeDocIndicatorEl = document.getElementById('activeDocIndicatorText'); 
 
         const DB_NAME = 'markdownDB';
         const SAVED_STORE_NAME = 'savedMarkdown';
-        const HISTORY_STORE_NAME = 'editHistory'; // New store name
-        const HISTORY_LIMIT = 50; // Max number of history entries
-        let db; // Database instance
-        let historySaveTimeout; // Timeout for debounced history saving
-        let lastSavedHistoryContent = null; // Track last saved history content to avoid duplicates
-        let isSyncing = false; // For scroll sync
+        const HISTORY_STORE_NAME = 'editHistory';
+        const HISTORY_LIMIT = 50;
+        let db;
+        let historySaveTimeout;
+        let lastSavedHistoryContent = null;
+        let isSyncing = false;
+
+        // --- Diff Tracking Variables ---
+        let isDiffTrackingEnabled = false;
+        let diffDebounceTime = 1500; 
+        let diffMatchThreshold = 0.85; 
+        let jsdiffInstance = null; 
+        let diffDebounceTimeout = null;
+        let isContentConsideredSameAsActiveDoc = false; 
+
+        let activeSavedDocument = { 
+            id: null,
+            name: null,
+            originalContent: null
+        };
+
+        const diffConfigModal = document.getElementById('diffConfigModal');
+        const diffDebounceTimeInput = document.getElementById('diffDebounceTimeInput');
+        const diffMatchThresholdRange = document.getElementById('diffMatchThresholdRange');
+        const diffMatchThresholdInput = document.getElementById('diffMatchThresholdInput');
+        const diffTrackingToggle = document.getElementById('diffTrackingToggle');
+        const diffStatusIndicator = document.getElementById('diffStatusIndicator');
 
 
         // --- Toast Notification ---
 		function showToast(message, duration = 3000) {
-		    document.querySelectorAll('.toast-message').forEach(t => t.remove()); // Remove existing
+		    document.querySelectorAll('.toast-message').forEach(t => t.remove());
             const toast = document.createElement('div');
             toast.textContent = message;
 		    toast.className = 'toast-message';
 		    document.body.appendChild(toast);
 		    requestAnimationFrame(() => {
-                requestAnimationFrame(() => { toast.classList.add('show'); }); // Ensure transition triggers
+                requestAnimationFrame(() => { toast.classList.add('show'); });
             });
 		    setTimeout(() => {
 		        toast.classList.remove('show');
@@ -605,12 +792,11 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 e.preventDefault(); handleIndentation('unindent');
             }
         });
-        function handleIndentation(action) { // Indentation logic remains the same
+        function handleIndentation(action) {
             const start = editor.selectionStart;
             const end = editor.selectionEnd;
             const value = editor.value;
             const tab = '    ';
-
             if (start === end) {
                 const lineStart = value.lastIndexOf('\n', start - 1) + 1;
                 if (action === 'indent') {
@@ -655,8 +841,11 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 const finalEnd = end + lengthDifference;
                 editor.setSelectionRange(finalStart, finalEnd);
             }
-            triggerHistorySave();
+            updatePreview(); 
+            triggerHistorySave(); 
+            handleContentChangeForDiff(); 
         }
+
 
         // --- Core Editor and Preview Logic ---
         marked.setOptions({
@@ -674,15 +863,14 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
             },
             breaks: true, gfm: true
         });
-
-        function loadSample() {
+        function loadSample() { 
             editor.value = sampleContent;
             updatePreview();
             showToast("示例内容已加载");
-            lastSavedHistoryContent = null; // Allow potential save of sample if user interacts further
+            lastSavedHistoryContent = null;
+            clearActiveSavedDocumentState(true); 
         }
-
-        function updatePreview() {
+        function updatePreview() { 
             try {
                  preview.innerHTML = marked.parse(editor.value);
                  hljs.highlightAll();
@@ -692,44 +880,85 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
             }
         }
 
-        // --- Export Logic (Using html-docx-js) ---
+
+        // --- File Import Logic ---
+        function importMarkdownFile() { 
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.md,.txt,text/markdown,text/plain';
+            fileInput.onchange = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        editor.value = e.target.result;
+                        updatePreview();
+                        triggerHistorySave();
+                        showToast(`文件 "${file.name}" 已导入！`);
+                        clearActiveSavedDocumentState(true); 
+                    };
+                    reader.onerror = (e) => { console.error("File reading error:", e); showToast("文件读取失败。"); };
+                    reader.readAsText(file);
+                }
+            };
+            fileInput.click();
+        }
+
+        // --- Export Logic ---
         async function exportFile(event) {
             const format = document.getElementById('format').value;
             const markdownInput = editor.value;
-            const previewElement = document.getElementById('preview');
             const exportButton = event.target;
             const originalButtonText = exportButton.textContent;
+
             exportButton.disabled = true;
             exportButton.textContent = '导出中...';
 
-            // Ensure preview is up-to-date for export
+            const baseFilename = generateBaseFilename(); 
+            let filenameWithExt = `${baseFilename}.txt`; 
+
+            if (format === 'markdown') {
+                try {
+                    filenameWithExt = `${baseFilename}.md`;
+                    triggerDownload(
+                        URL.createObjectURL(new Blob([markdownInput], { type: 'text/markdown;charset=UTF-8' })),
+                        filenameWithExt
+                    );
+                    showToast('Markdown 文件导出成功！');
+                } catch (error) {
+                    showToast(`导出失败: ${error.message}`);
+                    console.error("Export Error (Markdown):", error);
+                } finally {
+                    exportButton.disabled = false;
+                    exportButton.textContent = originalButtonText;
+                }
+                return;
+            }
+
+            const previewElement = document.getElementById('preview');
             try {
                 previewElement.innerHTML = marked.parse(markdownInput);
                 hljs.highlightAll();
             } catch (e) {
                 showToast(`Markdown 解析错误，无法导出: ${e.message}`);
-                console.error("Markdown Parsing Error on Export:", e);
                 exportButton.disabled = false;
                 exportButton.textContent = originalButtonText;
                 return;
             }
 
-            // Use a temporary container for html2canvas to capture background/padding
             const captureContainer = document.createElement('div');
-            captureContainer.className = 'markdown-body'; // Apply styling for capture
+            captureContainer.className = 'markdown-body';
             Object.assign(captureContainer.style, {
                 position: 'absolute', left: '-9999px', top: '0px',
-                padding: '2rem', background: 'var(--preview-bg)', // Use computed styles later
-                width: previewElement.scrollWidth + 'px', // Use scrollWidth
+                padding: '2rem', background: 'var(--preview-bg)',
+                width: previewElement.scrollWidth + 'px',
                 minWidth: '600px', height: 'auto', overflow: 'visible',
                 boxSizing: 'content-box'
             });
-            // Clone the *preview* element, not the whole container, for content
             const clonedPreview = previewElement.cloneNode(true);
             captureContainer.appendChild(clonedPreview);
             document.body.appendChild(captureContainer);
 
-            // Wait for styles and layout
             await new Promise(resolve => requestAnimationFrame(resolve));
             await new Promise(resolve => setTimeout(resolve, 150));
 
@@ -737,21 +966,19 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 switch(format) {
                     case 'image':
                     case 'pdf':
-                        console.log(`Exporting as ${format.toUpperCase()}...`);
                         const scale = window.devicePixelRatio || 2;
-                        // Capture the container div which includes padding and background
                         const canvas = await html2canvas(captureContainer, {
                             scale: scale, useCORS: true, logging: false, scrollX: 0, scrollY: 0,
                             windowWidth: captureContainer.scrollWidth,
                             windowHeight: captureContainer.scrollHeight,
-                            backgroundColor: getComputedStyle(captureContainer).backgroundColor // Get actual bg
+                            backgroundColor: getComputedStyle(captureContainer).backgroundColor
                         });
-                        console.log('Canvas generated');
-
                         if (format === 'image') {
-                            triggerDownload(canvas.toDataURL('image/png'), 'export.png');
+                            filenameWithExt = `${baseFilename}.png`;
+                            triggerDownload(canvas.toDataURL('image/png'), filenameWithExt);
                             showToast('图片导出成功！');
-                        } else { // PDF Export
+                        } else {
+                            filenameWithExt = `${baseFilename}.pdf`;
                             const { jsPDF } = window.jspdf;
                             const imgData = canvas.toDataURL('image/png');
                             const imgProps = { width: canvas.width / scale, height: canvas.height / scale };
@@ -763,87 +990,56 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                             const pdfWidth = pdf.internal.pageSize.getWidth();
                             const pdfHeight = pdf.internal.pageSize.getHeight();
                             const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
-                            const imgPdfWidth = imgProps.width * ratio;
-                            const imgPdfHeight = imgProps.height * ratio;
-                            const x = (pdfWidth - imgPdfWidth) / 2;
-                            const y = 0;
-                            pdf.addImage(imgData, 'PNG', x, y, imgPdfWidth, imgPdfHeight);
-                            pdf.save('export.pdf');
+                            pdf.addImage(imgData, 'PNG', (pdfWidth - imgProps.width * ratio) / 2, 0, imgProps.width * ratio, imgProps.height * ratio);
+                            pdf.save(filenameWithExt);
                             showToast('PDF导出成功！(作为单页图片)');
                         }
                         break;
-
                     case 'html':
-                        console.log('Exporting as HTML...');
-                        // Use the cloned preview's innerHTML for consistency
+                        filenameWithExt = `${baseFilename}.html`;
                         const fullHTML = createFullHtml(clonedPreview.innerHTML);
                         triggerDownload(
                             URL.createObjectURL(new Blob([fullHTML], { type: 'text/html;charset=UTF-8' })),
-                            'export.html'
+                            filenameWithExt
                         );
                         showToast('HTML导出成功！');
                         break;
-
                     case 'docx':
-                        console.log('Exporting as DOCX using html-docx-js...');
-                        // Create the full HTML structure needed by the library
+                        filenameWithExt = `${baseFilename}.docx`;
                         const docxHtmlString = createFullHtml(clonedPreview.innerHTML);
-
-                        // --- >>> USE html-docx-js <<< ---
-                        if (typeof htmlDocx === 'undefined') {
-                            throw new Error("html-docx-js library not loaded correctly.");
-                        }
-                        // Convert the HTML string to a DOCX blob
+                        if (typeof htmlDocx === 'undefined') throw new Error("html-docx-js library not loaded.");
                         const fileBlob = htmlDocx.asBlob(docxHtmlString);
-                        // --- >>> END OF CHANGE <<< ---
-
-                        triggerDownload(
-                            URL.createObjectURL(fileBlob), // Create URL from blob
-                            'export.docx'
-                        );
-                        showToast('DOCX导出成功！(样式基于Word HTML解析)');
+                        triggerDownload(URL.createObjectURL(fileBlob), filenameWithExt);
+                        showToast('DOCX导出成功！');
                         break;
                 }
             } catch (error) {
                 showToast(`导出失败: ${error.message}`);
                 console.error("Export Error:", error);
             } finally {
-                // Clean up the temporary container
-                if (document.body.contains(captureContainer)) {
-                    document.body.removeChild(captureContainer);
-                }
-                exportButton.disabled = false; // Re-enable button
-                exportButton.textContent = originalButtonText; // Restore original text
+                if (document.body.contains(captureContainer)) document.body.removeChild(captureContainer);
+                exportButton.disabled = false;
+                exportButton.textContent = originalButtonText;
             }
         }
 
-
-        // Helper to create full HTML structure for export
-        function createFullHtml(bodyContent) {
-            // Include necessary CSS links and highlight script for self-contained HTML/DOCX
+        function createFullHtml(bodyContent) { 
             return `
                 <!DOCTYPE html>
                 <html lang="zh-CN" xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
                 <head>
                     <meta charset="UTF-8">
                     <title>Exported Markdown</title>
-                    <!-- Include base CSS for structure and styles Word might understand -->
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
-                    <!-- Highlight.js CSS is less likely to be fully translated by Word, but include for completeness -->
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css">
                     <style>
-                        /* Styles Word might interpret */
-                        body { font-family: Calibri, sans-serif; font-size: 11pt; padding: 1in; margin: 0; } /* Basic Word defaults */
-                        .markdown-body { /* Apply some basic container-like properties if needed, Word handles page margins */
-                             /* max-width: 6.5in; /* Example: Limit width within page */
-                        }
-                        /* Specific overrides for Word compatibility if needed */
+                        body { font-family: Calibri, sans-serif; font-size: 11pt; padding: 1in; margin: 0; }
+                        .markdown-body { }
                         pre { background-color: #f6f8fa; border: 1px solid #e1e4e8; padding: 1em; overflow: auto; font-family: Consolas, monospace; }
                         code { font-family: Consolas, monospace; font-size: 90%; }
                         table { border-collapse: collapse; width: 100%; }
                         th, td { border: 1px solid #dfe2e5; padding: 6px 13px; }
                         blockquote { border-left: .25em solid #dfe2e5; color: #6a737d; padding: 0 1em; margin-left: 0; }
-                        /* Minimal styling from root variables Word might ignore */
                         :root { --preview-bg: #ffffff; --border-color: #e1e4e8; }
                     </style>
                      <!--[if gte mso 9]>
@@ -863,13 +1059,8 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                  </body>
                 </html>
             `;
-             // Removed highlight.js script tag as it's not needed for DOCX generation
-             // Added Word-specific XML headers for better compatibility
         }
-
-
-        // Universal download trigger
-        function triggerDownload(dataURL, filename) {
+        function triggerDownload(dataURL, filename) { 
             const link = document.createElement('a');
             link.href = dataURL;
             link.download = filename;
@@ -882,10 +1073,10 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
         }
 
         // --- IndexedDB Logic ---
-        function initDB() { // Logic remains the same
+        function initDB() { 
             return new Promise((resolve, reject) => {
                 if (db) return resolve(db);
-                const request = indexedDB.open(DB_NAME, 2);
+                const request = indexedDB.open(DB_NAME, 2); 
                 request.onerror = (event) => reject("Database error: " + event.target.error);
                 request.onsuccess = (event) => {
                     db = event.target.result;
@@ -912,9 +1103,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 };
             });
         }
-
-        // --- Save/Load/Update/Delete for NAMED Documents (savedMarkdown store) ---
-        async function saveMarkdown(name, content) { // Logic remains the same
+        async function saveMarkdown(name, content) { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
@@ -922,13 +1111,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 const timestamp = new Date();
                 const request = store.add({ name, content, timestamp });
                 return new Promise((resolve, reject) => {
-                    request.onsuccess = () => resolve(request.result);
+                    request.onsuccess = () => resolve(request.result); 
                     request.onerror = (event) => reject("Error saving: " + event.target.error);
                     transaction.onerror = (event) => reject("Save transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`保存失败: ${error}`); throw error; }
         }
-        async function updateMarkdown(id, name, content) { // Logic remains the same
+        async function updateMarkdown(id, name, content) { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
@@ -942,7 +1131,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 });
             } catch (error) { showToast(`更新失败: ${error}`); throw error; }
         }
-        async function loadAllMarkdown() { // Logic remains the same
+        async function loadAllMarkdown() { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readonly');
@@ -959,7 +1148,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 });
             } catch (error) { showToast(`加载列表失败: ${error}`); return []; }
         }
-        async function loadMarkdownById(id) { // Logic remains the same
+        async function loadMarkdownById(id) { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readonly');
@@ -972,7 +1161,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 });
             } catch (error) { showToast(`加载文档失败: ${error}`); return null; }
         }
-        async function deleteMarkdownById(id) { // Logic remains the same
+        async function deleteMarkdownById(id) { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
@@ -986,40 +1175,28 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
             } catch (error) { showToast(`删除失败: ${error}`); return false; }
         }
 
-        // --- EDIT HISTORY Logic (editHistory store) ---
-        function scheduleHistorySave() { // Logic remains the same
-            clearTimeout(historySaveTimeout);
-            historySaveTimeout = setTimeout(() => {
-                saveCurrentStateToHistory();
-            }, 2000);
-        }
-        function triggerHistorySave() { // Logic remains the same
-             clearTimeout(historySaveTimeout);
-             setTimeout(() => { saveCurrentStateToHistory(); }, 0);
-        }
-        async function saveCurrentStateToHistory() { // Logic remains the same (with sample check)
+        // --- EDIT HISTORY Logic ---
+        function scheduleHistorySave() { clearTimeout(historySaveTimeout); historySaveTimeout = setTimeout(saveCurrentStateToHistory, 2000); }
+        function triggerHistorySave() { clearTimeout(historySaveTimeout); setTimeout(saveCurrentStateToHistory, 0); }
+        async function saveCurrentStateToHistory() {
             const content = editor.value;
-            if (content === sampleContent) { return; }
-            if (!content.trim() || content === lastSavedHistoryContent) { return; }
-
-            console.log("Saving to history...");
+            if (content === sampleContent) return;
+            if (!content.trim() || content === lastSavedHistoryContent) return;
             try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
-                const timestamp = new Date();
-                const request = store.add({ content, timestamp });
-                request.onsuccess = () => {
-                    console.log("History entry saved successfully:", request.result);
-                    lastSavedHistoryContent = content;
+                const request = store.add({ content, timestamp: new Date() });
+                request.onsuccess = (e) => {
+                    lastSavedHistoryContent = content; 
                     pruneHistory();
                 };
                 request.onerror = (event) => console.error("Error saving history entry:", event.target.error);
                 transaction.onerror = (event) => console.error("History save transaction error:", event.target.error);
             } catch (error) { console.error("Failed to initiate history save:", error); }
         }
-        async function pruneHistory() { // Logic remains the same
-            try {
+        async function pruneHistory() { 
+             try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
@@ -1029,13 +1206,17 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                     if (count > HISTORY_LIMIT) {
                         const itemsToDelete = count - HISTORY_LIMIT;
                         let deletedCount = 0;
-                        const index = store.index('timestamp');
-                        const cursorRequest = index.openCursor(null, 'next');
+                        const index = store.index('timestamp'); 
+                        const cursorRequest = index.openCursor(null, 'next'); 
                         cursorRequest.onsuccess = (event) => {
                             const cursor = event.target.result;
                             if (cursor && deletedCount < itemsToDelete) {
-                                cursor.delete(); deletedCount++; cursor.continue();
-                            } else { console.log(`Pruning complete. Deleted ${deletedCount} entries.`); }
+                                cursor.delete(); 
+                                deletedCount++; 
+                                cursor.continue();
+                            } else { 
+                                if (deletedCount > 0) console.log(`Pruning complete. Deleted ${deletedCount} entries.`);
+                            }
                         };
                         cursorRequest.onerror = (event) => console.error("Error opening cursor for pruning:", event.target.error);
                     }
@@ -1044,8 +1225,8 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                  transaction.onerror = (event) => console.error("History prune transaction error:", event.target.error);
             } catch (error) { console.error("Failed to initiate history pruning:", error); }
         }
-        async function loadAllHistory() { // Logic remains the same
-             try {
+        async function loadAllHistory() { 
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
@@ -1053,7 +1234,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 const request = index.getAll();
                 return new Promise((resolve, reject) => {
                      request.onsuccess = () => {
-                         const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
+                         const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp); 
                          resolve(sortedResults);
                      };
                      request.onerror = (event) => reject("Error loading history: " + event.target.error);
@@ -1061,7 +1242,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 });
             } catch (error) { showToast(`加载历史失败: ${error}`); return []; }
         }
-        async function loadHistoryById(id) { // Logic remains the same
+        async function loadHistoryById(id) { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
@@ -1074,7 +1255,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 });
             } catch (error) { showToast(`加载历史条目失败: ${error}`); return null; }
         }
-        async function deleteHistoryById(id) { // Logic remains the same
+        async function deleteHistoryById(id) { 
              try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
@@ -1087,14 +1268,14 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                 });
             } catch (error) { showToast(`删除历史失败: ${error}`); return false; }
         }
-         async function getLastHistoryEntryContent() { // Logic remains the same
+         async function getLastHistoryEntryContent() { 
              return new Promise(async (resolve, reject) => {
                  try {
                     const dbInstance = await initDB();
                     const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
                     const store = transaction.objectStore(HISTORY_STORE_NAME);
                     const index = store.index('timestamp');
-                    const cursorRequest = index.openCursor(null, 'prev');
+                    const cursorRequest = index.openCursor(null, 'prev'); 
                     cursorRequest.onsuccess = (event) => {
                         const cursor = event.target.result;
                         resolve(cursor ? cursor.value.content : null);
@@ -1105,20 +1286,220 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
              });
          }
 
+
+        // --- Diff Tracking Logic (USING JSDIFF) ---
+        function loadDiffSettings() {
+            isDiffTrackingEnabled = localStorage.getItem('diffTrackingEnabled') === 'true';
+            diffDebounceTime = parseInt(localStorage.getItem('diffDebounceTime'), 10) || 1500;
+            if (diffDebounceTime < 1000) diffDebounceTime = 1000;
+            diffMatchThreshold = parseFloat(localStorage.getItem('diffMatchThreshold')) || 0.85; 
+            if (diffMatchThreshold < 0.5) diffMatchThreshold = 0.5;
+            if (diffMatchThreshold > 1.0) diffMatchThreshold = 1.0;
+
+            diffTrackingToggle.checked = isDiffTrackingEnabled;
+            diffDebounceTimeInput.value = diffDebounceTime;
+            diffMatchThresholdInput.value = Math.round(diffMatchThreshold * 100); 
+            diffMatchThresholdRange.value = Math.round(diffMatchThreshold * 100); 
+            updateDiffStatusIndicator();
+        }
+
+        function saveDiffSettings() {
+            localStorage.setItem('diffTrackingEnabled', isDiffTrackingEnabled);
+            localStorage.setItem('diffDebounceTime', diffDebounceTime);
+            localStorage.setItem('diffMatchThreshold', diffMatchThreshold); 
+        }
+
+        function updateDiffStatusIndicator() {
+            if (isDiffTrackingEnabled) {
+                diffStatusIndicator.textContent = '追踪开启';
+                diffStatusIndicator.classList.remove('disabled');
+                diffStatusIndicator.classList.add('enabled');
+            } else {
+                diffStatusIndicator.textContent = '追踪关闭';
+                diffStatusIndicator.classList.remove('enabled');
+                diffStatusIndicator.classList.add('disabled');
+                isContentConsideredSameAsActiveDoc = false; 
+            }
+            updateActiveDocIndicatorText(); 
+        }
+
+        diffTrackingToggle.addEventListener('change', (event) => {
+            isDiffTrackingEnabled = event.target.checked;
+            saveDiffSettings();
+            updateDiffStatusIndicator();
+            showToast(`Diff内容追踪已${isDiffTrackingEnabled ? '开启' : '关闭'}`);
+            if (isDiffTrackingEnabled && activeSavedDocument.id) {
+                handleContentChangeForDiff(); 
+            } else {
+                isContentConsideredSameAsActiveDoc = false; 
+                updateActiveDocIndicatorText();
+            }
+        });
+
+        function showDiffConfigModal() {
+            diffDebounceTimeInput.value = diffDebounceTime;
+            const thresholdPercent = Math.round(diffMatchThreshold * 100);
+            diffMatchThresholdInput.value = thresholdPercent;
+            diffMatchThresholdRange.value = thresholdPercent;
+            diffConfigModal.style.display = 'block';
+        }
+        function hideDiffConfigModal() { diffConfigModal.style.display = 'none'; }
+
+        diffMatchThresholdRange.addEventListener('input', (e) => {
+            diffMatchThresholdInput.value = e.target.value;
+        });
+        diffMatchThresholdInput.addEventListener('input', (e) => {
+            let val = parseInt(e.target.value, 10);
+            if (val < 50) val = 50;
+            if (val > 100) val = 100;
+            e.target.value = val; 
+            diffMatchThresholdRange.value = val;
+        });
+
+
+        function handleSaveDiffSettings() {
+            const newDebounceTime = parseInt(diffDebounceTimeInput.value, 10);
+            if (newDebounceTime >= 1000) {
+                diffDebounceTime = newDebounceTime;
+            } else {
+                showToast("防抖时间不能小于1000毫秒", 3000);
+                diffDebounceTimeInput.value = diffDebounceTime; 
+                return;
+            }
+
+            const newThresholdPercent = parseInt(diffMatchThresholdInput.value, 10);
+            if (newThresholdPercent >= 50 && newThresholdPercent <= 100) {
+                diffMatchThreshold = newThresholdPercent / 100; 
+            } else {
+                showToast("匹配阈值必须在50%到100%之间", 3000);
+                diffMatchThresholdInput.value = Math.round(diffMatchThreshold * 100); 
+                diffMatchThresholdRange.value = Math.round(diffMatchThreshold * 100);
+                return;
+            }
+
+            saveDiffSettings();
+            hideDiffConfigModal();
+            showToast("Diff配置已保存！");
+            if (isDiffTrackingEnabled && activeSavedDocument.id) {
+                 handleContentChangeForDiff(); 
+            }
+        }
+
+        function isOriginalContentSufficientlyRetained(originalText, currentText, threshold) {
+            if (!originalText || originalText.length === 0) {
+                return (!currentText || currentText.length === 0); 
+            }
+            if (originalText === currentText) return true;
+            if (!currentText || currentText.length === 0) return false; 
+
+            if (!jsdiffInstance) {
+                console.warn("jsdiff library (Diff) not available for calculation.");
+                showToast("警告: Diff库异常，追踪判断可能不准确。", 3000);
+                return (originalText === currentText);
+            }
+
+            const diffs = jsdiffInstance.diffChars(originalText, currentText);
+            let commonCharsFromOriginal = 0; 
+
+            diffs.forEach(part => {
+                if (!part.added && !part.removed) { 
+                    commonCharsFromOriginal += part.value.length;
+                }
+            });
+            
+            const retentionRate = commonCharsFromOriginal / originalText.length;
+            return retentionRate >= threshold;
+        }
+
+
+        function handleContentChangeForDiff() {
+            if (!isDiffTrackingEnabled || !activeSavedDocument.id || activeSavedDocument.originalContent === null) {
+                isContentConsideredSameAsActiveDoc = false; 
+                updateActiveDocIndicatorText();
+                return;
+            }
+
+            clearTimeout(diffDebounceTimeout);
+            diffDebounceTimeout = setTimeout(() => {
+                const currentContent = editor.value;
+                isContentConsideredSameAsActiveDoc = isOriginalContentSufficientlyRetained(
+                    activeSavedDocument.originalContent,
+                    currentContent,
+                    diffMatchThreshold 
+                );
+                updateActiveDocIndicatorText();
+            }, diffDebounceTime);
+        }
+
+        // --- Active Saved Document State ---
+        function setActiveSavedDocumentState(id, name, content) {
+            activeSavedDocument.id = id;
+            activeSavedDocument.name = name;
+            activeSavedDocument.originalContent = content; 
+            isContentConsideredSameAsActiveDoc = true; 
+            updateActiveDocIndicatorText();
+            console.log(`Active document set: ID ${id}, Name "${name}"`);
+        }
+
+        function clearActiveSavedDocumentState(isDestructiveLoad = false) {
+            if (activeSavedDocument.id !== null) {
+                 console.log(`Active document cleared. Was: ID ${activeSavedDocument.id}, Name "${activeSavedDocument.name}"`);
+            }
+            activeSavedDocument.id = null;
+            activeSavedDocument.name = null;
+            activeSavedDocument.originalContent = null;
+            isContentConsideredSameAsActiveDoc = false;
+            updateActiveDocIndicatorText();
+        }
+        
+        function updateActiveDocIndicatorText() {
+            if (activeSavedDocument.id && activeSavedDocument.name) {
+                let indicatorText = escapeHtml(activeSavedDocument.name);
+                let titleText = `当前内容基于已保存的文档: ${escapeHtml(activeSavedDocument.name)}`;
+
+                if (isDiffTrackingEnabled) { 
+                    if (editor.value === activeSavedDocument.originalContent) {
+                        // Identical
+                    } else if (isContentConsideredSameAsActiveDoc) {
+                        indicatorText += " (追踪中)"; 
+                        titleText += " (内容已修改，但仍在追踪范围内)";
+                    } else {
+                        indicatorText += " (差异较大)"; 
+                        titleText += " (内容差异较大，已不视为追踪同一文档)";
+                    }
+                } else { 
+                    if (activeSavedDocument.originalContent !== null && editor.value !== activeSavedDocument.originalContent) {
+                         indicatorText += "*"; 
+                         titleText += " (已修改)";
+                    }
+                }
+                activeDocIndicatorEl.textContent = indicatorText;
+                activeDocIndicatorEl.title = titleText;
+
+            } else {
+                activeDocIndicatorEl.textContent = '';
+                activeDocIndicatorEl.title = '';
+            }
+        }
+
+
         // --- UI Interaction for Modals ---
-        function showLoadModal() { populateModal(false); } // Logic remains the same
-        function showSaveModal() { populateModal(true); } // Logic remains the same
-        function hideLoadModal() { loadModal.style.display = 'none'; } // Logic remains the same
-        async function populateModal(isSavingMode = false) { // Logic remains the same
+        function showLoadModal() { populateModal(false); }
+        function showSaveModal() { populateModal(true); }
+        function hideLoadModal() { loadModal.style.display = 'none'; }
+
+        async function populateModal(isSavingMode = false) {
             modalTitle.textContent = isSavingMode ? "保存或更新 Markdown" : "加载已保存的 Markdown";
             saveNewButton.style.display = isSavingMode ? 'inline-flex' : 'none';
             searchInput.value = '';
             try {
                 const items = await loadAllMarkdown();
-                savedItemList.innerHTML = '';
+                savedItemList.innerHTML = ''; 
                 const noItemsLi = '<li class="no-items">没有找到已保存的文档。</li>';
+
                 if (items && items.length > 0) {
-                    items.forEach(item => { /* ... item creation ... */
+                    let activeItemElement = null;
+                    items.forEach(item => {
                         const li = document.createElement('li');
                         li.className = 'saved-item';
                         li.dataset.id = item.id; li.dataset.name = item.name;
@@ -1133,19 +1514,34 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                                 <button class="small danger" onclick="handleDeleteItem(event, ${item.id}, 'saved')" title="删除此项">删除</button>
                             </div>`;
                         savedItemList.appendChild(li);
+
+                        if (isSavingMode && isDiffTrackingEnabled && isContentConsideredSameAsActiveDoc &&
+                            activeSavedDocument.id === item.id) {
+                            li.classList.add('highlighted-active-doc');
+                            activeItemElement = li;
+                        }
                     });
-                    const existingNoItems = savedItemList.querySelector('.no-items');
-                    if(existingNoItems) existingNoItems.remove();
-                } else { savedItemList.innerHTML = noItemsLi; }
-                 filterSavedItems();
-                 loadModal.style.display = 'block';
+                    
+                    if (activeItemElement) {
+                        loadModal.style.display = 'block'; 
+                        requestAnimationFrame(() => { 
+                             activeItemElement.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' });
+                        });
+                    } else {
+                         loadModal.style.display = 'block';
+                    }
+                } else {
+                    savedItemList.innerHTML = noItemsLi;
+                    loadModal.style.display = 'block';
+                }
+                filterSavedItems();
             } catch (error) {
                 showToast(`加载列表失败: ${error}`);
                 savedItemList.innerHTML = '<li class="no-items" style="color:red;">加载列表时出错。</li>';
                 loadModal.style.display = 'block';
             }
         }
-        function filterSavedItems() { // Logic remains the same
+        function filterSavedItems() { 
             const filter = searchInput.value.toLowerCase();
             const items = savedItemList.querySelectorAll('li.saved-item');
             let visibleCount = 0;
@@ -1161,15 +1557,15 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
              else if (visibleCount > 0) { if (savedItemList.contains(noItemsMessage)) noItemsMessage.style.display = 'none'; }
              else if (items.length === 0) { if (!savedItemList.contains(noItemsMessage)) { savedItemList.innerHTML = ''; savedItemList.appendChild(noItemsMessage); } noItemsMessage.style.display = 'block'; }
         }
-        function showHistoryModal() { populateHistoryModal(); } // Logic remains the same
-        function hideHistoryModal() { historyModal.style.display = 'none'; } // Logic remains the same
-        async function populateHistoryModal() { // Logic remains the same
+        function showHistoryModal() { populateHistoryModal(); }
+        function hideHistoryModal() { historyModal.style.display = 'none'; }
+        async function populateHistoryModal() { 
              try {
                 const items = await loadAllHistory();
                 historyItemList.innerHTML = '';
                 const noItemsLi = '<li class="no-items">没有编辑历史记录。</li>';
                 if (items && items.length > 0) {
-                    items.forEach(item => { /* ... item creation ... */
+                    items.forEach(item => {
                         const li = document.createElement('li');
                         li.className = 'history-item';
                         li.dataset.id = item.id;
@@ -1185,8 +1581,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                             </div>`;
                         historyItemList.appendChild(li);
                     });
-                     const existingNoItems = historyItemList.querySelector('.no-items');
-                    if(existingNoItems) existingNoItems.remove();
                 } else { historyItemList.innerHTML = noItemsLi; }
                  historyModal.style.display = 'block';
             } catch (error) {
@@ -1196,17 +1590,23 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
             }
         }
 
-        // --- Action Handlers (Load/Save/Update/Delete/History) ---
-        async function handleSaveNew() { // Logic remains the same
+        // --- Action Handlers ---
+        async function handleSaveNew() { 
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法保存。"); return; }
             const defaultName = `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
             const name = prompt("请输入新文档的名称:", defaultName);
             if (name === null || name.trim() === "") { showToast("已取消保存或名称无效。"); return; }
-            try { await saveMarkdown(name.trim(), content); showToast(`"${name.trim()}" 已成功保存！`); hideLoadModal(); }
+            try {
+                const newId = await saveMarkdown(name.trim(), content); 
+                showToast(`"${name.trim()}" 已成功保存！`);
+                if (newId) setActiveSavedDocumentState(newId, name.trim(), content);
+                else clearActiveSavedDocumentState(); 
+                hideLoadModal();
+            }
             catch (error) { console.error("Save new failed:", error); }
         }
-        async function handleUpdateItem(event, id) { // Logic remains the same
+        async function handleUpdateItem(event, id) { 
             event.stopPropagation();
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法更新。"); return; }
@@ -1217,34 +1617,41 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                     const newName = prompt("请输入更新后的名称（留空则保留原名）:", itemToUpdate.name);
                      if (newName === null) { showToast("更新已取消。"); return; }
                     const finalName = (newName.trim() === "") ? itemToUpdate.name : newName.trim();
-                    await updateMarkdown(id, finalName, content); showToast(`"${finalName}" 已成功更新！`); hideLoadModal();
+                    await updateMarkdown(id, finalName, content);
+                    showToast(`"${finalName}" 已成功更新！`);
+                    setActiveSavedDocumentState(id, finalName, content);
+                    hideLoadModal();
                 } else { showToast("更新已取消。"); }
             } catch (error) { console.error("Update failed:", error); }
         }
-        async function handleLoadItem(id) { // Logic remains the same
-            console.log(`Attempting to load saved item ID: ${id}`);
+        async function handleLoadItem(id) { 
              try {
                  const item = await loadMarkdownById(id);
                  if (item) {
-                     editor.value = item.content; updatePreview(); hideLoadModal(); editor.scrollTop = 0;
-					 showToast(`已加载: ${item.name}`); triggerHistorySave();
+                     editor.value = item.content;
+                     updatePreview();
+                     setActiveSavedDocumentState(item.id, item.name, item.content);
+                     hideLoadModal(); editor.scrollTop = 0;
+					 showToast(`已加载: ${item.name}`);
+                     triggerHistorySave(); 
                  } else { showToast("无法找到该项目。"); }
              } catch (error) { console.error("Load item failed:", error); }
         }
-        async function handleRestoreHistory(id) { // Logic remains the same
-            console.log(`Attempting to restore history ID: ${id}`);
+        async function handleRestoreHistory(id) { 
              try {
                  const item = await loadHistoryById(id);
                  if (item) {
-                     editor.value = item.content; updatePreview(); hideHistoryModal(); editor.scrollTop = 0;
+                     editor.value = item.content;
+                     updatePreview();
+                     hideHistoryModal(); editor.scrollTop = 0;
 					 showToast(`已从 ${formatTimestamp(item.timestamp)} 恢复`);
-                     lastSavedHistoryContent = item.content; // Update tracker
+                     lastSavedHistoryContent = item.content;
+                     clearActiveSavedDocumentState(true); 
                  } else { showToast("无法找到该历史记录。"); }
              } catch (error) { console.error("Restore history failed:", error); }
         }
-        async function handleDeleteItem(event, id, type) { // Logic remains the same
+        async function handleDeleteItem(event, id, type) { 
              event.stopPropagation();
-             console.log(`Attempting to delete ${type} item ID: ${id}`);
              const listElement = (type === 'saved') ? savedItemList : historyItemList;
              const itemElement = listElement.querySelector(`li[data-id='${id}']`);
              const itemName = (type === 'saved' && itemElement) ? itemElement.dataset.name : `此${type === 'saved' ? '文档' : '历史记录'}`;
@@ -1259,7 +1666,10 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
                             itemElement.style.opacity = '0'; itemElement.style.height = '0'; itemElement.style.margin = '0'; itemElement.style.padding = '0'; itemElement.style.border = 'none';
                             setTimeout(() => {
                                 if (itemElement.parentNode) itemElement.remove();
-                                if (type === 'saved') { filterSavedItems(); }
+                                if (type === 'saved') {
+                                    filterSavedItems();
+                                    if (activeSavedDocument.id === id) clearActiveSavedDocumentState(true);
+                                }
                                 else { if (historyItemList.querySelectorAll('.history-item').length === 0) { historyItemList.innerHTML = '<li class="no-items">没有编辑历史记录。</li>'; } }
                             }, 300);
                         }
@@ -1269,28 +1679,67 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
              }
         }
 
-        // Close modals on outside click
-        window.onclick = function(event) { // Logic remains the same
+        // Close modals on outside click or Escape key
+        window.onclick = function(event) { 
             if (event.target == loadModal) hideLoadModal();
             if (event.target == historyModal) hideHistoryModal();
+            if (event.target == diffConfigModal) hideDiffConfigModal();
         }
+        window.addEventListener('keydown', function(event) { 
+            if (event.key === 'Escape') {
+                if (loadModal.style.display === 'block') hideLoadModal();
+                if (historyModal.style.display === 'block') hideHistoryModal();
+                if (diffConfigModal.style.display === 'block') hideDiffConfigModal();
+            }
+        });
+
 
         // --- Utility Functions ---
-        function escapeHtml(unsafe) { // Logic remains the same
+        function escapeHtml(unsafe) { 
             if (typeof unsafe !== 'string') return '';
             return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
          }
-         function formatTimestamp(date) { // Logic remains the same
+         function formatTimestamp(date) { 
              if (!(date instanceof Date)) date = new Date(date);
              if (isNaN(date)) return "Invalid Date";
              try { return date.toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
              catch (e) { console.error("Error formatting date:", e); return "Error Date"; }
         }
+        function sanitizeFilenameComponent(name) { 
+            if (!name || typeof name !== 'string') return '';
+            return name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w.-]/g, '').substring(0, 50);
+        }
+        function getTimestampForFilename() { 
+            const now = new Date();
+            return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+        }
+        
+        function generateBaseFilename() { 
+            let baseName = '';
+            if (isDiffTrackingEnabled && isContentConsideredSameAsActiveDoc && activeSavedDocument.id && activeSavedDocument.name) {
+                baseName = sanitizeFilenameComponent(activeSavedDocument.name);
+            }
+
+            if (!baseName) { 
+                const content = editor.value.trim();
+                const h1Match = content.match(/^#\s+(.*)/m);
+                if (h1Match && h1Match[1]) {
+                    baseName = sanitizeFilenameComponent(h1Match[1]);
+                } else {
+                    const firstLine = content.split('\n')[0];
+                    if (firstLine) {
+                        baseName = sanitizeFilenameComponent(firstLine.substring(0,50)); 
+                    }
+                }
+            }
+            if (!baseName || baseName.length === 0) baseName = 'markdown-export';
+            return `${baseName}-${getTimestampForFilename()}`;
+        }
+
 
         // --- Scroll Sync ---
-		function syncScroll(source, target) { // Logic remains the same
-			if (isSyncing) return;
-			isSyncing = true;
+		function syncScroll(source, target) { 
+			if (isSyncing) return; isSyncing = true;
 			const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight || 1);
 			target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
 			requestAnimationFrame(() => { isSyncing = false; });
@@ -1299,23 +1748,44 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor i
 		preview.addEventListener('scroll', () => syncScroll(preview, editor));
 
         // --- Initialization ---
-        editor.addEventListener('input', () => { // Logic remains the same
+        editor.addEventListener('input', () => {
             updatePreview();
             scheduleHistorySave();
+            handleContentChangeForDiff(); 
         });
-        editor.addEventListener('paste', () => { // Logic remains the same
-            setTimeout(() => { updatePreview(); triggerHistorySave(); }, 0);
+        editor.addEventListener('paste', () => {
+            setTimeout(() => {
+                updatePreview();
+                triggerHistorySave();
+                handleContentChangeForDiff(); 
+            }, 0);
         });
-        editor.addEventListener('blur', () => { // Logic remains the same
+        editor.addEventListener('blur', () => {
              clearTimeout(historySaveTimeout);
-             saveCurrentStateToHistory();
+             saveCurrentStateToHistory(); 
         });
 
-        // Load sample and initialize DB on page load
-        loadSample(); // Load sample by default
-        initDB().then(() => { // Logic remains the same
+
+        loadSample();
+        initDB().then(() => {
             console.log("DB Initialized.");
             pruneHistory();
+            loadDiffSettings(); 
+
+            if (typeof Diff === 'undefined') { 
+                console.error("jsdiff library (Diff) not loaded!");
+                showToast("错误：Diff库未加载，追踪功能将不可用。", 5000);
+                isDiffTrackingEnabled = false;
+                diffTrackingToggle.checked = false;
+                diffTrackingToggle.disabled = true;
+                const diffConfigButton = document.querySelector('button[onclick="showDiffConfigModal()"]');
+                if (diffConfigButton) diffConfigButton.disabled = true;
+                updateDiffStatusIndicator();
+                jsdiffInstance = null; 
+            } else {
+                jsdiffInstance = Diff; 
+                console.log("jsdiff (Diff) instance ready.");
+            }
         }).catch(err => console.error("Initial DB connection failed:", err));
 
     </script>
