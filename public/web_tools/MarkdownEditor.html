@@ -2322,7 +2322,24 @@
             if (diffConfigButton && !jsdiffInstance) diffConfigButton.disabled = true;
             
             checkAndManageDiffForLongText(); // Initial check on page load
-
+			
+			console.warn(
+			    "\n %c🗿 MARKDOWN EDITOR - 开发者守则 🤏%c\n\n" +
+			    " %c1. 所有新功能需通过 \"7天冷静期测试\"%c （如果7天后还觉得非加不可，再议）\n" +
+			    " %c2. 每增一按钮，需要删除一个旧按钮%c （规则1例外时此条也失效）\n" +
+			    " %c3. 克制是美德%c —— 不为满足5%的边缘需求，添加95%的复杂度\n" +
+			    "    %c「简单是终极的复杂」%c —— 达芬奇如是说（大概）\n\n" +
+			    " %c—— Self @ " + new Date('2025/05/19').toLocaleDateString('zh-CN', {year: 'numeric', month: '2-digit', day: '2-digit'}) + "%c\n" +
+			    " %c[写于打消了增加若干个\"酷但是复杂功能\"的念头后留此存照]%c ",
+			    // 样式参数
+			    "color:#D32F2F;font-weight:bold;font-size:13px;font-family:Menlo,monospace;border-bottom:2px solid #FFCC80;", "", // 标题
+			    "color:#1976D2;font-weight:600;", "color:#757575;", // 规则1 
+			    "color:#1976D2;font-weight:600;", "color:#757575;", // 规则2
+			    "color:#1976D2;font-weight:600;", "color:#757575;", // 规则3
+			    "color:#43A047;font-style:italic;", "color:#757575;", // 达芬奇名言
+			    "color:#616161;letter-spacing:.5px;", "", // 日期
+			    "color:#9E9E9E;font-size:0.9em;", ""  // 彩蛋注释
+			);
         }).catch(err => console.error("Initial DB connection failed:", err));
 
     </script>
