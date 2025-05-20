@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-UTF-8">
+    <meta charset="UTF-8">
     <title>Markdown转换工具</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -594,6 +594,42 @@
 		.preview-box .card-title .preview-title-extra:nth-of-type(2){ /* 指向包含开关的那个 preview-title-extra */
 			/* margin-left: auto; /* 确保开关组靠右 */
 		}
+
+        /* Drag and Drop Overlay */
+        #dragDropOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 123, 255, 0.1); /* Semi-transparent primary color */
+            border: 3px dashed var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            pointer-events: none; /* Allow events to pass through initially */
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+        #dragDropOverlay.visible {
+            opacity: 1;
+            pointer-events: auto; /* Block events when visible and active for drop */
+        }
+        #dragDropOverlay p {
+            font-size: 1.8em;
+            color: var(--primary-color);
+            font-weight: 600;
+            background-color: rgba(255,255,255,0.8);
+            padding: 20px 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        body.drag-over #dragDropOverlay { /* Alternative or additional styling if needed */
+             /* opacity: 1; */
+        }
+
     </style>
 </head>
 <body>
@@ -632,7 +668,7 @@
             <div class="card-body">
                 <div class="editor">
                     <div class="toolbar">Markdown Editor (Tab/Shift+Tab supported)</div>
-                    <textarea id="editor" placeholder="Start typing markdown here..."></textarea>
+                    <textarea id="editor" placeholder="Start typing markdown here... or drag & drop a .md/.txt file onto the page."></textarea>
                 </div>
             </div>
         </div>
@@ -759,6 +795,10 @@
         </div>
     </div>
 
+    <!-- Drag and Drop Overlay -->
+    <div id="dragDropOverlay" style="display: none;">
+        <p>拖放 Markdown 或文本文件到此处</p>
+    </div>
 
     <!-- 独立示例内容 -->
     <script id="sampleMarkdown" type="text/template">
@@ -783,11 +823,11 @@
 3.  **🔄 导入与导出：**
     *   **概念：** 方便您将外部 Markdown 内容导入到编辑器中进行处理，同时也能将编辑完成的内容导出为多种常用文件格式，满足不同的分享和使用需求。
     *   **包含：**
-        *   **导入：** 支持从本地计算机导入 `.md` 或 `.txt` 文件。
+        *   **导入：** 支持从本地计算机导入 `.md` 或 `.txt` 文件（通过按钮或拖拽）。
         *   **导出：** 支持将当前文档导出为图片 (.png)、HTML (.html)、PDF (.pdf)、Word 文档 (.docx) 以及原始 Markdown (.md) 格式。
 
 4.  **💡 智能识别关联：**
-    *   **概念：** 当您加载一个已保存的文档并进行修改时，此功能会尝试判断您当前的编辑内容是否仍然是基于原文档的“延续”或“修改版”，即使内容发生了较大变化。
+    *   **概念：** 当您加载一个已保存的文档或导入一个文件并进行修改时，此功能会尝试判断您当前的编辑内容是否仍然是基于原文档/文件的“延续”或“修改版”，即使内容发生了较大变化。
     *   **包含：**
         *   **关联状态反馈：** 通过预览区的指示器（百分比、变更摘要）展示当前内容与“活动文档”原始版本的关联程度。
         *   **辅助决策：** 根据关联判断，工具会在保存、导出等操作时提供更智能的默认行为（如使用原文档名导出、在保存列表高亮原文档、建议“另存为版本”等）。
@@ -802,6 +842,7 @@
 1.  **编辑器 (左侧)：**
     *   直接在此区域输入您的 Markdown 内容。
     *   使用 `Tab` 键进行列表或代码块的缩进，`Shift + Tab` 取消缩进。
+    *   您可以将 `.md` 或 `.txt` 文件直接拖拽到页面上，其内容会自动载入编辑器。
 2.  **预览区 (右侧)：**
     *   您输入的内容会实时显示为格式化后的效果。
     *   代码块会自动高亮显示。
@@ -816,7 +857,7 @@
     1.  点击编辑器顶部【💾保存】按钮。
     2.  在弹窗中：
         *   若要创建全新文档，点击【另存为新...】，输入名称后保存。
-        *   若智能识别到当前内容是对某个已加载文档的显著修改，可能会出现【另存为 "[原名] v.时间戳"】按钮，方便创建版本。
+        *   若智能识别到当前内容是对某个已加载或导入文档的显著修改（例如，内容相似度在85%-97%之间），可能会出现【另存为 "[原名] v.时间戳"】按钮，方便创建版本。
         *   若要覆盖更新已存在的文档（通常会被高亮显示），点击其右侧的【更新】按钮，可修改名称后确认。
     3.  成功保存后，该文档将成为“活动文档”，编辑器标题栏会显示其名称和状态。
 
@@ -834,10 +875,10 @@
     3.  点击某条记录旁的【恢复】按钮，可将编辑器内容恢复至该状态。（注意：这会清除当前活动文档状态）
     4.  点击【删除】可移除该条历史记录。
 
-*   **从本地文件导入：**
+*   **从本地文件导入（通过按钮）：**
     1.  点击编辑器顶部【📥 导入】按钮。
     2.  在弹出的文件选择框中，选择您电脑上的 `.md` 或 `.txt` 文件。
-    3.  文件内容将被载入编辑器。（注意：这会覆盖当前编辑内容并清除活动文档状态）
+    3.  文件内容将被载入编辑器。（注意：这会覆盖当前编辑内容并设置导入文件为新的活动文档起点）
 
 ### (三) 使用智能识别关联功能 💡
 
@@ -853,18 +894,18 @@
         *   **原文相似度要求(%)：** 判定关联的阈值。
 
 2.  **查看关联状态：**
-    *   当您加载了一个已保存的文档并开始编辑后（且智能识别开启）：
+    *   当您加载了一个已保存的文档、或导入了一个文件，并开始编辑后（且智能识别开启）：
         *   预览区标题栏的“实时预览”右侧会显示：
             *   **关联强度 (%)：** 当前内容与活动文档原始版本的相似度。绿色表示高度关联，红色则较低。
             *   **变更摘要：** 如“+X字 -Y字”，显示内容变化量。
         *   编辑器标题栏“活动文档”状态会相应更新为“(识别为修改版)”或“(关联度低)”等。
 
 3.  **“恢复原始内容”按钮：**
-    *   若活动文档内容被修改，编辑器顶部的【加载示例】按钮会变为【🔄 恢复原始内容】。
-    *   点击此按钮并确认后，编辑器内容将回退到活动文档刚加载时的状态。
+    *   若活动文档（无论是加载的还是导入的）内容被修改，编辑器顶部的【加载示例】按钮会变为【🔄 恢复原始内容】。
+    *   点击此按钮并确认后，编辑器内容将回退到活动文档刚加载/导入时的状态。
 
 4.  **功能影响：**
-    *   **导出文件名：** 若识别为关联，默认导出文件名会基于活动文档名。
+    *   **导出文件名：** 若识别为关联，默认导出文件名会基于活动文档名（无论是加载的还是导入的）。
     *   **保存列表高亮：** 保存时，关联的活动文档会在列表突出显示。
 
 ### (四) 文件导出 🚀
@@ -905,6 +946,8 @@
         const activeDocStatusEl = document.getElementById('activeDocStatusIndicator');
         const loadSampleOrRevertButton = document.getElementById('loadSampleOrRevertButton');
 		const wordCountIndicator = document.getElementById('wordCountIndicator'); 
+        const dragDropOverlay = document.getElementById('dragDropOverlay');
+
 
         const DB_NAME = 'markdownDB';
         const SAVED_STORE_NAME = 'savedMarkdown';
@@ -922,11 +965,14 @@
         let diffAlgorithmType = 'chars'; 
         let diffDebounceTime = 1500; 
         let diffMatchThreshold = 0.85; 
-        const SIGNIFICANT_MODIFICATION_THRESHOLD = 0.95;
+        const SIGNIFICANT_MODIFICATION_THRESHOLD = 0.97; // MODIFIED from 0.95
         let jsdiffInstance = null; 
         let diffDebounceTimeout = null;
         let currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] };
-        let activeSavedDocument = { id: null, name: null, originalContent: null };
+        // activeSavedDocument.id can now be 'imported-[timestamp]' for dragged/imported files
+        // not yet saved to DB, or a numeric ID for files from DB.
+        let activeSavedDocument = { id: null, name: null, originalContent: null, isImported: false };
+
 
         const diffConfigModal = document.getElementById('diffConfigModal');
         const diffAlgorithmSelect = document.getElementById('diffAlgorithmSelect');
@@ -951,33 +997,15 @@
 		    const text = editor.value.trim();
 		    let charCount = text.length;
 		    
-		    // Simple word count (splits by space/newline, filters empty strings)
-		    // This is a basic count, can be more sophisticated for CJK, etc.
 		    let wordCount = 0;
 		    if (text) {
 		        const words = text.split(/\s+/).filter(s => s.length > 0);
 		        wordCount = words.length;
 		    }
 		
-		    // For Chinese/Japanese/Korean (CJK) characters, often each char is a "word".
-		    // A more robust CJK word count would require specific libraries or complex regex.
-		    // Here's a very basic heuristic: count non-whitespace sequences and CJK chars.
-		    let cjkWordCount = 0;
-		    if (text) {
-		        const cjkRegex = /[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\uFF00-\uFFEF\u4E00-\u9FAF\u3400-\u4DBF]/g;
-		        const nonCjkWords = text.replace(cjkRegex, ' ').split(/\s+/).filter(s => s.length > 0);
-		        const cjkChars = (text.match(cjkRegex) || []).length;
-		        cjkWordCount = nonCjkWords.length + cjkChars;
-		         // If primarily CJK, cjkWordCount might be more representative.
-		        // For mixed, it's harder. Let's stick to simpler char/word count for now,
-		        // or provide both if desired.
-		    }
-		
-		    // Display format: "字符: X | 词语: Y"
-		    // For simplicity, we'll show character count and a basic space-separated word count.
 		    wordCountIndicator.textContent = `字符: ${charCount.toLocaleString()} | 词语: ${wordCount.toLocaleString()}`;
 		    wordCountIndicator.title = `字符数: ${charCount.toLocaleString()}, 词语数 (按空格/换行分隔): ${wordCount.toLocaleString()}`;
-		    wordCountIndicator.style.display = charCount > 0 ? 'inline' : 'none'; // Hide if empty
+		    wordCountIndicator.style.display = charCount > 0 ? 'inline' : 'none';
 		}
 
         // --- Toast Notification ---
@@ -1085,7 +1113,7 @@
                     requestPreviewUpdate();
                     triggerHistorySave(); 
                     checkAndManageDiffForLongText();
-                    handleContentChangeForAssociation(); 
+                    handleContentChangeForAssociation(); // This will re-evaluate, rate should be 1.0
                     updateLoadSampleOrRevertButtonState();
 					updateWordCount();
                     showToast(`已恢复文档 "${activeSavedDocument.name}" 的原始内容。`);
@@ -1096,7 +1124,7 @@
                 showToast("示例内容已加载");
                 lastSavedHistoryContent = null; 
                 clearActiveSavedDocumentState(true); 
-                checkAndManageDiffForLongText(); // Check after loading sample
+                checkAndManageDiffForLongText();
                 updateLoadSampleOrRevertButtonState();
 				updateWordCount();
             }
@@ -1104,13 +1132,14 @@
 
         function updateLoadSampleOrRevertButtonState() {
             if (activeSavedDocument.id && activeSavedDocument.originalContent !== null && editor.value !== activeSavedDocument.originalContent) {
-                loadSampleOrRevertButton.textContent = `恢复原始内容`;
-                loadSampleOrRevertButton.title = `放弃当前修改，恢复到文档 "${activeSavedDocument.name}" 的原始内容`;
+                loadSampleOrRevertButton.innerHTML = `<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-sync"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-2.203-2.202a.75.75 0 0 1 1.06-1.06l3.5 3.5a.75.75 0 0 1 0 1.06l-3.5 3.5a.75.75 0 1 1-1.06-1.06l2.203-2.202A7.001 7.001 0 0 1 1.07 8.725a.75.75 0 0 1 .635-.72Z M11 2.5a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0V3.569l-2.203 2.202a.75.75 0 0 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 0 1-1.06 1.06L11.93 3.57V2.5Z"></path></svg> 恢复原始内容`;
+                loadSampleOrRevertButton.title = `放弃当前修改，恢复到文档 "${escapeHtml(activeSavedDocument.name)}" 的原始内容`;
             } else {
                 loadSampleOrRevertButton.textContent = '加载示例';
                 loadSampleOrRevertButton.title = '加载内置的示例Markdown内容';
             }
         }
+
 
         function requestPreviewUpdate() {
             clearTimeout(previewUpdateDebounceTimeout);
@@ -1129,8 +1158,7 @@
             }
         }
 
-
-        // --- File Import Logic ---
+        // --- File Import (Button Click) Logic ---
         function importMarkdownFile() { 
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
@@ -1139,22 +1167,38 @@
                 const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (e) => {
-                        editor.value = e.target.result;
-                        requestPreviewUpdate();
-                        triggerHistorySave();
-                        showToast(`文件 "${file.name}" 已导入！`);
-                        clearActiveSavedDocumentState(true); 
-                        checkAndManageDiffForLongText();
-                        updateLoadSampleOrRevertButtonState();
-						updateWordCount();
+                    reader.onload = (e_reader) => {
+                        handleImportedFileContent(e_reader.target.result, file.name, 'button');
                     };
-                    reader.onerror = (e) => { console.error("File reading error:", e); showToast("文件读取失败。"); };
+                    reader.onerror = (e_reader) => { console.error("File reading error:", e_reader.target.error); showToast("文件读取失败。"); };
                     reader.readAsText(file);
                 }
             };
             fileInput.click();
         }
+
+        // --- Common logic for handling imported file content (from button or drag-drop) ---
+        function handleImportedFileContent(content, filename, sourceType = 'drag-drop') {
+            editor.value = content?.replace(/\r/g, '');
+            
+            clearActiveSavedDocumentState(true); // Clear previous state, true for destructive load
+
+            activeSavedDocument.id = `imported-${Date.now()}`;
+            activeSavedDocument.name = filename.replace(/\.[^/.]+$/, ""); // Remove extension for name
+            activeSavedDocument.originalContent = content?.replace(/\r/g, '');
+            activeSavedDocument.isImported = true; // Mark as imported
+
+            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] }; // Reset diff
+
+            requestPreviewUpdate();
+            triggerHistorySave();
+            showToast(`文件 "${filename}" 已通过${sourceType === 'button' ? '按钮' : '拖放'}导入！`);
+            checkAndManageDiffForLongText();
+            updateActiveDocIndicators(); // Crucial to show new active doc name/status
+            updateLoadSampleOrRevertButtonState();
+            updateWordCount();
+        }
+
 
         // --- Export Logic ---
         async function exportFile(event) {
@@ -1186,9 +1230,6 @@
                 }
                 return;
             }
-
-            // For non-markdown formats, ensure preview is up-to-date before capture
-            // This is a synchronous update for export, could be slow for very large docs
             try {
                 preview.innerHTML = marked.parse(markdownInput);
                 hljs.highlightAll();
@@ -1198,19 +1239,7 @@
                 exportButton.textContent = originalButtonText;
                 return;
             }
-
-
             const previewElement = document.getElementById('preview');
-            // try { // This was already done above, removed redundant parsing
-            //     previewElement.innerHTML = marked.parse(markdownInput);
-            //     hljs.highlightAll();
-            // } catch (e) {
-            //     showToast(`Markdown 解析错误，无法导出: ${e.message}`);
-            //     exportButton.disabled = false;
-            //     exportButton.textContent = originalButtonText;
-            //     return;
-            // }
-
             const captureContainer = document.createElement('div');
             captureContainer.className = 'markdown-body';
             Object.assign(captureContainer.style, {
@@ -1388,7 +1417,7 @@
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(SAVED_STORE_NAME);
                 const timestamp = new Date();
-                const request = store.put({ id, name, content, timestamp });
+                const request = store.put({ id, name, content, timestamp }); // ID must be numeric for DB
                  return new Promise((resolve, reject) => {
                     request.onsuccess = () => resolve(id);
                     request.onerror = (event) => reject("Error updating: " + event.target.error);
@@ -1608,7 +1637,6 @@
                         showToast("检测到长文本，为保持流畅，智能识别已临时关闭。", 4000);
                     } else {
                         updateLongTextWarningUI(true);
-                         // No separate toast here, the pre-computation toast in handleContentChangeForAssociation will cover it.
                     }
                 }
             } else { 
@@ -1648,28 +1676,26 @@
                 diffStatusIndicator.textContent = '智能识别: 开启';
                 diffStatusIndicator.classList.remove('disabled');
                 diffStatusIndicator.classList.add('enabled');
-                // Warning for long text is handled by checkAndManageDiffForLongText -> updateLongTextWarningUI
             } else {
                 diffStatusIndicator.textContent = '智能识别: 关闭';
                 diffStatusIndicator.classList.remove('enabled');
                 diffStatusIndicator.classList.add('disabled');
                 currentDiffAnalysisResult.isRetained = false; 
-                updateLongTextWarningUI(false); // Hide warning if globally disabled
+                updateLongTextWarningUI(false); 
             }
             updateActiveDocIndicators(); 
         }
 
         diffTrackingToggle.addEventListener('change', (event) => {
             isDiffTrackingEnabled = event.target.checked;
-            // If user manually enables it, reset the "auto-disabled" state
             if (isDiffTrackingEnabled) {
                 wasDiffTrackingEnabledBeforeLongText = null; 
             }
-            saveDiffSettings(); // Save the global enabled/disabled state
+            saveDiffSettings(); 
             updateDiffStatusIndicator();
             showToast(`智能识别关联功能已${isDiffTrackingEnabled ? '开启' : '关闭'}`);
             
-            checkAndManageDiffForLongText(); // Re-check long text condition after manual toggle
+            checkAndManageDiffForLongText(); 
 
             if (isDiffTrackingEnabled && activeSavedDocument.id) {
                 handleContentChangeForAssociation(); 
@@ -1682,7 +1708,7 @@
         function showDiffConfigModal() {
             longTextThresholdInput.value = LONG_TEXT_THRESHOLD;
             autoDisableDiffForLongTextToggle.checked = localStorage.getItem('autoDisableDiffForLongText') === null ? true : (localStorage.getItem('autoDisableDiffForLongText') === 'true');
-            updateAutoDisableDiffInfoSpan(); // Update text with current threshold
+            updateAutoDisableDiffInfoSpan(); 
 
             diffAlgorithmSelect.value = diffAlgorithmType;
             diffAlgorithmSelect.disabled = !jsdiffInstance;
@@ -1716,13 +1742,10 @@
                 LONG_TEXT_THRESHOLD = newLongTextThreshold;
             } else {
                 showToast("长文本阈值不能小于5000字符。", 3000);
-                longTextThresholdInput.value = LONG_TEXT_THRESHOLD; // Revert to old value
-                return; // Early exit
+                longTextThresholdInput.value = LONG_TEXT_THRESHOLD; 
+                return; 
             }
-            updateAutoDisableDiffInfoSpan(); // Update text with new threshold immediately
-
-            // Auto-disable toggle is directly saved via its 'checked' state later
-            // diffAlgorithmType, diffDebounceTime, diffMatchThreshold are saved as before
+            updateAutoDisableDiffInfoSpan(); 
             const newAlgoType = diffAlgorithmSelect.value;
             diffAlgorithmType = newAlgoType;
 
@@ -1745,12 +1768,12 @@
                 return;
             }
 
-            saveDiffSettings(); // This will now also save longTextThreshold and autoDisable toggle state
+            saveDiffSettings(); 
             hideDiffConfigModal();
             showToast("智能识别设置已保存！");
             
-            checkAndManageDiffForLongText(); // Re-evaluate with new settings
-            if (isDiffTrackingEnabled && activeSavedDocument.id) { // If still enabled after check
+            checkAndManageDiffForLongText(); 
+            if (isDiffTrackingEnabled && activeSavedDocument.id) { 
                  handleContentChangeForAssociation(); 
             }
         }
@@ -1826,14 +1849,14 @@
             }
             clearTimeout(diffDebounceTimeout);
             diffDebounceTimeout = setTimeout(() => {
-                if (!isDiffTrackingEnabled) { // Check if it was auto-disabled or manually
+                if (!isDiffTrackingEnabled) { 
                     currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] }; 
                     updateActiveDocIndicators();
                     return;
                 }
                 const currentContent = editor.value;
                 if (currentContent.length > LONG_TEXT_THRESHOLD && 
-                    (!autoDisableDiffForLongTextToggle.checked || wasDiffTrackingEnabledBeforeLongText === null) ) { // Show toast if not auto-disabled or if it's the first calc on long text
+                    (!autoDisableDiffForLongTextToggle.checked || wasDiffTrackingEnabledBeforeLongText === null) ) { 
                     showToast("正在进行长文本关联分析，请稍候...", 2000);
                 }
                 currentDiffAnalysisResult = analyzeContentDifference(
@@ -1859,7 +1882,7 @@
 
             if (algorithm === 'lines') {
                 unit = "行"; currentUnitCountFunc = countLinesRobust;
-                diffs.forEach(part => { // jsdiff for lines with newlineIsToken often gives reliable 'count'
+                diffs.forEach(part => { 
                     if (part.added) added += (part.count || currentUnitCountFunc(part.value));
                     else if (part.removed) removed += (part.count || currentUnitCountFunc(part.value));
                 });
@@ -1880,16 +1903,20 @@
 
 
         // --- Active Saved Document State ---
-        function setActiveSavedDocumentState(id, name, content) {
+        function setActiveSavedDocumentState(id, name, content, isFromImport = false) {
             activeSavedDocument.id = id;
             activeSavedDocument.name = name;
-            activeSavedDocument.originalContent = content; 
-            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] };
+            activeSavedDocument.originalContent = content;
+            activeSavedDocument.isImported = isFromImport; // Track if it's from import
+
+            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] }; // Reset diff
+            
             updateActiveDocIndicators();
             updateLoadSampleOrRevertButtonState();
-            checkAndManageDiffForLongText(); // Check long text status for the new active doc
-            console.log(`Active document set: ID ${id}, Name "${name}"`);
+            checkAndManageDiffForLongText(); 
+            console.log(`Active document set: ID ${id}, Name "${name}", Imported: ${isFromImport}`);
         }
+
 
         function clearActiveSavedDocumentState(isDestructiveLoad = false) {
             if (activeSavedDocument.id !== null) {
@@ -1898,11 +1925,16 @@
             activeSavedDocument.id = null;
             activeSavedDocument.name = null;
             activeSavedDocument.originalContent = null;
+            activeSavedDocument.isImported = false; // Reset imported flag
+
             currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] };
-            updateActiveDocIndicators();
-            updateLoadSampleOrRevertButtonState();
-            checkAndManageDiffForLongText(); // Re-evaluate long text for empty/sample state
-			updateWordCount();
+            
+            if (isDestructiveLoad) { // Only if content is being replaced
+                 updateActiveDocIndicators();
+                 updateLoadSampleOrRevertButtonState();
+                 checkAndManageDiffForLongText(); 
+			     updateWordCount();
+            }
         }
         
         function updateActiveDocIndicators() {
@@ -1912,20 +1944,23 @@
                 activeDocNameEl.title = `当前编辑基于文档: ${escapeHtml(activeSavedDocument.name)}`;
                 let statusText = "";
                 let statusTitle = "";
+
+                const docTypePrefix = activeSavedDocument.isImported ? "导入文件" : "文档";
+
                 if (isDiffTrackingEnabled) { 
                     if (editor.value === activeSavedDocument.originalContent) {
-                        statusText = "(原始内容)"; statusTitle = "内容与已保存的原始版本一致";
+                        statusText = "(原始内容)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致`;
                     } else if (isRetained) {
-                        statusText = "(识别为修改版)"; statusTitle = `内容已修改，但系统仍认为与原文档 "${escapeHtml(activeSavedDocument.name)}" 相关联 (相似度: ${Math.round(rate * 100)}%)`;
+                        statusText = "(识别为修改版)"; statusTitle = `内容已修改，系统仍认为与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 相关联 (相似度: ${Math.round(rate * 100)}%)`;
                     } else {
-                        statusText = "(关联度低)"; statusTitle = `内容与原文档 "${escapeHtml(activeSavedDocument.name)}" 差异较大 (相似度: ${Math.round(rate * 100)}%)，系统不再认为它们强相关`;
+                        statusText = "(关联度低)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 差异较大 (相似度: ${Math.round(rate * 100)}%)，系统不再认为它们强相关`;
                     }
                 } else { 
                     if (activeSavedDocument.originalContent !== null && editor.value !== activeSavedDocument.originalContent) {
                          statusText = "(已修改)"; statusTitle = `内容已修改 (智能识别已关闭${wasDiffTrackingEnabledBeforeLongText ? ' - 因长文本临时关闭':''})`;
                     } else if (activeSavedDocument.originalContent !== null && editor.value === activeSavedDocument.originalContent) {
-                        statusText = "(原始内容)"; statusTitle = "内容与已保存的原始版本一致 (智能识别已关闭)";
-                    } else if (wasDiffTrackingEnabledBeforeLongText) { // Diff is off, but was auto-disabled
+                        statusText = "(原始内容)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致 (智能识别已关闭)`;
+                    } else if (wasDiffTrackingEnabledBeforeLongText) { 
                          statusText = ""; statusTitle = `智能识别已因长文本临时关闭`;
                     }
                 }
@@ -1956,7 +1991,10 @@
         // --- UI Interaction for Modals ---
         function showLoadModal() { populateModal(false); }
         function showSaveModal() { populateModal(true); }
-        function hideLoadModal() { loadModal.style.display = 'none'; }
+        function hideLoadModal() { 
+            loadModal.style.display = 'none'; 
+            loadModal.classList.remove('show-flex');
+        }
 
         async function populateModal(isSavingMode = false) {
             modalTitle.textContent = isSavingMode ? "保存或更新 Markdown" : "加载已保存的 Markdown";
@@ -1969,7 +2007,15 @@
                 const noItemsLi = '<li class="no-items">没有找到已保存的文档。</li>';
                 if (isSavingMode) {
                     const { isRetained, rate } = currentDiffAnalysisResult;
-                    if (isDiffTrackingEnabled && isRetained && activeSavedDocument.id && activeSavedDocument.name && rate < SIGNIFICANT_MODIFICATION_THRESHOLD && editor.value !== activeSavedDocument.originalContent) {
+                    // Condition for "Save as Version":
+                    // 1. Diff tracking is enabled
+                    // 2. There is an active document (from DB or import)
+                    // 3. Content is different from original
+                    // 4. It's still considered "retained" (similarity >= diffMatchThreshold)
+                    // 5. Similarity is less than SIGNIFICANT_MODIFICATION_THRESHOLD (now 0.97)
+                    if (isDiffTrackingEnabled && activeSavedDocument.id && activeSavedDocument.name &&
+                        editor.value !== activeSavedDocument.originalContent &&
+                        isRetained && rate < SIGNIFICANT_MODIFICATION_THRESHOLD) {
                         saveAsVersionButton.textContent = `另存为 "${truncateText(activeSavedDocument.name, 15)} v.${getTimestampForFilename(true)}"`;
                         saveAsVersionButton.style.display = 'inline-flex';
                     }
@@ -1991,7 +2037,12 @@
                                 <button class="small danger" onclick="handleDeleteItem(event, ${item.id}, 'saved')" title="删除此项">删除</button>
                             </div>`;
                         savedItemList.appendChild(li);
+                        // Highlight if the active document (even imported one that's not yet saved with numeric ID)
+                        // matches a saved item by name AND its original content (if it was a loaded item).
+                        // This is tricky if an imported file has the same name as a saved one.
+                        // For simplicity, only highlight if activeSavedDocument.id is numeric (from DB)
                         if (isSavingMode && isDiffTrackingEnabled && currentDiffAnalysisResult.isRetained &&
+                            activeSavedDocument.id && typeof activeSavedDocument.id === 'number' && // ensure it's from DB
                             activeSavedDocument.id === item.id) {
                             li.classList.add('highlighted-active-doc');
                             activeItemElement = li;
@@ -2037,7 +2088,10 @@
              else if (items.length === 0) { if (!savedItemList.contains(noItemsMessage)) { savedItemList.innerHTML = ''; savedItemList.appendChild(noItemsMessage); } noItemsMessage.style.display = 'block'; }
         }
         function showHistoryModal() { populateHistoryModal(); }
-        function hideHistoryModal() { historyModal.style.display = 'none'; }
+        function hideHistoryModal() { 
+            historyModal.style.display = 'none'; 
+            historyModal.classList.remove('show-flex');
+        }
         async function populateHistoryModal() { 
              try {
                 const items = await loadAllHistory();
@@ -2075,13 +2129,18 @@
         async function handleSaveNew() { 
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法保存。"); return; }
-            const defaultName = `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
-            const name = prompt("请输入新文档的名称:", defaultName);
+            
+            let defaultNameSuggestion = `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+            if (activeSavedDocument.id && activeSavedDocument.isImported && activeSavedDocument.name) {
+                 defaultNameSuggestion = activeSavedDocument.name; // Suggest imported filename if available
+            }
+
+            const name = prompt("请输入新文档的名称:", defaultNameSuggestion);
             if (name === null || name.trim() === "") { showToast("已取消保存或名称无效。"); return; }
             try {
                 const newId = await saveMarkdown(name.trim(), content); 
                 showToast(`"${name.trim()}" 已成功保存！`);
-                if (newId) setActiveSavedDocumentState(newId, name.trim(), content);
+                if (newId) setActiveSavedDocumentState(newId, name.trim(), content, false); // Now it's a DB doc
                 else clearActiveSavedDocumentState(); 
                 hideLoadModal();
             }
@@ -2092,7 +2151,7 @@
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法保存。"); return; }
             if (!activeSavedDocument.id || !activeSavedDocument.name) {
-                 showToast("没有可作为版本的原始文档。请先加载一个文档。"); return;
+                 showToast("没有可作为版本的原始文档。请先加载或导入一个文档。"); return;
             }
             const versionedName = `${activeSavedDocument.name} v.${getTimestampForFilename(true)}`;
             const name = prompt("请输入新版本文档的名称:", versionedName);
@@ -2101,7 +2160,7 @@
             try {
                 const newId = await saveMarkdown(name.trim(), content);
                 showToast(`版本 "${name.trim()}" 已成功另存！`);
-                if (newId) setActiveSavedDocumentState(newId, name.trim(), content); 
+                if (newId) setActiveSavedDocumentState(newId, name.trim(), content, false); // New DB doc
                 hideLoadModal();
             } catch (error) {
                 console.error("Save as version failed:", error);
@@ -2122,7 +2181,7 @@
                     const finalName = (newName.trim() === "") ? itemToUpdate.name : newName.trim();
                     await updateMarkdown(id, finalName, content);
                     showToast(`"${finalName}" 已成功更新！`);
-                    setActiveSavedDocumentState(id, finalName, content);
+                    setActiveSavedDocumentState(id, finalName, content, false); // DB doc
                     hideLoadModal();
                 } else { showToast("更新已取消。"); }
             } catch (error) { console.error("Update failed:", error); }
@@ -2133,11 +2192,10 @@
                  if (item) {
                      editor.value = item.content;
                      requestPreviewUpdate();
-                     setActiveSavedDocumentState(item.id, item.name, item.content); // This will call checkAndManageDiffForLongText
+                     setActiveSavedDocumentState(item.id, item.name, item.content, false); // DB doc
                      hideLoadModal(); editor.scrollTop = 0;
 					 showToast(`已加载: ${item.name}`);
                      triggerHistorySave(); 
-                     // handleContentChangeForAssociation(); // Already called by setActiveSavedDocumentState via checkAndManageDiff
                      updateLoadSampleOrRevertButtonState();
 					 updateWordCount();
                  } else { showToast("无法找到该项目。"); }
@@ -2178,7 +2236,6 @@
                                     filterSavedItems();
                                     if (activeSavedDocument.id === id) {
                                         clearActiveSavedDocumentState(true);
-                                        updateLoadSampleOrRevertButtonState();
                                     }
                                 }
                                 else { if (historyItemList.querySelectorAll('.history-item').length === 0) { historyItemList.innerHTML = '<li class="no-items">没有编辑历史记录。</li>'; } }
@@ -2201,6 +2258,10 @@
                 if (['block', 'flex'].includes(loadModal.style.display)) hideLoadModal();
                 if (['block', 'flex'].includes(historyModal.style.display)) hideHistoryModal();
                 if (['block', 'flex'].includes(diffConfigModal.style.display)) hideDiffConfigModal();
+                if (dragDropOverlay.style.display === 'flex') { // Hide drag-drop overlay on Esc
+                    dragDropOverlay.style.display = 'none';
+                    document.body.classList.remove('drag-over');
+                }
             }
         });
 
@@ -2218,7 +2279,9 @@
         }
         function sanitizeFilenameComponent(name) { 
             if (!name || typeof name !== 'string') return '';
-            return name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w.-]/g, '').substring(0, 50);
+            // Keep original case for display, but maybe lowercase for filesystem if needed
+            // For now, keep case, replace problematic chars
+            return name.trim().replace(/[<>:"/\\|?*\s]+/g, '-').replace(/[\x00-\x1f\x7f]/g, '').substring(0, 100);
         }
         function getTimestampForFilename(short = false) { 
             const now = new Date();
@@ -2234,9 +2297,15 @@
         
         function generateBaseFilename() { 
             let baseName = '';
+            // Priority for active document (either from DB or imported) if diff tracking is on and content is retained
             if (isDiffTrackingEnabled && currentDiffAnalysisResult.isRetained && activeSavedDocument.id && activeSavedDocument.name) {
                 baseName = sanitizeFilenameComponent(activeSavedDocument.name);
+            } 
+            // If diff tracking is off, but there's an active imported file
+            else if (!isDiffTrackingEnabled && activeSavedDocument.id && activeSavedDocument.isImported && activeSavedDocument.name) {
+                 baseName = sanitizeFilenameComponent(activeSavedDocument.name);
             }
+
 
             if (!baseName) { 
                 const content = editor.value.trim();
@@ -2251,6 +2320,10 @@
                 }
             }
             if (!baseName || baseName.length === 0) baseName = 'markdown-export';
+            
+            // Add timestamp if it's not an active document being exported with its original name
+            // or if content has changed significantly from an active document.
+            // Simple approach: always add timestamp for now to avoid complex logic here.
             return `${baseName}-${getTimestampForFilename()}`;
         }
 
@@ -2265,6 +2338,80 @@
 		editor.addEventListener('scroll', () => syncScroll(editor, preview));
 		preview.addEventListener('scroll', () => syncScroll(preview, editor));
 
+        // --- Drag and Drop File Import ---
+        let dragCounter = 0; // To handle nested dragenter/dragleave events
+        
+        function setupDragDropListeners() {
+            const body = document.body; // Listen on body for full page drop zone
+
+            body.addEventListener('dragenter', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                dragCounter++;
+                if (dragCounter === 1 && dragDropOverlay) { // Show only on first enter
+                    dragDropOverlay.style.display = 'flex';
+                    dragDropOverlay.classList.add('visible'); // Use class for transition
+                    body.classList.add('drag-over');
+                }
+            }, false);
+
+            body.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                event.dataTransfer.dropEffect = 'copy'; // Visual feedback
+            }, false);
+
+            body.addEventListener('dragleave', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                dragCounter--;
+                if (dragCounter === 0 && dragDropOverlay) { // Hide only when counter is zero
+                    dragDropOverlay.style.display = 'none';
+                    dragDropOverlay.classList.remove('visible');
+                    body.classList.remove('drag-over');
+                }
+            }, false);
+
+            body.addEventListener('drop', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                dragCounter = 0; // Reset counter
+                if (dragDropOverlay) {
+                    dragDropOverlay.style.display = 'none';
+                    dragDropOverlay.classList.remove('visible');
+                    body.classList.remove('drag-over');
+                }
+
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0]; // Process the first file
+
+                    const allowedTypes = ['text/markdown', 'text/plain', '']; // Empty type for some .md files
+                    const allowedExtensions = ['.md', '.txt'];
+                    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                    
+                    console.log(`Dropped file: ${file.name}, type: ${file.type}, ext: ${fileExtension}`);
+
+                    // More lenient check for .md files that might not have a specific MIME type
+                    if (allowedExtensions.includes(fileExtension) || allowedTypes.includes(file.type)) {
+                        const reader = new FileReader();
+                        reader.onload = (e_reader) => {
+                            handleImportedFileContent(e_reader.target.result, file.name, 'drag-drop');
+                        };
+                        reader.onerror = (e_reader) => {
+                            console.error("File reading error (drag-drop):", e_reader.target.error);
+                            showToast("文件读取失败。");
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        showToast(`不支持的文件类型: ${file.name} (仅支持 .md, .txt)`, 4000);
+                        console.warn(`Skipped non-text file (drag-drop): ${file.name}, type: ${file.type}`);
+                    }
+                }
+            }, false);
+        }
+
+
         // --- Initialization ---
         editor.addEventListener('input', () => {
             requestPreviewUpdate();
@@ -2277,7 +2424,6 @@
         editor.addEventListener('paste', (event) => {
             const pastedText = (event.clipboardData || window.clipboardData).getData('text');
             if (pastedText.length > LONG_TEXT_THRESHOLD / 2) { 
-                 // Check if auto-disable is off and diff is on, then show a pre-computation toast
                 if (isDiffTrackingEnabled && !autoDisableDiffForLongTextToggle.checked && pastedText.length > LONG_TEXT_THRESHOLD) {
                     showToast("正在处理大量粘贴内容，智能识别分析可能需要一些时间...", 3000);
                 } else if (pastedText.length > LONG_TEXT_THRESHOLD) {
@@ -2297,16 +2443,14 @@
              clearTimeout(historySaveTimeout);
              saveCurrentStateToHistory(); 
         });
-
-        // Initialize elements that might not be immediately available if script is in <head>
-        // But since it's at the end of body, this is fine.
         
-        handleLoadSampleOrRevert(); // Load initial sample
-        updateLoadSampleOrRevertButtonState(); // Set initial button state
+        handleLoadSampleOrRevert(); 
+        updateLoadSampleOrRevertButtonState(); 
 
         initDB().then(() => {
             console.log("DB Initialized.");
             pruneHistory();
+            setupDragDropListeners(); // Initialize drag and drop
             
             if (typeof Diff === 'undefined') { 
                 console.error("jsdiff library (Diff) not loaded!");
@@ -2321,7 +2465,7 @@
             const diffConfigButton = document.querySelector('button[onclick="showDiffConfigModal()"]');
             if (diffConfigButton && !jsdiffInstance) diffConfigButton.disabled = true;
             
-            checkAndManageDiffForLongText(); // Initial check on page load
+            checkAndManageDiffForLongText();
 			
 			console.warn(
 			    "\n %c🗿 MARKDOWN EDITOR - 开发者守则 🤏%c\n\n" +
@@ -2331,14 +2475,13 @@
 			    "    %c「简单是终极的复杂」%c —— 达芬奇如是说（大概）\n\n" +
 			    " %c—— Self @ " + new Date('2025/05/19').toLocaleDateString('zh-CN', {year: 'numeric', month: '2-digit', day: '2-digit'}) + "%c\n" +
 			    " %c[写于打消了增加若干个\"酷但是复杂功能\"的念头后留此存照]%c ",
-			    // 样式参数
-			    "color:#D32F2F;font-weight:bold;font-size:13px;font-family:Menlo,monospace;border-bottom:2px solid #FFCC80;", "", // 标题
-			    "color:#1976D2;font-weight:600;", "color:#757575;", // 规则1 
-			    "color:#1976D2;font-weight:600;", "color:#757575;", // 规则2
-			    "color:#1976D2;font-weight:600;", "color:#757575;", // 规则3
-			    "color:#43A047;font-style:italic;", "color:#757575;", // 达芬奇名言
-			    "color:#616161;letter-spacing:.5px;", "", // 日期
-			    "color:#9E9E9E;font-size:0.9em;", ""  // 彩蛋注释
+			    "color:#D32F2F;font-weight:bold;font-size:13px;font-family:Menlo,monospace;border-bottom:2px solid #FFCC80;", "", 
+			    "color:#1976D2;font-weight:600;", "color:#757575;", 
+			    "color:#1976D2;font-weight:600;", "color:#757575;", 
+			    "color:#1976D2;font-weight:600;", "color:#757575;", 
+			    "color:#43A047;font-style:italic;", "color:#757575;", 
+			    "color:#616161;letter-spacing:.5px;", "", 
+			    "color:#9E9E9E;font-size:0.9em;", ""  
 			);
         }).catch(err => console.error("Initial DB connection failed:", err));
 
