@@ -629,6 +629,39 @@
         body.drag-over #dragDropOverlay { /* Alternative or additional styling if needed */
              /* opacity: 1; */
         }
+		/* 保持 .active-doc-name 和 .active-doc-status 原有样式 */
+		
+		/* 新的文字按钮样式 */
+		button.text-button {
+		    background: none;
+		    border: none;
+		    color: var(--primary-color); /* 默认为主题蓝色，表示可点击 */
+		    cursor: pointer;
+		    font-size: 0.8em; /* 与状态指示器字体大小保持一致或略大 */
+		    font-weight: 500; /* 略微加粗 */
+		    padding: 0.2em 0.5em; /* 调整内边距使其看起来舒适 */
+		    margin-left: 0.5rem; /* 与前一个状态指示器的间距 */
+		    border-radius: 4px; /* 轻微圆角 */
+		    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+		}
+		
+		button.text-button:hover {
+		    color: var(--primary-hover-color);
+		    background-color: rgba(0, 102, 214, 0.1); /* 非常浅的背景高亮 */
+		    text-decoration: underline; /* 悬停时加下划线，更像链接 */
+		}
+		
+		button.text-button:active {
+		    color: var(--primary-hover-color);
+		    background-color: rgba(0, 102, 214, 0.2); /* 点击时背景略深 */
+		}
+		
+		button.text-button:disabled { /* 如果未来需要禁用状态 */
+		    color: var(--secondary-text-color);
+		    cursor: not-allowed;
+		    background-color: transparent;
+		    text-decoration: none;
+		}
 
     </style>
 </head>
@@ -639,7 +672,13 @@
             <div class="card-title">
                 <div class="text-title">
                     Markdown 编辑器
-                    <span id="activeDocNameIndicator" class="active-doc-name"></span><span id="activeDocStatusIndicator" class="active-doc-status"></span>
+					<span id="activeDocInfoContainer" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-left: 8px;"> <!-- 新增容器 -->
+						<span id="activeDocNameIndicator" class="active-doc-name"></span>
+						<span id="activeDocStatusIndicator" class="active-doc-status"></span>
+						<button id="dissociateActiveDocButton" class="small text-button" onclick="manuallyDissociateActiveDocument()" title="清除当前活动文档关联" style="display: none; padding: 0.2em 0.5em;">
+							解除关联
+						</button>
+					</span>
                 </div>
                 <div class="title-button-group">
                     <button onclick="importMarkdownFile()" title="导入 Markdown 文件" class="title-button-item icon-button">
@@ -942,8 +981,6 @@
         const saveAsVersionButton = document.getElementById('saveAsVersionButton');
         const historyModal = document.getElementById('historyModal');
         const historyItemList = document.getElementById('historyItemList');
-        const activeDocNameEl = document.getElementById('activeDocNameIndicator');
-        const activeDocStatusEl = document.getElementById('activeDocStatusIndicator');
         const loadSampleOrRevertButton = document.getElementById('loadSampleOrRevertButton');
 		const wordCountIndicator = document.getElementById('wordCountIndicator'); 
         const dragDropOverlay = document.getElementById('dragDropOverlay');
@@ -987,6 +1024,10 @@
         const autoDisableDiffForLongTextToggle = document.getElementById('autoDisableDiffForLongTextToggle');
         const longTextWarningSpan = document.getElementById('longTextWarning');
         const autoDisableDiffInfoSpan = document.getElementById('autoDisableDiffInfo');
+		const activeDocInfoContainer = document.getElementById('activeDocInfoContainer');
+		const activeDocNameEl = document.getElementById('activeDocNameIndicator');
+		const activeDocStatusEl = document.getElementById('activeDocStatusIndicator');
+		const dissociateActiveDocButton = document.getElementById('dissociateActiveDocButton');
         let previewUpdateDebounceTimeout;
         const DEBOUNCE_DELAY_PREVIEW = 250;
 		
@@ -1938,55 +1979,141 @@
         }
         
         function updateActiveDocIndicators() {
-            const { isRetained, rate, diffs } = currentDiffAnalysisResult;
+            const { isRetained, rate, diffs } = currentDiffAnalysisResult; 
+        
             if (activeSavedDocument.id && activeSavedDocument.name) {
+                if (activeDocInfoContainer) activeDocInfoContainer.style.display = 'inline-flex';
+        
                 activeDocNameEl.textContent = escapeHtml(truncateText(activeSavedDocument.name, 20));
                 activeDocNameEl.title = `当前编辑基于文档: ${escapeHtml(activeSavedDocument.name)}`;
+                
                 let statusText = "";
                 let statusTitle = "";
-
                 const docTypePrefix = activeSavedDocument.isImported ? "导入文件" : "文档";
-
-                if (isDiffTrackingEnabled) { 
-                    if (editor.value === activeSavedDocument.originalContent) {
-                        statusText = "(原始内容)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致`;
-                    } else if (isRetained) {
-                        statusText = "(识别为修改版)"; statusTitle = `内容已修改，系统仍认为与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 相关联 (相似度: ${Math.round(rate * 100)}%)`;
+        
+                if (rate === 1.0 && normalizeTextForComparison(editor.value) === normalizeTextForComparison(activeSavedDocument.originalContent)) { 
+                    // Stricter check for original content, using normalized comparison
+                    statusText = "(原始内容)";
+                    statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致`;
+                    
+                    trackingStrengthIndicator.style.display = 'none'; 
+                    changeSummaryIndicator.style.display = 'none';    
+                    
+                    if (isDiffTrackingEnabled && jsdiffInstance) {
+                         trackingStrengthIndicator.textContent = `100%`;
+                         trackingStrengthIndicator.className = 'strong';
+                         trackingStrengthIndicator.style.display = 'inline-block';
+                    }
+                } 
+                else if (isDiffTrackingEnabled) { 
+                    if (isRetained) { 
+                        statusText = "(识别为修改版)"; 
+                        statusTitle = `内容已修改，系统仍认为与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 相关联 (相似度: ${Math.round(rate * 100)}%)`;
                     } else {
-                        statusText = "(关联度低)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 差异较大 (相似度: ${Math.round(rate * 100)}%)，系统不再认为它们强相关`;
+                        statusText = "(关联度低)"; 
+                        statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 差异较大 (相似度: ${Math.round(rate * 100)}%)，系统不再认为它们强相关`;
                     }
-                } else { 
-                    if (activeSavedDocument.originalContent !== null && editor.value !== activeSavedDocument.originalContent) {
-                         statusText = "(已修改)"; statusTitle = `内容已修改 (智能识别已关闭${wasDiffTrackingEnabledBeforeLongText ? ' - 因长文本临时关闭':''})`;
-                    } else if (activeSavedDocument.originalContent !== null && editor.value === activeSavedDocument.originalContent) {
-                        statusText = "(原始内容)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致 (智能识别已关闭)`;
-                    } else if (wasDiffTrackingEnabledBeforeLongText) { 
-                         statusText = ""; statusTitle = `智能识别已因长文本临时关闭`;
-                    }
-                }
-                activeDocStatusEl.textContent = statusText;
-                activeDocStatusEl.title = statusTitle;
-            } else {
-                activeDocNameEl.textContent = ''; activeDocNameEl.title = '';
-                activeDocStatusEl.textContent = ''; activeDocStatusEl.title = '';
-            }
-
-            if (isDiffTrackingEnabled && activeSavedDocument.id && jsdiffInstance) {
-                trackingStrengthIndicator.textContent = `${Math.round(rate * 100)}%`;
-                trackingStrengthIndicator.className = isRetained ? 'strong' : 'weak';
-                trackingStrengthIndicator.style.display = 'inline-block';
-                if (editor.value !== activeSavedDocument.originalContent) {
+                    
+                    trackingStrengthIndicator.textContent = `${Math.round(rate * 100)}%`;
+                    trackingStrengthIndicator.className = isRetained ? 'strong' : 'weak';
+                    trackingStrengthIndicator.style.display = 'inline-block';
+                    
                     changeSummaryIndicator.textContent = calculateDiffSummary(diffs, diffAlgorithmType);
                     changeSummaryIndicator.style.display = changeSummaryIndicator.textContent ? 'inline-block' : 'none';
-                } else {
+        
+                } else { // Diff tracking is disabled
+                    // This 'else' implies content has changed or rate is not 1.0 (and diff tracking is off)
+                    if (activeSavedDocument.originalContent !== null && 
+                        normalizeTextForComparison(editor.value) !== normalizeTextForComparison(activeSavedDocument.originalContent)) {
+                         statusText = "(已修改)"; 
+                         statusTitle = `内容已修改 (智能识别已关闭${wasDiffTrackingEnabledBeforeLongText ? ' - 因长文本临时关闭':''})`;
+                    } else if (activeSavedDocument.originalContent !== null && 
+                               normalizeTextForComparison(editor.value) === normalizeTextForComparison(activeSavedDocument.originalContent)) {
+                        // This case is for when content IS original, but diff tracking is off
+                        statusText = "(原始内容)";
+                        statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致 (智能识别已关闭)`;
+                    } else if (wasDiffTrackingEnabledBeforeLongText) { // originalContent might be null if cleared after auto-disable
+                         statusText = ""; 
+                         statusTitle = `智能识别已因长文本临时关闭`;
+                    }
+                    trackingStrengthIndicator.style.display = 'none';
                     changeSummaryIndicator.style.display = 'none';
                 }
-            } else {
+        
+                activeDocStatusEl.textContent = statusText;
+                activeDocStatusEl.title = statusTitle;
+        
+                if (dissociateActiveDocButton) {
+                    // Show button if there's an active document and it's not just sample content 
+                    // (though sample content would clear activeSavedDocument.id anyway)
+                    dissociateActiveDocButton.style.display = 'inline-block';
+                }
+        
+            } else { // No active document
+                if (activeDocInfoContainer) activeDocInfoContainer.style.display = 'none'; 
+                
+                activeDocNameEl.textContent = ''; 
+                activeDocNameEl.title = '';
+                activeDocStatusEl.textContent = ''; 
+                activeDocStatusEl.title = '';
+                if (dissociateActiveDocButton) dissociateActiveDocButton.style.display = 'none';
+        
                 trackingStrengthIndicator.style.display = 'none';
                 changeSummaryIndicator.style.display = 'none';
             }
         }
 
+		function manuallyDissociateActiveDocument() {
+		    if (activeSavedDocument.id) {
+		        if (confirm(`确定要解除当前编辑器内容与文档 "${activeSavedDocument.name}" 的关联吗？之后编辑器内容将被视为一个全新的文档。`)) {
+		            const oldDocName = activeSavedDocument.name;
+		            const editorContentBeforeDissociate = editor.value; // Preserve current editor content
+		
+		            // Clear the active document association.
+		            // Pass `false` to `clearActiveSavedDocumentState` if it means "don't clear editor content".
+		            // If `clearActiveSavedDocumentState` has a boolean to signify destructive load,
+		            // we want a non-destructive dissociation here regarding editor content.
+		            // Let's assume `clearActiveSavedDocumentState(true)` clears content and association,
+		            // and we need a way to *only* clear association.
+		            // For now, let's manually reset parts of activeSavedDocument and then call updates.
+		
+		            console.log(`Dissociating from: ID ${activeSavedDocument.id}, Name "${oldDocName}"`);
+		
+		            activeSavedDocument.id = null;
+		            activeSavedDocument.name = null;
+		            activeSavedDocument.originalContent = null; // No more original to compare against
+		            activeSavedDocument.isImported = false;
+		            
+		            currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] }; // Now it's a new, unassociated doc
+		
+		            editor.value = editorContentBeforeDissociate; // Ensure editor content is still there
+		
+		            // Update all UIs that depend on active document state
+		            updateActiveDocIndicators(); // Will now show no active document
+		            updateLoadSampleOrRevertButtonState(); // Should revert to "加载示例"
+		            // updateWordCount(); // Not strictly needed if content didn't change, but good practice
+		            
+		            showToast(`已解除与 "${oldDocName}" 的关联。编辑器内容现在是新文档。`);
+		            
+		            // Since the content in the editor is now considered "new" (unassociated),
+		            // save its current state to history.
+		            lastSavedHistoryContent = null; // Force save to history for this new state
+		            triggerHistorySave();
+		            
+		            // Optional: If diff tracking was on, it will now have nothing to compare to.
+		            // handleContentChangeForAssociation(); // This will confirm no active doc.
+		
+		            updateWordCount(); // Recalculate word count for the (potentially) "new" document
+		        }
+		    } else {
+		        showToast("当前没有活动的关联文档。");
+		    }
+		}
+		
+		function normalizeTextForComparison(text) {
+		    if (text === null || text === undefined) return "";
+		    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+		}
 
         // --- UI Interaction for Modals ---
         function showLoadModal() { populateModal(false); }
