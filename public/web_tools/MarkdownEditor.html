@@ -1,22 +1,43 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <title>Markdown转换工具</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <!-- Markdown-it and plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@4.0.0/dist/markdown-it-footnote.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists@2.1.1/dist/markdown-it-task-lists.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-container@4.0.0/dist/markdown-it-container.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-emoji@3.0.0/dist/markdown-it-emoji.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-deflist@3.0.0/dist/markdown-it-deflist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-ins@4.0.0/dist/markdown-it-ins.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/markdown-it-link-attributes@4.0.1/dist/markdown-it-link-attributes.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-abbr@2.0.0/dist/markdown-it-abbr.min.js"></script>
+
+    <!-- Mermaid.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
     <!-- PDF/Image Export Libs -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- DOCX Export Lib -->
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
     <!-- Highlight JS -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css" integrity="sha512-jYtlOKxyOGJQxuHAR9h4PK04vh9HzaxI0dHVXx/kqICgw82nv3UpzWkaef+Fg8g4XJEvf/W+sPOnaeYQp5SRaQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.css"
+        integrity="sha512-jYtlOKxyOGJQxuHAR9h4PK04vh9HzaxI0dHVXx/kqICgw82nv3UpzWkaef+Fg8g4XJEvf/W+sPOnaeYQp5SRaQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Diff Lib (jsdiff) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/7.0.0/diff.min.js"></script>
     <style>
-         :root {
+        :root {
             --bg-color: #f8f9fa;
             --preview-bg: #ffffff;
             --border-color: #e1e4e8;
@@ -26,16 +47,26 @@
             --primary-hover-color: #0056b3;
             --danger-color: #d73a49;
             --danger-hover-color: #cb2431;
-            --modal-overlay-bg: rgba(0,0,0,0.6);
+            --modal-overlay-bg: rgba(0, 0, 0, 0.6);
             --modal-content-bg: #ffffff;
-            --diff-enabled-color: #28a745; /* Bootstrap Success Green */
-            --diff-disabled-color: #6c757d; /* Bootstrap Secondary Grey */
+            --diff-enabled-color: #28a745;
+            /* Bootstrap Success Green */
+            --diff-disabled-color: #6c757d;
+            /* Bootstrap Secondary Grey */
             --tracking-strong-color: #28a745;
             --tracking-weak-color: #dc3545;
-            --warning-color: #ffc107; /* Bootstrap Warning Yellow/Orange */
+            --warning-color: #ffc107;
+            /* Bootstrap Warning Yellow/Orange */
+
+            /* Pane Collapse Variables */
+            --grid-min-pane-width: 44px; /* Width of a collapsed pane */
+            --grid-columns-normal: 1fr 2fr;
+            --grid-columns-editor-collapsed: var(--grid-min-pane-width) 1fr;
+            --grid-columns-preview-collapsed: 1fr var(--grid-min-pane-width);
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             width: 100%;
             margin: 0;
@@ -51,24 +82,66 @@
         .container {
             padding: 2rem;
             display: grid;
-            grid-template-columns: 1fr 2fr;
+            /* grid-template-columns: 1fr 2fr; /* Will be set by JS */
+            grid-template-columns: var(--grid-columns-normal); /* Default state */
             gap: 2rem;
             margin: 0 auto;
             height: calc(100vh - 1rem);
             box-sizing: border-box;
+            transition: grid-template-columns 0.3s ease-in-out; /* Smooth transition for collapse */
         }
 
-        .editor-box, .preview-box {
+        .editor-box,
+        .preview-box {
             background: var(--preview-bg);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
             gap: 1rem;
             overflow: hidden;
-            min-width: 0;
+            min-width: 0; /* Important for grid collapsing */
+            transition: padding 0.3s ease-in-out; /* Smooth transition for padding */
         }
+        
+        /* Styles for collapsed panes */
+        .pane-collapsed {
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .pane-collapsed .card-title {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            margin: 0 !important;
+            border-bottom: 1px solid var(--border-color); /* Optional: keep a line */
+            flex-wrap: nowrap !important; /* Prevent button from wrapping */
+        }
+
+        .pane-collapsed .card-title > *:not(.title-collapse-btn) {
+            display: none !important;
+        }
+        .pane-collapsed .title-collapse-btn {
+            display: inline-flex !important;
+            margin: 0 !important;
+        }
+
+        .pane-collapsed > *:not(.card-title) {
+            display: none !important;
+        }
+
+        .title-collapse-btn {
+            flex-shrink: 0; /* Prevent shrinking */
+            /* margin-left: 8px; /* Default margin, adjust as needed */
+        }
+        .title-collapse-btn svg {
+             vertical-align: middle; /* Align icon nicely */
+        }
+
 
         .markdown-body {
             background: var(--preview-bg) !important;
@@ -85,15 +158,16 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        
-        .preview-title-extra { 
-            /*margin-left: auto;*/ 
+
+        .preview-title-extra {
+            /*margin-left: auto;*/
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        #trackingStrengthIndicator, #changeSummaryIndicator {
+        #trackingStrengthIndicator,
+        #changeSummaryIndicator {
             font-size: 0.8em;
             font-weight: 500;
             padding: 0.2em 0.5em;
@@ -101,23 +175,37 @@
             white-space: nowrap;
             margin-right: 5px;
         }
-        #trackingStrengthIndicator.strong { color: var(--tracking-strong-color); border: 1px solid var(--tracking-strong-color);}
-        #trackingStrengthIndicator.weak { color: var(--tracking-weak-color); border: 1px solid var(--tracking-weak-color);}
-        #changeSummaryIndicator { color: var(--secondary-text-color); font-weight: normal;}
+
+        #trackingStrengthIndicator.strong {
+            color: var(--tracking-strong-color);
+            border: 1px solid var(--tracking-strong-color);
+        }
+
+        #trackingStrengthIndicator.weak {
+            color: var(--tracking-weak-color);
+            border: 1px solid var(--tracking-weak-color);
+        }
+
+        #changeSummaryIndicator {
+            color: var(--secondary-text-color);
+            font-weight: normal;
+        }
 
 
         #diffStatusIndicator {
-            font-size: 0.8em; 
+            font-size: 0.8em;
             font-weight: 500;
-            padding: 0.2em 0.6em; 
+            padding: 0.2em 0.6em;
             border-radius: 4px;
             color: white;
-            line-height: 1.5; 
+            line-height: 1.5;
             white-space: nowrap;
         }
+
         #diffStatusIndicator.enabled {
             background-color: var(--diff-enabled-color);
         }
+
         #diffStatusIndicator.disabled {
             background-color: var(--diff-disabled-color);
         }
@@ -133,14 +221,16 @@
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 40px; 
-            height: 20px; 
+            width: 40px;
+            height: 20px;
         }
+
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
+
         .slider {
             position: absolute;
             cursor: pointer;
@@ -150,31 +240,39 @@
             bottom: 0;
             background-color: #ccc;
             transition: .4s;
-            border-radius: 20px; 
+            border-radius: 20px;
         }
+
         .slider:before {
             position: absolute;
             content: "";
-            height: 14px; 
-            width: 14px;  
-            left: 3px;    
-            bottom: 3px;  
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
             transition: .4s;
             border-radius: 50%;
         }
-        input:checked + .slider {
+
+        input:checked+.slider {
             background-color: var(--primary-color);
         }
-        input:focus + .slider {
+
+        input:focus+.slider {
             box-shadow: 0 0 1px var(--primary-color);
         }
-        input:checked + .slider:before {
-            transform: translateX(20px); 
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
         }
 
 
-        select, button, input[type="search"], input[type="number"], input[type="range"] {
+        select,
+        button,
+        input[type="search"],
+        input[type="number"],
+        input[type="range"] {
             padding: 0.5rem 1rem;
             border-radius: 6px;
             border: 1px solid var(--border-color);
@@ -182,21 +280,25 @@
             font-size: 0.9em;
             box-sizing: border-box;
         }
+
         input[type="range"] {
-            padding: 0; 
+            padding: 0;
         }
+
         button {
             cursor: pointer;
             transition: all 0.2s ease-in-out;
         }
+
         button:hover {
-             border-color: #c6cbd1;
-             background-color: #f6f8fa;
+            border-color: #c6cbd1;
+            background-color: #f6f8fa;
         }
+
         button:active {
-             background-color: #f3f4f6;
-             border-color: #c6cbd1;
-             box-shadow: inset 0 1px 0 rgba(225,228,232,0.2);
+            background-color: #f3f4f6;
+            border-color: #c6cbd1;
+            box-shadow: inset 0 1px 0 rgba(225, 228, 232, 0.2);
         }
 
 
@@ -215,21 +317,24 @@
             background-color: var(--danger-color);
             color: white;
             border-color: var(--danger-color);
-         }
-         button.danger:hover {
+        }
+
+        button.danger:hover {
             background-color: var(--danger-hover-color);
             border-color: var(--danger-hover-color);
-         }
-         button.small {
+        }
+
+        button.small {
             padding: 0.3rem 0.8rem;
             font-size: 0.8em;
-         }
+        }
 
-         .notice {
+        .notice {
             color: var(--secondary-text-color);
             font-size: 0.9em;
             margin-top: 0;
         }
+
         .card-title {
             padding: 10px 0;
             display: flex;
@@ -243,20 +348,24 @@
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 0.5rem;
         }
+
         .card-body {
             flex-grow: 1;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
+
         .text-title {
             font-size: 1.25em;
             font-weight: 600;
-            margin-right: 1rem; 
+            margin-right: 1rem;
             white-space: nowrap;
-            display: flex; 
-            align-items: center; 
-			gap: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-grow: 1; /* Allow title to take space */
+            min-width: 0; /* Prevent overflow issues */
         }
 
         .active-doc-name {
@@ -267,10 +376,11 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 150px; 
-            vertical-align: middle; 
-            display: inline-block; 
+            max-width: 150px;
+            vertical-align: middle;
+            display: inline-block;
         }
+
         .active-doc-status {
             font-weight: normal;
             font-size: 0.8em;
@@ -282,27 +392,31 @@
         }
 
         .title-button-group {
-             display: flex;
-             gap: 0.5rem;
-             align-items: center;
-			 width: 100%;
-			 justify-content: flex-end;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            /* width: 100%; */ /* Removed for better flex behavior with collapse button */
+            /* justify-content: flex-end; */ /* Let natural flow position it */
+            flex-shrink: 0; /* Prevent this group from shrinking too much */
         }
-		.title-button-item {
-			height: 35px;
-			min-width: 75px;
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
+
+        .title-button-item {
+            height: 35px;
+            min-width: 75px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             gap: 0.4em;
             padding: 0.5rem 0.8rem;
             white-space: nowrap;
-			text-overflow: ellipsis;
-		}
+            text-overflow: ellipsis;
+        }
+
         .icon-button svg {
             vertical-align: middle;
             flex-shrink: 0;
         }
+
         .editor {
             width: 100%;
             font-family: 'Fira Code', 'Consolas', monospace;
@@ -345,49 +459,66 @@
             user-select: none;
         }
 
-		.modal {
-			display: none; /* 确保默认是隐藏的 */
-			position: fixed;
-			z-index: 1000;
-			left: 0;
-			top: 0;
-			width: 100%;
-			height: 100vh; /* 使用视窗高度单位 vh */
-			overflow: hidden; /* 禁止 modal 本身滚动 */
-			background-color: var(--modal-overlay-bg);
-			backdrop-filter: blur(3px);
-		}
+        .modal {
+            display: none;
+            /* 确保默认是隐藏的 */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            /* 使用视窗高度单位 vh */
+            overflow: hidden;
+            /* 禁止 modal 本身滚动 */
+            background-color: var(--modal-overlay-bg);
+            backdrop-filter: blur(3px);
+        }
 
-		/* 当 JS 将 .modal 设置为 display: flex; 时，以下样式用于居中 modal-content */
-		.modal.show-flex { /* 创建一个新类给 JS 来切换 */
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
+        /* 当 JS 将 .modal 设置为 display: flex; 时，以下样式用于居中 modal-content */
+        .modal.show-flex {
+            /* 创建一个新类给 JS 来切换 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
 
-		.modal-content {
-			background-color: var(--modal-content-bg);
-			/* margin: 8% auto; */ /* 移除，由 .modal.show-flex 的 flex 布局处理居中 */
-			margin: 20px; /* 可以给一个固定的外边距，防止贴边，并为 max-height 计算留出空间 */
-			padding: 25px;
-			border: 1px solid var(--border-color);
-			width: 85%;
-			max-width: 650px;
-			border-radius: 8px;
-			box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-			position: relative; /* 保持 */
-			animation: fadeIn 0.3s ease-out;
-			display: flex; /* 内部仍然是flex布局 */
-			flex-direction: column;
-			gap: 1rem;
-			max-height: calc(100vh - 40px); /* 限制最大高度，减去上下margin (20px + 20px) */
-			overflow-y: auto; /* 当内容超出 modal-content 的 max-height 时，内容区才滚动 */
-		}
-		
+        .modal-content {
+            background-color: var(--modal-content-bg);
+            /* margin: 8% auto; */
+            /* 移除，由 .modal.show-flex 的 flex 布局处理居中 */
+            margin: 20px;
+            /* 可以给一个固定的外边距，防止贴边，并为 max-height 计算留出空间 */
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            width: 85%;
+            max-width: 650px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            /* 保持 */
+            animation: fadeIn 0.3s ease-out;
+            display: flex;
+            /* 内部仍然是flex布局 */
+            flex-direction: column;
+            gap: 1rem;
+            max-height: calc(100vh - 40px);
+            /* 限制最大高度，减去上下margin (20px + 20px) */
+            overflow-y: auto;
+            /* 当内容超出 modal-content 的 max-height 时，内容区才滚动 */
+        }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modal-header {
@@ -420,22 +551,28 @@
             font-weight: 600;
             font-size: 1.3em;
         }
+
         .modal-toolbar {
             display: flex;
             gap: 1rem;
             align-items: center;
             flex-wrap: wrap;
         }
-        #searchInput, #historySearchInput {
+
+        #searchInput,
+        #historySearchInput {
             flex-grow: 1;
             min-width: 200px;
         }
-        #saveNewButton, #saveAsVersionButton {
-             display: none;
+
+        #saveNewButton,
+        #saveAsVersionButton {
+            display: none;
         }
 
 
-        .saved-item-list, .history-item-list {
+        .saved-item-list,
+        .history-item-list {
             list-style: none;
             padding: 0;
             margin: 0;
@@ -445,26 +582,33 @@
             border-radius: 6px;
         }
 
-        .saved-item, .history-item {
+        .saved-item,
+        .history-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
-            transition: background-color 0.15s ease-in-out, border-left 0.15s ease-in-out; 
+            transition: background-color 0.15s ease-in-out, border-left 0.15s ease-in-out;
             gap: 10px;
         }
-        .saved-item:last-child, .history-item:last-child {
+
+        .saved-item:last-child,
+        .history-item:last-child {
             border-bottom: none;
         }
-        .saved-item:hover, .history-item:hover {
+
+        .saved-item:hover,
+        .history-item:hover {
             background-color: #f6f8fa;
         }
+
         .saved-item.highlighted-active-doc {
-            background-color: #e6f7ff; 
+            background-color: #e6f7ff;
             border-left: 4px solid var(--primary-color);
             font-weight: 500;
         }
+
         .saved-item.highlighted-active-doc .item-name {
             color: var(--primary-hover-color);
         }
@@ -485,6 +629,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .item-content-preview {
             font-size: 0.9em;
             color: var(--secondary-text-color);
@@ -499,6 +644,7 @@
             font-size: 0.8em;
             color: var(--secondary-text-color);
         }
+
         .item-actions {
             display: flex;
             gap: 8px;
@@ -506,16 +652,18 @@
         }
 
         .no-items {
-             text-align: center;
-             color: var(--secondary-text-color);
-             padding: 2rem 0;
-             font-style: italic;
-             border-bottom: none !important;
-             display: block !important;
+            text-align: center;
+            color: var(--secondary-text-color);
+            padding: 2rem 0;
+            font-style: italic;
+            border-bottom: none !important;
+            display: block !important;
         }
+
         .no-items:hover {
-             background-color: transparent !important;
+            background-color: transparent !important;
         }
+
         .toast-message {
             position: fixed;
             top: 20px;
@@ -534,9 +682,11 @@
             text-align: center;
             pointer-events: none;
         }
+
         .toast-message.show {
             opacity: 1;
         }
+
         /* Styles for Diff Config Modal */
         .config-item {
             display: flex;
@@ -544,56 +694,68 @@
             gap: 0.5rem;
             margin-bottom: 1rem;
         }
+
         .config-item label {
             font-weight: 500;
             font-size: 0.95em;
         }
+
         .config-item .input-group {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
+
         .config-item input[type="number"] {
-            width: 100px; /* Increased width for threshold input */
+            width: 100px;
+            /* Increased width for threshold input */
         }
+
         .config-item input[type="range"] {
             flex-grow: 1;
         }
+
         .config-item select {
             flex-grow: 1;
         }
+
         .config-note {
             font-size: 0.8em;
             color: var(--secondary-text-color);
             margin-top: 0.2rem;
         }
-		#wordCountIndicator {
-			font-size: 0.8em;
-			color: var(--secondary-text-color);
-			margin-left: 0.75rem; /* 与其他指示器间隔保持一致 */
-			white-space: nowrap;
-		}
 
-		/* 确保 .preview-title-extra (包含强度和摘要的那个) 与字数统计有间隔 */
-		.text-title > .preview-title-extra {
-			 margin-left: 0.75rem; /* 如果字数统计存在，这个div向右移一点 */
-		}
+        #wordCountIndicator {
+            font-size: 0.8em;
+            color: var(--secondary-text-color);
+            margin-left: 0.75rem;
+            /* 与其他指示器间隔保持一致 */
+            white-space: nowrap;
+        }
 
-		/* 微调 .text-title 以容纳更多元素 */
-		.text-title {
-			font-size: 1.25em;
-			font-weight: 600;
-			/* margin-right: 1rem; */ /* 可以移除或减小，因为右侧现在有更多元素 */
-			white-space: nowrap;
-			display: flex; 
-			align-items: center; 
-			gap: 0.5rem; /* 保持子元素间的间隙 */
-			flex-grow: 1; /* 让 text-title 占据可用空间，以推动右侧的开关组 */
-			min-width: 0; /* 防止内容过长时撑开布局 */
-		}
-		.preview-box .card-title .preview-title-extra:nth-of-type(2){ /* 指向包含开关的那个 preview-title-extra */
-			/* margin-left: auto; /* 确保开关组靠右 */
-		}
+        /* 确保 .preview-title-extra (包含强度和摘要的那个) 与字数统计有间隔 */
+        .text-title>.preview-title-extra {
+            margin-left: 0.75rem;
+            /* 如果字数统计存在，这个div向右移一点 */
+        }
+
+        /* 微调 .text-title 以容纳更多元素 */
+        /* .text-title {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-right: 1rem;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-grow: 1;
+            min-width: 0;
+        } */
+
+        .preview-box .card-title .preview-title-extra:nth-of-type(2) {
+            /* 指向包含开关的那个 preview-title-extra */
+            /* margin-left: auto; /* 确保开关组靠右 */
+        }
 
         /* Drag and Drop Overlay */
         #dragDropOverlay {
@@ -602,69 +764,338 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 123, 255, 0.1); /* Semi-transparent primary color */
+            background-color: rgba(0, 123, 255, 0.1);
+            /* Semi-transparent primary color */
             border: 3px dashed var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            pointer-events: none; /* Allow events to pass through initially */
+            pointer-events: none;
+            /* Allow events to pass through initially */
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
             box-sizing: border-box;
         }
+
         #dragDropOverlay.visible {
             opacity: 1;
-            pointer-events: auto; /* Block events when visible and active for drop */
+            pointer-events: auto;
+            /* Block events when visible and active for drop */
         }
+
         #dragDropOverlay p {
             font-size: 1.8em;
             color: var(--primary-color);
             font-weight: 600;
-            background-color: rgba(255,255,255,0.8);
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 20px 30px;
             border-radius: 8px;
             text-align: center;
         }
-        body.drag-over #dragDropOverlay { /* Alternative or additional styling if needed */
-             /* opacity: 1; */
-        }
-		/* 保持 .active-doc-name 和 .active-doc-status 原有样式 */
-		
-		/* 新的文字按钮样式 */
-		button.text-button {
-		    background: none;
-		    border: none;
-		    color: var(--primary-color); /* 默认为主题蓝色，表示可点击 */
-		    cursor: pointer;
-		    font-size: 0.8em; /* 与状态指示器字体大小保持一致或略大 */
-		    font-weight: 500; /* 略微加粗 */
-		    padding: 0.2em 0.5em; /* 调整内边距使其看起来舒适 */
-		    margin-left: 0.5rem; /* 与前一个状态指示器的间距 */
-		    border-radius: 4px; /* 轻微圆角 */
-		    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
-		}
-		
-		button.text-button:hover {
-		    color: var(--primary-hover-color);
-		    background-color: rgba(0, 102, 214, 0.1); /* 非常浅的背景高亮 */
-		    text-decoration: underline; /* 悬停时加下划线，更像链接 */
-		}
-		
-		button.text-button:active {
-		    color: var(--primary-hover-color);
-		    background-color: rgba(0, 102, 214, 0.2); /* 点击时背景略深 */
-		}
-		
-		button.text-button:disabled { /* 如果未来需要禁用状态 */
-		    color: var(--secondary-text-color);
-		    cursor: not-allowed;
-		    background-color: transparent;
-		    text-decoration: none;
-		}
 
+        body.drag-over #dragDropOverlay {
+            /* Alternative or additional styling if needed */
+            /* opacity: 1; */
+        }
+
+        /* 保持 .active-doc-name 和 .active-doc-status 原有样式 */
+
+        /* 新的文字按钮样式 */
+        button.text-button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            /* 默认为主题蓝色，表示可点击 */
+            cursor: pointer;
+            font-size: 0.8em;
+            /* 与状态指示器字体大小保持一致或略大 */
+            font-weight: 500;
+            /* 略微加粗 */
+            padding: 0.2em 0.5em;
+            /* 调整内边距使其看起来舒适 */
+            margin-left: 0.5rem;
+            /* 与前一个状态指示器的间距 */
+            border-radius: 4px;
+            /* 轻微圆角 */
+            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+
+        button.text-button:hover {
+            color: var(--primary-hover-color);
+            background-color: rgba(0, 102, 214, 0.1);
+            /* 非常浅的背景高亮 */
+            text-decoration: underline;
+            /* 悬停时加下划线，更像链接 */
+        }
+
+        button.text-button:active {
+            color: var(--primary-hover-color);
+            background-color: rgba(0, 102, 214, 0.2);
+            /* 点击时背景略深 */
+        }
+
+        button.text-button:disabled {
+            /* 如果未来需要禁用状态 */
+            color: var(--secondary-text-color);
+            cursor: not-allowed;
+            background-color: transparent;
+            text-decoration: none;
+        }
+
+        /* Mermaid diagrams should be centered and responsive */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1em 0;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Task lists styling (from github-markdown.css or similar) */
+        .task-list-item {
+            list-style-type: none;
+        }
+
+        .task-list-item input[type="checkbox"] {
+            margin: 0 0.2em 0.25em -1.6em;
+            vertical-align: middle;
+        }
+
+        /* 警告容器 - 琥珀色系 */
+        .warning-text {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border: none;
+            border-left: 4px solid #ff8f00;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 16px 0;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(255, 143, 0, 0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .warning-text::before {
+            content: "⚠";
+            position: absolute;
+            left: -12px;
+            top: 8px;
+            background: #ff8f00;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .warning-text:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(255, 143, 0, 0.18);
+        }
+
+        /* 信息容器 - 蓝色系 */
+        .info-text {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: none;
+            border-left: 4px solid #1976d2;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 16px 0;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(25, 118, 210, 0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .info-text::before {
+            content: "i";
+            position: absolute;
+            left: -12px;
+            top: 8px;
+            background: #1976d2;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            font-style: italic;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-text:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(25, 118, 210, 0.18);
+        }
+
+        /* 提示容器 - 绿色系 */
+        .tip-text {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            border: none;
+            border-left: 4px solid #388e3c;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 16px 0;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(56, 142, 60, 0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tip-text::before {
+            content: "✓";
+            position: absolute;
+            left: -12px;
+            top: 8px;
+            background: #388e3c;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .tip-text:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(56, 142, 60, 0.18);
+        }
+
+        /* 危险容器 - 红色系 */
+        .danger-text {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border: none;
+            border-left: 4px solid #d32f2f;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 16px 0;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(211, 47, 47, 0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .danger-text::before {
+            content: "✕";
+            position: absolute;
+            left: -12px;
+            top: 8px;
+            background: #d32f2f;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .danger-text:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(211, 47, 47, 0.18);
+        }
+
+        /* 内容段落样式重置 */
+        .warning-text p,
+        .info-text p,
+        .tip-text p,
+        .danger-text p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+
+            .warning-text,
+            .info-text,
+            .tip-text,
+            .danger-text {
+                padding: 12px 16px;
+                margin: 12px 0;
+            }
+
+            .warning-text::before,
+            .info-text::before,
+            .tip-text::before,
+            .danger-text::before {
+                left: -10px;
+                top: 6px;
+                width: 18px;
+                height: 18px;
+                font-size: 10px;
+            }
+        }
+
+        /* 暗色主题适配 */
+        @media (prefers-color-scheme: dark) {
+            .warning-text {
+                background: linear-gradient(135deg, #332b1f 0%, #3d2f24 100%);
+                color: #ffcc80;
+            }
+
+            .info-text {
+                background: linear-gradient(135deg, #1a2332 0%, #243447 100%);
+                color: #90caf9;
+            }
+
+            .tip-text {
+                background: linear-gradient(135deg, #1f2b1f 0%, #2c3e2c 100%);
+                color: #a5d6a7;
+            }
+
+            .danger-text {
+                background: linear-gradient(135deg, #2e1a1a 0%, #3c2727 100%);
+                color: #ef9a9a;
+            }
+        }
+
+        .external-link {
+            color: #6366f1;
+            text-decoration: none;
+            position: relative;
+            font-weight: 550;
+            transition: color 0.3s;
+            padding: 0px 2px;
+        }
+
+        .external-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: width 0.3s ease;
+        }
+
+        .external-link:hover {
+            color: #4f46e5;
+        }
+
+        .external-link:hover::after {
+            width: 100%;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- 编辑区 -->
@@ -672,65 +1103,99 @@
             <div class="card-title">
                 <div class="text-title">
                     Markdown 编辑器
-					<span id="activeDocInfoContainer" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-left: 8px;"> <!-- 新增容器 -->
-						<span id="activeDocNameIndicator" class="active-doc-name"></span>
-						<span id="activeDocStatusIndicator" class="active-doc-status"></span>
-						<button id="dissociateActiveDocButton" class="small text-button" onclick="manuallyDissociateActiveDocument()" title="清除当前活动文档关联" style="display: none; padding: 0.2em 0.5em;">
-							解除关联
-						</button>
-					</span>
+                    <span id="activeDocInfoContainer"
+                        style="display: inline-flex; align-items: center; gap: 0.5rem; margin-left: 8px;">
+                        <span id="activeDocNameIndicator" class="active-doc-name"></span>
+                        <span id="activeDocStatusIndicator" class="active-doc-status"></span>
+                        <button id="dissociateActiveDocButton" class="small text-button"
+                            onclick="manuallyDissociateActiveDocument()" title="清除当前活动文档关联"
+                            style="display: none; padding: 0.2em 0.5em;">
+                            解除关联
+                        </button>
+                    </span>
                 </div>
                 <div class="title-button-group">
                     <button onclick="importMarkdownFile()" title="导入 Markdown 文件" class="title-button-item icon-button">
-						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-upload"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 1.75a.75.75 0 0 1 .75.75v6.51L11.03 6.78a.75.75 0 0 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.5a.75.75 0 0 1 .75-.75Z"></path></svg>
-						导入
-					</button>
+                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"
+                            data-view-component="true" class="octicon octicon-upload">
+                            <path
+                                d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 1.75a.75.75 0 0 1 .75.75v6.51L11.03 6.78a.75.75 0 0 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.5a.75.75 0 0 1 .75-.75Z">
+                            </path>
+                        </svg>
+                        导入
+                    </button>
                     <button onclick="showLoadModal()" title="加载已保存的 Markdown" class="title-button-item icon-button">
-						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-download"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 11.75a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 1.5 0v9.5a.75.75 0 0 1-.75.75Zm-4.28-4.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.31V9.5a.75.75 0 0 1-1.5 0V4.31L3.78 7.47a.75.75 0 0 1-1.06 0Z"></path></svg>
-						加载
-					</button>
-                    <button class="primary title-button-item icon-button" onclick="showSaveModal()" title="保存或更新 Markdown">
-						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-file-directory-fill"><path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.09L5.95 1.36A.75.75 0 0 0 5.41 1H1.75Z"></path></svg>
-						保存
-					</button>
+                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"
+                            data-view-component="true" class="octicon octicon-download">
+                            <path
+                                d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z M8 11.75a.75.75 0 0 1-.75-.75V1.5a.75.75 0 0 1 1.5 0v9.5a.75.75 0 0 1-.75-.75Zm-4.28-4.28a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.31V9.5a.75.75 0 0 1-1.5 0V4.31L3.78 7.47a.75.75 0 0 1-1.06 0Z">
+                            </path>
+                        </svg>
+                        加载
+                    </button>
+                    <button class="primary title-button-item icon-button" onclick="showSaveModal()"
+                        title="保存或更新 Markdown">
+                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"
+                            data-view-component="true" class="octicon octicon-file-directory-fill">
+                            <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.09L5.95 1.36A.75.75 0 0 0 5.41 1H1.75Z">
+                            </path>
+                        </svg>
+                        保存
+                    </button>
                     <button onclick="showHistoryModal()" title="查看编辑历史" class="title-button-item icon-button">
-						<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-history"><path d="M1.643 3.143L.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684zM7.75 4a.75.75 0 0 1 .75.75v4.336l3.47 2.023a.75.75 0 0 1-.74 1.298l-3.75-2.165A.75.75 0 0 1 7 9.75V4.75a.75.75 0 0 1 .75-.75z"></path></svg>
-						历史
-					</button>
+                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"
+                            data-view-component="true" class="octicon octicon-history">
+                            <path
+                                d="M1.643 3.143L.427 1.927A.25.25 0 0 0 0 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 0 0 .177-.427L2.715 4.215a6.5 6.5 0 1 1-1.18 4.458.75.75 0 1 0-1.493.154 8.001 8.001 0 1 0 1.6-5.684zM7.75 4a.75.75 0 0 1 .75.75v4.336l3.47 2.023a.75.75 0 0 1-.74 1.298l-3.75-2.165A.75.75 0 0 1 7 9.75V4.75a.75.75 0 0 1 .75-.75z">
+                            </path>
+                        </svg>
+                        历史
+                    </button>
                     <button onclick="showDiffConfigModal()" title="配置智能识别关联" class="title-button-item icon-button">
-                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-gear"><path fill-rule="evenodd" d="M8 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 1.5a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM5.44 8A2.56 2.56 0 0 1 8 5.44v.035a.75.75 0 0 1 0 1.5v-.035A.97.97 0 0 0 8 6.91a.97.97 0 0 0-.97.97.97.97 0 0 0 .97.97.97.97 0 0 0 .97-.97V8a2.56 2.56 0 0 1-2.56 2.56H5.47a.75.75 0 0 1 0-1.5h.005A2.524 2.524 0 0 1 5.44 8Zm4.12-2.56A2.56 2.56 0 0 1 10.53 8h.005a.75.75 0 0 1 0 1.5H10.5A2.56 2.56 0 0 1 8 10.56v-.035a.75.75 0 0 1 0-1.5v.035A.97.97 0 0 0 8 9.09a.97.97 0 0 0 .97-.97A.97.97 0 0 0 8 7.15.97.97 0 0 0 7.03 8.12V8A2.56 2.56 0 0 1 9.56 5.44Zm2.06.7a.75.75 0 0 1 1.06-.02l.003.004 1.5 1.5.003.003a.75.75 0 0 1 .02 1.06l-.003.004-1.5 1.5-.004.003a.75.75 0 0 1-1.06.02l.004-.003-1.5-1.5-.004-.003a.75.75 0 0 1-.02-1.06l.003-.004 1.5-1.5Zm-8.24 4.12a.75.75 0 0 1 1.06.02l-.003-.004 1.5 1.5-.003-.003a.75.75 0 0 1 .02 1.06l.003.004-1.5 1.5.004.003a.75.75 0 0 1-1.06.02l-.004-.003-1.5-1.5.004-.003a.75.75 0 0 1-.02-1.06l-.003.004 1.5-1.5Z"></path></svg>
+                        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"
+                            data-view-component="true" class="octicon octicon-gear">
+                            <path fill-rule="evenodd"
+                                d="M8 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 1.5a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM5.44 8A2.56 2.56 0 0 1 8 5.44v.035a.75.75 0 0 1 0 1.5v-.035A.97.97 0 0 0 8 6.91a.97.97 0 0 0-.97.97.97.97 0 0 0 .97.97.97.97 0 0 0 .97-.97V8a2.56 2.56 0 0 1-2.56 2.56H5.47a.75.75 0 0 1 0-1.5h.005A2.524 2.524 0 0 1 5.44 8Zm4.12-2.56A2.56 2.56 0 0 1 10.53 8h.005a.75.75 0 0 1 0 1.5H10.5A2.56 2.56 0 0 1 8 10.56v-.035a.75.75 0 0 1 0-1.5v.035A.97.97 0 0 0 8 9.09a.97.97 0 0 0 .97-.97A.97.97 0 0 0 8 7.15.97.97 0 0 0 7.03 8.12V8A2.56 2.56 0 0 1 9.56 5.44Zm2.06.7a.75.75 0 0 1 1.06-.02l.003.004 1.5 1.5.003.003a.75.75 0 0 1 .02 1.06l-.003.004-1.5 1.5-.004.003a.75.75 0 0 1-1.06.02l.004-.003-1.5-1.5-.004-.003a.75.75 0 0 1-.02-1.06l.003-.004 1.5-1.5Zm-8.24 4.12a.75.75 0 0 1 1.06.02l-.003-.004 1.5 1.5-.003-.003a.75.75 0 0 1 .02 1.06l.003.004-1.5 1.5.004.003a.75.75 0 0 1-1.06.02l-.004-.003-1.5-1.5.004-.003a.75.75 0 0 1-.02-1.06l-.003.004 1.5-1.5Z">
+                            </path>
+                        </svg>
                         关联设置
                     </button>
-					<button id="loadSampleOrRevertButton" class="title-button-item" onclick="handleLoadSampleOrRevert()" >加载示例</button>
+                    <button id="loadSampleOrRevertButton" class="title-button-item"
+                        onclick="handleLoadSampleOrRevert()">加载示例</button>
                 </div>
+                <button id="toggleEditorButton" class="icon-button small title-collapse-btn" title="收起编辑区">
+                    <!-- SVG will be injected by JS -->
+                </button>
             </div>
             <div class="card-body">
                 <div class="editor">
                     <div class="toolbar">Markdown Editor (Tab/Shift+Tab supported)</div>
-                    <textarea id="editor" placeholder="Start typing markdown here... or drag & drop a .md/.txt file onto the page."></textarea>
+                    <textarea id="editor"
+                        placeholder="Start typing markdown here... or drag & drop a .md/.txt file onto the page."></textarea>
                 </div>
             </div>
         </div>
 
         <!-- 预览区 -->
         <div class="preview-box">
-            <div  class="card-title">
+            <div class="card-title">
                 <div class="text-title">
                     <div>实时预览</div>
-					<span id="wordCountIndicator" class="word-count-indicator"></span>
-					<div class="preview-title-extra" >
-					    <span id="trackingStrengthIndicator" style="display: none;" title="当前使用的方案存续未修改部分的百分比"></span>
-					    <span id="changeSummaryIndicator" style="display: none;" title="当前编辑器中对比使用的方案初始状态的差异"></span>
-					</div>
+                    <span id="wordCountIndicator" class="word-count-indicator"></span>
+                    <div class="preview-title-extra">
+                        <span id="trackingStrengthIndicator" style="display: none;" title="当前使用的方案存续未修改部分的百分比"></span>
+                        <span id="changeSummaryIndicator" style="display: none;" title="当前编辑器中对比使用的方案初始状态的差异"></span>
+                    </div>
                 </div>
                 <div class="preview-title-extra">
-					<span id="diffStatusIndicator">智能识别: 关闭</span>
+                    <span id="diffStatusIndicator">智能识别: 关闭</span>
                     <span id="longTextWarning" style="display: none;"></span>
-					<label class="toggle-switch" title="开启/关闭智能识别关联功能">
-					    <input type="checkbox" id="diffTrackingToggle">
-					    <span class="slider"></span>
-					</label>
-				</div>
+                    <label class="toggle-switch" title="开启/关闭智能识别关联功能">
+                        <input type="checkbox" id="diffTrackingToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
                 <div class="title-toolbar">
                     <select id="format">
                         <option value="image" selected>图片</option>
@@ -742,6 +1207,9 @@
                     <button class="primary" onclick="exportFile(event)">导出文件</button>
                     <p class="notice">提示：生成图片/PDF可能需5-10秒</p>
                 </div>
+                <button id="togglePreviewButton" class="icon-button small title-collapse-btn" title="收起预览区">
+                    <!-- SVG will be injected by JS -->
+                </button>
             </div>
             <div class="card-body">
                 <div class="markdown-body" id="preview"></div>
@@ -749,20 +1217,21 @@
         </div>
     </div>
 
-     <!-- Load/Save Markdown Modal -->
+    <!-- Load/Save Markdown Modal -->
     <div id="loadModal" class="modal">
         <div class="modal-content">
-             <div class="modal-header">
-                 <h2 id="modalTitle">加载已保存的 Markdown</h2>
-                 <button class="modal-close-btn" onclick="hideLoadModal()" title="关闭">&times;</button>
-             </div>
-             <div class="modal-toolbar">
+            <div class="modal-header">
+                <h2 id="modalTitle">加载已保存的 Markdown</h2>
+                <button class="modal-close-btn" onclick="hideLoadModal()" title="关闭">&times;</button>
+            </div>
+            <div class="modal-toolbar">
                 <input type="search" id="searchInput" placeholder="按名称搜索..." oninput="filterSavedItems()">
-                <button id="saveAsVersionButton" class="primary" onclick="handleSaveAsVersion()" style="display: none;">另存为版本...</button>
+                <button id="saveAsVersionButton" class="primary" onclick="handleSaveAsVersion()"
+                    style="display: none;">另存为版本...</button>
                 <button id="saveNewButton" class="primary" onclick="handleSaveNew()">另存为新...</button>
-             </div>
+            </div>
             <ul id="savedItemList" class="saved-item-list">
-                 <li class="no-items">没有找到已保存的文档。</li>
+                <li class="no-items">没有找到已保存的文档。</li>
             </ul>
         </div>
     </div>
@@ -770,12 +1239,12 @@
     <!-- Edit History Modal -->
     <div id="historyModal" class="modal">
         <div class="modal-content">
-             <div class="modal-header">
-                 <h2 id="historyModalTitle">编辑历史记录</h2>
-                 <button class="modal-close-btn" onclick="hideHistoryModal()" title="关闭">&times;</button>
-             </div>
+            <div class="modal-header">
+                <h2 id="historyModalTitle">编辑历史记录</h2>
+                <button class="modal-close-btn" onclick="hideHistoryModal()" title="关闭">&times;</button>
+            </div>
             <ul id="historyItemList" class="history-item-list">
-                 <li class="no-items">没有编辑历史记录。</li>
+                <li class="no-items">没有编辑历史记录。</li>
             </ul>
         </div>
     </div>
@@ -826,7 +1295,8 @@
                 <label for="diffMatchThresholdInput">原文相似度要求 (%)</label>
                 <div class="input-group">
                     <input type="range" id="diffMatchThresholdRange" min="50" max="100" step="1">
-                    <input type="number" id="diffMatchThresholdInput" min="50" max="100" step="1" style="width: 70px;"> %
+                    <input type="number" id="diffMatchThresholdInput" min="50" max="100" step="1" style="width: 70px;">
+                    %
                 </div>
                 <p class="config-note">当已保存文档中，至少有这个百分比的内容还存在于当前编辑区时，系统会认为您仍在修改该文档。范围50% - 100%。</p>
             </div>
@@ -841,9 +1311,11 @@
 
     <!-- 独立示例内容 -->
     <script id="sampleMarkdown" type="text/template">
-# 欢迎使用 Markdown 编辑与转换工具 (v2.4) 👋
+# 欢迎使用 Markdown 编辑与转换工具 (v2.5 - powered by Markdown-it) 👋
 
-您好！本工具旨在为您提供一个**高度轻量化、高效、便捷**的 Markdown 文档在线编辑与多格式转换体验。为了让您快速掌握其核心价值，请首先了解以下几大核心功能，随后我们将提供详细的使用手册。
+您好！本工具旨在为您提供一个**高度轻量化、高效、便捷**的 Markdown 文档在线编辑与多格式转换体验。它基于强大的 Markdown-it 解析器，不仅支持所有标准 Markdown 语法，还内置了诸多实用扩展，如：**Mermaid 图表、任务列表、脚注、自定义容器**等，助您轻松创作富文本内容。
+
+为了让您快速掌握其核心价值，请首先了解以下几大核心功能。详细的 Markdown 语法参考及 Markdown-it 特性示例见文末附录。
 
 ## 🚀 一、核心功能概览
 
@@ -955,8 +1427,7 @@
     *   点击【导出文件】按钮。文件将开始生成并下载。
     *   *提示：图片/PDF 生成可能需要几秒钟。PDF为图片格式，文字不可选。*
 
-
-## 🌱 四、未来计划
+## 🌱 三、未来计划
 
 我们计划持续优化并添加新功能，例如：
 
@@ -964,6 +1435,202 @@
 - **编辑增强：** 编辑器内查找替换等。
 - ...以及更多惊喜！
 
+---
+
+## 📚 附录：Markdown 语法参考
+
+本编辑器采用 Markdown-it 解析器，支持 GFM (GitHub Flavored Markdown) 标准语法及多种实用扩展。
+
+### (一) 基础语法
+
+#### 1. 标题 (Headers)
+```markdown
+# 这是一级标题 (H1)
+## 这是二级标题 (H2)
+### 这是三级标题 (H3)
+#### 这是四级标题 (H4)
+##### 这是五级标题 (H5)
+###### 这是六级标题 (H6)
+```
+
+#### 2. 强调 (Emphasis)
+```markdown
+*这是斜体文本*
+_这也是斜体文本_
+
+**这是粗体文本**
+__这也是粗体文本__
+
+***这是粗斜体文本***
+___这也是粗斜体文本___
+```
+
+#### 3. 列表 (Lists)
+##### 无序列表
+```markdown
+- 项目一
+- 项目二
+    - 子项目 A
+    - 子项目 B
+* 项目三
++ 项目四
+```
+##### 有序列表
+```markdown
+1. 第一项
+2. 第二项
+    1. 子项 1
+    2. 子项 2
+3. 第三项
+```
+
+#### 4. 链接 (Links)
+```markdown
+这是[行内链接](https://example.com)，而这是[引用链接][1]
+
+[1]: https://example.com "可选标题"
+```
+
+#### 5. 图片 (Images)
+```markdown
+![替代文本](image.jpg "图片标题")
+```
+
+#### 6. 代码 (Code)
+##### 行内代码
+`这是行内代码块`
+
+##### 代码块 (Fenced Code Blocks)
+```javascript
+function greet(name) {
+    console.log("Hello, " + name + "!");
+}
+greet("World");
+```
+
+#### 7. 引用 (Blockquotes)
+```markdown
+> 这是一个引用块。
+>
+> > 嵌套引用。
+```
+
+#### 8. 分隔线 (Horizontal Rules)
+```markdown
+---
+***
+___
+```
+
+#### 9. 表格 (Tables) - GFM
+```markdown
+| 表头1 | 表头2 | 表头3 |
+| :---- | :---: | ----: |
+| 左对齐 | 居中  | 右对齐 |
+| 内容A | 内容B | 内容C |
+```
+**效果:**
+
+| 表头1 | 表头2 | 表头3 |
+| :---- | :---: | ----: |
+| 左对齐 | 居中  | 右对齐 |
+| 内容A | 内容B | 内容C |
+
+---
+
+### (二) Markdown-it 扩展特性示例 ✨
+
+此版本已切换到 Markdown-it 解析器，并支持更多高级语法：
+
+#### 1. Mermaid 图表 🧜‍♀️
+
+您现在可以直接在 Markdown 中嵌入 Mermaid 图表：
+
+```mermaid
+graph TD
+    A[Christmas] -->|Get money| B(Go shopping)
+    B --> C{Let me think}
+    C -->|One| D[Laptop]
+    C -->|Two| E[iPhone]
+    C -->|Three| F[fa:fa-car Car]
+```
+
+#### 2. 任务列表 (Task Lists) ✅
+
+- [x] 学习 Markdown-it
+- [ ] 掌握 Mermaid 集成
+- [ ] 发布新版本
+
+#### 3. 脚注 (Footnotes) [^1]
+
+这是一个带有脚注的句子。脚注内容在文档末尾定义。
+
+[^1]: 这是脚注的具体内容。
+
+#### 4. 自定义容器 (Custom Containers) 📦
+
+::: tip-text
+这是一个提示类型的自定义容器。
+:::
+
+::: warning-text
+这是一个警告类型的自定义容器。注意安全！
+:::
+
+::: info-text
+这是一个信息类型的自定义容器。
+:::
+
+::: danger-text
+这是一个危险类型的自定义容器。
+:::
+
+#### 5. 定义列表 (Definition Lists) 📚
+
+苹果
+:   一种常见的水果，富含维生素。
+
+香蕉
+:   另一种受欢迎的水果，能量来源。
+
+#### 6. 其他实用语法
+
+上标
+: `H^2^O` 渲染为 H^2^O
+
+下标
+: `CO~2~` 渲染为 CO~2~
+
+删除线
+: `~~删除~~` 渲染为 ~~删除~~
+
+下划线 (Insert)
+: `++下划线++` 渲染为 ++下划线++
+
+高亮文本 (Mark)
+: `==高亮文本==` 渲染为 ==高亮文本==
+
+表情符号 (Emoji)
+: `:smile:` 渲染为 :smile:
+: `:tada:` 渲染为 :tada:
+: `:rocket:` 渲染为 :rocket:
+
+缩写标签
+: 写法：
+    ```markdown
+    The HTML specification
+    is maintained by the W3C.
+
+    *[HTML]: Hyper Text Markup Language
+    *[W3C]:  World Wide Web Consortium
+    ```
+: 渲染:
+    The HTML specification
+    is maintained by the W3C.
+
+    *[HTML]: Hyper Text Markup Language
+    *[W3C]:  World Wide Web Consortium
+---
 
 > 感谢您的耐心阅读！希望本指南能助您轻松驾驭这款 Markdown 工具。祝您使用愉快！🎉
     </script>
@@ -982,9 +1649,10 @@
         const historyModal = document.getElementById('historyModal');
         const historyItemList = document.getElementById('historyItemList');
         const loadSampleOrRevertButton = document.getElementById('loadSampleOrRevertButton');
-		const wordCountIndicator = document.getElementById('wordCountIndicator'); 
+        const wordCountIndicator = document.getElementById('wordCountIndicator');
         const dragDropOverlay = document.getElementById('dragDropOverlay');
 
+        let md; // Markdown-it instance
 
         const DB_NAME = 'markdownDB';
         const SAVED_STORE_NAME = 'savedMarkdown';
@@ -997,17 +1665,15 @@
 
         // --- Intelligent Association & Performance Variables ---
         let LONG_TEXT_THRESHOLD = 20000; // Default, will be loaded from localStorage
-        let wasDiffTrackingEnabledBeforeLongText = null; 
+        let wasDiffTrackingEnabledBeforeLongText = null;
         let isDiffTrackingEnabled = false;
-        let diffAlgorithmType = 'chars'; 
-        let diffDebounceTime = 1500; 
-        let diffMatchThreshold = 0.85; 
+        let diffAlgorithmType = 'chars';
+        let diffDebounceTime = 1500;
+        let diffMatchThreshold = 0.85;
         const SIGNIFICANT_MODIFICATION_THRESHOLD = 0.97; // MODIFIED from 0.95
-        let jsdiffInstance = null; 
+        let jsdiffInstance = null;
         let diffDebounceTimeout = null;
         let currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] };
-        // activeSavedDocument.id can now be 'imported-[timestamp]' for dragged/imported files
-        // not yet saved to DB, or a numeric ID for files from DB.
         let activeSavedDocument = { id: null, name: null, originalContent: null, isImported: false };
 
 
@@ -1024,48 +1690,56 @@
         const autoDisableDiffForLongTextToggle = document.getElementById('autoDisableDiffForLongTextToggle');
         const longTextWarningSpan = document.getElementById('longTextWarning');
         const autoDisableDiffInfoSpan = document.getElementById('autoDisableDiffInfo');
-		const activeDocInfoContainer = document.getElementById('activeDocInfoContainer');
-		const activeDocNameEl = document.getElementById('activeDocNameIndicator');
-		const activeDocStatusEl = document.getElementById('activeDocStatusIndicator');
-		const dissociateActiveDocButton = document.getElementById('dissociateActiveDocButton');
+        const activeDocInfoContainer = document.getElementById('activeDocInfoContainer');
+        const activeDocNameEl = document.getElementById('activeDocNameIndicator');
+        const activeDocStatusEl = document.getElementById('activeDocStatusIndicator');
+        const dissociateActiveDocButton = document.getElementById('dissociateActiveDocButton');
         let previewUpdateDebounceTimeout;
         const DEBOUNCE_DELAY_PREVIEW = 250;
-		
-		// --- Function to calculate and update word count ---
-		function updateWordCount() {
-		    if (!editor || !wordCountIndicator) return;
-		
-		    const text = editor.value.trim();
-		    let charCount = text.length;
-		    
-		    let wordCount = 0;
-		    if (text) {
-		        const words = text.split(/\s+/).filter(s => s.length > 0);
-		        wordCount = words.length;
-		    }
-		
-		    wordCountIndicator.textContent = `字符: ${charCount.toLocaleString()} | 词语: ${wordCount.toLocaleString()}`;
-		    wordCountIndicator.title = `字符数: ${charCount.toLocaleString()}, 词语数 (按空格/换行分隔): ${wordCount.toLocaleString()}`;
-		    wordCountIndicator.style.display = charCount > 0 ? 'inline' : 'none';
-		}
 
-        // --- Toast Notification ---
-		function showToast(message, duration = 3000) {
-		    document.querySelectorAll('.toast-message').forEach(t => t.remove());
+        // --- Pane Collapse Variables ---
+        let editorPaneCollapsed = false;
+        let previewPaneCollapsed = false;
+        const editorPane = document.querySelector('.editor-box');
+        const previewPane = document.querySelector('.preview-box');
+        const pageContainer = document.querySelector('.container'); // Renamed to avoid conflict
+        const toggleEditorBtn = document.getElementById('toggleEditorButton');
+        const togglePreviewBtn = document.getElementById('togglePreviewButton');
+
+        const ICONS = {
+            chevronLeft: '<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"><path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 1.06L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z"></path></svg>',
+            chevronRight: '<svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path></svg>'
+        };
+
+        function updateWordCount() {
+            if (!editor || !wordCountIndicator) return;
+            const text = editor.value.trim();
+            let charCount = text.length;
+            let wordCount = 0;
+            if (text) {
+                const words = text.split(/\s+/).filter(s => s.length > 0);
+                wordCount = words.length;
+            }
+            wordCountIndicator.textContent = `字符: ${charCount.toLocaleString()} | 词语: ${wordCount.toLocaleString()}`;
+            wordCountIndicator.title = `字符数: ${charCount.toLocaleString()}, 词语数 (按空格/换行分隔): ${wordCount.toLocaleString()}`;
+            wordCountIndicator.style.display = charCount > 0 ? 'inline' : 'none';
+        }
+
+        function showToast(message, duration = 3000) {
+            document.querySelectorAll('.toast-message').forEach(t => t.remove());
             const toast = document.createElement('div');
             toast.textContent = message;
-		    toast.className = 'toast-message';
-		    document.body.appendChild(toast);
-		    requestAnimationFrame(() => {
+            toast.className = 'toast-message';
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => {
                 requestAnimationFrame(() => { toast.classList.add('show'); });
             });
-		    setTimeout(() => {
-		        toast.classList.remove('show');
-		        toast.addEventListener('transitionend', () => toast.remove());
-		    }, duration);
-		}
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, duration);
+        }
 
-        // --- Editor & Indentation Logic ---
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault(); handleIndentation('indent');
@@ -1087,8 +1761,8 @@
                     if (line.startsWith(tab)) { editor.setRangeText('', lineStart, lineStart + tab.length, 'end'); }
                     else if (line.startsWith('\t')) { editor.setRangeText('', lineStart, lineStart + 1, 'end'); }
                     else {
-                         const leadingSpaces = line.match(/^[ ]{1,4}/);
-                         if (leadingSpaces) { editor.setRangeText('', lineStart, lineStart + leadingSpaces[0].length, 'end'); }
+                        const leadingSpaces = line.match(/^[ ]{1,4}/);
+                        if (leadingSpaces) { editor.setRangeText('', lineStart, lineStart + leadingSpaces[0].length, 'end'); }
                     }
                 }
             } else {
@@ -1105,15 +1779,15 @@
                         if (line.startsWith(tab)) { modifiedText += line.substring(tab.length); currentLineShift = -tab.length; }
                         else if (line.startsWith('\t')) { modifiedText += line.substring(1); currentLineShift = -1; }
                         else {
-                             const leadingSpaces = line.match(/^[ ]{1,4}/);
-                             if (leadingSpaces) { modifiedText += line.substring(leadingSpaces[0].length); currentLineShift = -leadingSpaces[0].length; }
-                             else { modifiedText += line; }
+                            const leadingSpaces = line.match(/^[ ]{1,4}/);
+                            if (leadingSpaces) { modifiedText += line.substring(leadingSpaces[0].length); currentLineShift = -leadingSpaces[0].length; }
+                            else { modifiedText += line; }
                         }
                     }
                     if (index < lines.length - 1) { modifiedText += '\n'; }
                     if (index === 0) {
-                         if (start > selectionLineStart) { lineShiftFirst = currentLineShift > 0 ? tab.length : Math.max(currentLineShift, -(start - selectionLineStart)); }
-                         else { lineShiftFirst = currentLineShift; }
+                        if (start > selectionLineStart) { lineShiftFirst = currentLineShift > 0 ? tab.length : Math.max(currentLineShift, -(start - selectionLineStart)); }
+                        else { lineShiftFirst = currentLineShift; }
                     }
                 });
                 editor.setRangeText(modifiedText, selectionLineStart, end, 'select');
@@ -1122,52 +1796,108 @@
                 const finalEnd = end + lengthDifference;
                 editor.setSelectionRange(finalStart, finalEnd);
             }
-            requestPreviewUpdate(); 
-            triggerHistorySave(); 
+            requestPreviewUpdate();
+            triggerHistorySave();
             checkAndManageDiffForLongText();
-            handleContentChangeForAssociation(); 
+            handleContentChangeForAssociation();
             updateLoadSampleOrRevertButtonState();
         }
 
+        // --- Markdown-it Initialization ---
+        function initializeMarkdownIt() {
 
-        // --- Core Editor and Preview Logic ---
-        marked.setOptions({
-            highlight: (code, lang) => {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                try {
-                     if (language) { return hljs.highlight(code, { language, ignoreIllegals: true }).value; }
-                } catch (e) { console.error(`Highlighting error for lang ${lang}:`, e); }
-                try { return hljs.highlightAuto(code).value; }
-                catch (autoError) {
-                    console.error("Auto highlighting failed:", autoError);
-                    const escapedCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    return `<pre><code class="hljs">${escapedCode}</code></pre>`;
+            function markdownItMermaid(md) {
+                const defaultRenderer = md.renderer.rules.fence;
+
+                md.renderer.rules.fence = function (tokens, idx, options, env, renderer) {
+                    const token = tokens[idx];
+                    const info = token.info ? token.info.trim() : '';
+
+                    if (info === 'mermaid') {
+                        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                        return `<div class="mermaid" id="${id}">${token.content}</div>`;
+                    }
+
+                    return defaultRenderer(tokens, idx, options, env, renderer);
+                };
+            }
+
+            md = window.markdownit({
+                html: true,        // Enable HTML tags in source
+                xhtmlOut: false,   // Use '/' in tags like <br />
+                breaks: true,      // Convert '\n' in paragraphs into <br>
+                langPrefix: 'language-', // CSS language prefix for fenced blocks
+                linkify: true,     // Autoconvert URL-like text to links
+                typographer: true, // Enable some language-neutral replacement + quotes beautification
+                highlight: function (str, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        try {
+                            return hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+                        } catch (__) { }
+                    }
+                    try { // Fallback to auto-highlighting if specific lang fails or not provided
+                        return hljs.highlightAuto(str).value;
+                    } catch (__) { }
+                    return md.utils.escapeHtml(str); // use 'md.utils.escapeHtml(str)' if you want to escape and show as plain text
                 }
-            },
-            breaks: true, gfm: true
-        });
+            });
+
+            // Use plugins
+            if (window.markdownitFootnote) md.use(window.markdownitFootnote);
+            if (window.markdownitTaskLists) md.use(window.markdownitTaskLists, { enabled: true, label: true, labelAfter: true });
+            if (window.markdownitContainer) {
+                md.use(window.markdownitContainer, 'warning-text');
+                md.use(window.markdownitContainer, 'tip-text');
+                md.use(window.markdownitContainer, 'info-text');
+                md.use(window.markdownitContainer, 'danger-text');
+                // You can add more container types here
+            }
+            if (window.markdownitEmoji) md.use(window.markdownitEmoji);
+            if (window.markdownitDeflist) md.use(window.markdownitDeflist);
+            if (window.markdownitMermaid) md.use(window.markdownitMermaid);
+            if (window.markdownitMark) md.use(window.markdownitMark);
+            if (window.markdownitSub) md.use(window.markdownitSub);
+            if (window.markdownitSup) md.use(window.markdownitSup);
+            if (window.markdownitIns) md.use(window.markdownitIns);
+            if (window.markdownitLinkAttributes) md.use(window.markdownitLinkAttributes, { attrs: { target: '_blank', rel: 'noopener', class: 'external-link' } });
+            if (window.markdownitAbbr) md.use(window.markdownitAbbr);
+
+            md.use(markdownItMermaid);
+            // Initialize Mermaid.js
+            if (window.mermaid) {
+                mermaid.initialize({
+                    startOnLoad: true,
+                    theme: 'default',
+                    flowchart: {
+                        useMaxWidth: true,
+                        htmlLabels: true
+                    }
+                });
+            }
+        }
+
 
         function handleLoadSampleOrRevert() {
             if (activeSavedDocument.id && editor.value !== activeSavedDocument.originalContent) {
                 if (confirm(`确定要放弃当前对文档 "${activeSavedDocument.name}" 的更改，并恢复到原始内容吗？此操作无法撤销。`)) {
                     editor.value = activeSavedDocument.originalContent;
                     requestPreviewUpdate();
-                    triggerHistorySave(); 
+                    triggerHistorySave();
                     checkAndManageDiffForLongText();
-                    handleContentChangeForAssociation(); // This will re-evaluate, rate should be 1.0
+                    handleContentChangeForAssociation();
                     updateLoadSampleOrRevertButtonState();
-					updateWordCount();
+                    updateWordCount();
                     showToast(`已恢复文档 "${activeSavedDocument.name}" 的原始内容。`);
                 }
             } else {
                 editor.value = sampleContent;
                 requestPreviewUpdate();
                 showToast("示例内容已加载");
-                lastSavedHistoryContent = null; 
-                clearActiveSavedDocumentState(true); 
+                lastSavedHistoryContent = null;
+                clearActiveSavedDocumentState(true);
                 checkAndManageDiffForLongText();
                 updateLoadSampleOrRevertButtonState();
-				updateWordCount();
+                updateWordCount();
             }
         }
 
@@ -1189,18 +1919,26 @@
             }, DEBOUNCE_DELAY_PREVIEW);
         }
 
-        function updatePreview() { 
+        async function updatePreview() {
             try {
-                 preview.innerHTML = marked.parse(editor.value);
-                 hljs.highlightAll();
+                if (!md) initializeMarkdownIt(); // Ensure md is initialized
+                preview.innerHTML = md.render(editor.value);
+
+                // Render Mermaid diagrams
+                if (window.mermaid) {
+                    await mermaid.run({
+                        nodes: preview.querySelectorAll('.mermaid')
+                    }).catch(err => {
+                        console.error("Mermaid rendering error in preview:", err);
+                    });
+                }
             } catch (e) {
-                 console.error("Markdown Parsing Error:", e);
-                 preview.innerHTML = `<p style="color: red;">Error parsing Markdown. Check console for details.</p>`;
+                console.error("Markdown Parsing/Rendering Error:", e);
+                preview.innerHTML = `<p style="color: red;">Error parsing Markdown. Check console for details.</p>`;
             }
         }
 
-        // --- File Import (Button Click) Logic ---
-        function importMarkdownFile() { 
+        function importMarkdownFile() {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.md,.txt,text/markdown,text/plain';
@@ -1218,30 +1956,24 @@
             fileInput.click();
         }
 
-        // --- Common logic for handling imported file content (from button or drag-drop) ---
         function handleImportedFileContent(content, filename, sourceType = 'drag-drop') {
             editor.value = content?.replace(/\r/g, '');
-            
-            clearActiveSavedDocumentState(true); // Clear previous state, true for destructive load
-
+            clearActiveSavedDocumentState(true);
             activeSavedDocument.id = `imported-${Date.now()}`;
-            activeSavedDocument.name = filename.replace(/\.[^/.]+$/, ""); // Remove extension for name
+            activeSavedDocument.name = filename.replace(/\.[^/.]+$/, "");
             activeSavedDocument.originalContent = content?.replace(/\r/g, '');
-            activeSavedDocument.isImported = true; // Mark as imported
-
-            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] }; // Reset diff
-
+            activeSavedDocument.isImported = true;
+            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] };
             requestPreviewUpdate();
             triggerHistorySave();
             showToast(`文件 "${filename}" 已通过${sourceType === 'button' ? '按钮' : '拖放'}导入！`);
             checkAndManageDiffForLongText();
-            updateActiveDocIndicators(); // Crucial to show new active doc name/status
+            updateActiveDocIndicators();
             updateLoadSampleOrRevertButtonState();
             updateWordCount();
         }
 
 
-        // --- Export Logic ---
         async function exportFile(event) {
             const format = document.getElementById('format').value;
             const markdownInput = editor.value;
@@ -1251,8 +1983,10 @@
             exportButton.disabled = true;
             exportButton.textContent = '导出中...';
 
-            const baseFilename = generateBaseFilename(); 
-            let filenameWithExt = `${baseFilename}.txt`; 
+            if (!md) initializeMarkdownIt(); // Ensure md is initialized
+
+            const baseFilename = generateBaseFilename();
+            let filenameWithExt = `${baseFilename}.txt`;
 
             if (format === 'markdown') {
                 try {
@@ -1271,34 +2005,46 @@
                 }
                 return;
             }
+
+            // For other formats, render Markdown to HTML first
+            let renderedHtml;
             try {
-                preview.innerHTML = marked.parse(markdownInput);
-                hljs.highlightAll();
+                renderedHtml = md.render(markdownInput);
             } catch (e) {
                 showToast(`Markdown 解析错误，无法导出: ${e.message}`);
+                console.error("Markdown rendering error for export:", e);
                 exportButton.disabled = false;
                 exportButton.textContent = originalButtonText;
                 return;
             }
-            const previewElement = document.getElementById('preview');
+
+            const previewElement = document.getElementById('preview'); // Used for styling reference
             const captureContainer = document.createElement('div');
-            captureContainer.className = 'markdown-body';
+            captureContainer.className = 'markdown-body'; // Apply github-markdown styles
             Object.assign(captureContainer.style, {
                 position: 'absolute', left: '-9999px', top: '0px',
-                padding: '2rem', background: 'var(--preview-bg)',
-                width: previewElement.scrollWidth + 'px',
+                padding: '2rem', background: getComputedStyle(document.documentElement).getPropertyValue('--preview-bg').trim() || '#ffffff',
+                width: previewElement.scrollWidth + 'px', // Use current preview width as a base
                 minWidth: '600px', height: 'auto', overflow: 'visible',
                 boxSizing: 'content-box'
             });
-            const clonedPreview = previewElement.cloneNode(true);
-            captureContainer.appendChild(clonedPreview);
+            captureContainer.innerHTML = renderedHtml; // Put rendered HTML into the capture container
             document.body.appendChild(captureContainer);
 
+            // Wait for DOM updates and render Mermaid diagrams within the captureContainer
             await new Promise(resolve => requestAnimationFrame(resolve));
-            await new Promise(resolve => setTimeout(resolve, 150));
+            if (window.mermaid) {
+                try {
+                    await mermaid.run({ nodes: captureContainer.querySelectorAll('.mermaid') });
+                } catch (mermaidError) {
+                    console.error("Mermaid rendering error in export container:", mermaidError);
+                    showToast("警告：Mermaid 图表在导出时渲染失败，可能不显示。", 4000);
+                }
+            }
+            await new Promise(resolve => setTimeout(resolve, 200)); // Extra delay for rendering complex SVGs
 
             try {
-                switch(format) {
+                switch (format) {
                     case 'image':
                     case 'pdf':
                         const scale = window.devicePixelRatio || 2;
@@ -1332,7 +2078,8 @@
                         break;
                     case 'html':
                         filenameWithExt = `${baseFilename}.html`;
-                        const fullHTML = createFullHtml(clonedPreview.innerHTML);
+                        // captureContainer.innerHTML already has the rendered HTML including SVGs
+                        const fullHTML = createFullHtml(captureContainer.innerHTML);
                         triggerDownload(
                             URL.createObjectURL(new Blob([fullHTML], { type: 'text/html;charset=UTF-8' })),
                             filenameWithExt
@@ -1341,7 +2088,7 @@
                         break;
                     case 'docx':
                         filenameWithExt = `${baseFilename}.docx`;
-                        const docxHtmlString = createFullHtml(clonedPreview.innerHTML);
+                        const docxHtmlString = createFullHtml(captureContainer.innerHTML);
                         if (typeof htmlDocx === 'undefined') throw new Error("html-docx-js library not loaded.");
                         const fileBlob = htmlDocx.asBlob(docxHtmlString);
                         triggerDownload(URL.createObjectURL(fileBlob), filenameWithExt);
@@ -1358,7 +2105,7 @@
             }
         }
 
-        function createFullHtml(bodyContent) { 
+        function createFullHtml(bodyContent) {
             return `
                 <!DOCTYPE html>
                 <html lang="zh-CN" xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -1376,6 +2123,18 @@
                         th, td { border: 1px solid #dfe2e5; padding: 6px 13px; }
                         blockquote { border-left: .25em solid #dfe2e5; color: #6a737d; padding: 0 1em; margin-left: 0; }
                         :root { --preview-bg: #ffffff; --border-color: #e1e4e8; }
+                        /* Mermaid diagram centering for export */
+                        .mermaid { display: flex; justify-content: center; margin: 1em 0; }
+                        .mermaid svg { max-width: 100%; height: auto; }
+                        /* Task lists styling */
+                        .task-list-item { list-style-type: none; }
+                        .task-list-item input[type="checkbox"] { margin: 0 0.2em 0.25em -1.6em; vertical-align: middle; }
+                        /* Styles for custom containers */
+                        .markdown-body .custom-container { padding: .01em 16px; margin-top: 16px!important; margin-bottom: 16px!important; border-radius: 4px; }
+                        .markdown-body .custom-container.warning { background-color: #fffbe6; border-left: 4px solid #ffc107; }
+                        .markdown-body .custom-container.tip { background-color: #e7f3fe; border-left: 4px solid #2196F3; }
+                        .markdown-body .custom-container.info { background-color: #ddf4ff; border-left: 4px solid #00bcd4; }
+                        .markdown-body .custom-container-title { font-weight: bold; margin-bottom: 0.5em; }
                     </style>
                      <!--[if gte mso 9]>
                      <xml>
@@ -1395,7 +2154,7 @@
                 </html>
             `;
         }
-        function triggerDownload(dataURL, filename) { 
+        function triggerDownload(dataURL, filename) {
             const link = document.createElement('a');
             link.href = dataURL;
             link.download = filename;
@@ -1407,18 +2166,17 @@
             }
         }
 
-        // --- IndexedDB Logic ---
-        function initDB() { 
+        function initDB() {
             return new Promise((resolve, reject) => {
                 if (db) return resolve(db);
-                const request = indexedDB.open(DB_NAME, 2); 
+                const request = indexedDB.open(DB_NAME, 2);
                 request.onerror = (event) => reject("Database error: " + event.target.error);
                 request.onsuccess = (event) => {
                     db = event.target.result;
                     console.log("Database opened successfully (v2)");
-                     getLastHistoryEntryContent().then(content => {
-                         lastSavedHistoryContent = content;
-                     }).catch(err => console.error("Error getting initial last history entry:", err));
+                    getLastHistoryEntryContent().then(content => {
+                        lastSavedHistoryContent = content;
+                    }).catch(err => console.error("Error getting initial last history entry:", err));
                     resolve(db);
                 };
                 request.onupgradeneeded = (event) => {
@@ -1438,53 +2196,53 @@
                 };
             });
         }
-        async function saveMarkdown(name, content) { 
-             try {
+        async function saveMarkdown(name, content) {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(SAVED_STORE_NAME);
                 const timestamp = new Date();
                 const request = store.add({ name, content, timestamp });
                 return new Promise((resolve, reject) => {
-                    request.onsuccess = () => resolve(request.result); 
+                    request.onsuccess = () => resolve(request.result);
                     request.onerror = (event) => reject("Error saving: " + event.target.error);
                     transaction.onerror = (event) => reject("Save transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`保存失败: ${error}`); throw error; }
         }
-        async function updateMarkdown(id, name, content) { 
-             try {
+        async function updateMarkdown(id, name, content) {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(SAVED_STORE_NAME);
                 const timestamp = new Date();
-                const request = store.put({ id, name, content, timestamp }); // ID must be numeric for DB
-                 return new Promise((resolve, reject) => {
+                const request = store.put({ id, name, content, timestamp });
+                return new Promise((resolve, reject) => {
                     request.onsuccess = () => resolve(id);
                     request.onerror = (event) => reject("Error updating: " + event.target.error);
                     transaction.onerror = (event) => reject("Update transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`更新失败: ${error}`); throw error; }
         }
-        async function loadAllMarkdown() { 
-             try {
+        async function loadAllMarkdown() {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readonly');
                 const store = transaction.objectStore(SAVED_STORE_NAME);
                 const index = store.index('timestamp');
                 const request = index.getAll();
-                 return new Promise((resolve, reject) => {
-                     request.onsuccess = () => {
-                         const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
-                         resolve(sortedResults);
-                     };
-                     request.onerror = (event) => reject("Error loading all: " + event.target.error);
-                     transaction.onerror = (event) => reject("Load all transaction error: " + event.target.error);
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => {
+                        const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
+                        resolve(sortedResults);
+                    };
+                    request.onerror = (event) => reject("Error loading all: " + event.target.error);
+                    transaction.onerror = (event) => reject("Load all transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`加载列表失败: ${error}`); return []; }
         }
-        async function loadMarkdownById(id) { 
-             try {
+        async function loadMarkdownById(id) {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readonly');
                 const store = transaction.objectStore(SAVED_STORE_NAME);
@@ -1492,25 +2250,24 @@
                 return new Promise((resolve, reject) => {
                     request.onsuccess = () => resolve(request.result);
                     request.onerror = (event) => reject("Error loading by ID: " + event.target.error);
-                     transaction.onerror = (event) => reject("Load ID transaction error: " + event.target.error);
+                    transaction.onerror = (event) => reject("Load ID transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`加载文档失败: ${error}`); return null; }
         }
-        async function deleteMarkdownById(id) { 
-             try {
+        async function deleteMarkdownById(id) {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([SAVED_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(SAVED_STORE_NAME);
                 const request = store.delete(id);
-                 return new Promise((resolve, reject) => {
+                return new Promise((resolve, reject) => {
                     request.onsuccess = () => resolve(true);
                     request.onerror = (event) => reject("Error deleting: " + event.target.error);
-                     transaction.onerror = (event) => reject("Delete transaction error: " + event.target.error);
+                    transaction.onerror = (event) => reject("Delete transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`删除失败: ${error}`); return false; }
         }
 
-        // --- EDIT HISTORY Logic ---
         function scheduleHistorySave() { clearTimeout(historySaveTimeout); historySaveTimeout = setTimeout(saveCurrentStateToHistory, 2000); }
         function triggerHistorySave() { clearTimeout(historySaveTimeout); setTimeout(saveCurrentStateToHistory, 0); }
         async function saveCurrentStateToHistory() {
@@ -1523,15 +2280,15 @@
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
                 const request = store.add({ content, timestamp: new Date() });
                 request.onsuccess = (e) => {
-                    lastSavedHistoryContent = content; 
+                    lastSavedHistoryContent = content;
                     pruneHistory();
                 };
                 request.onerror = (event) => console.error("Error saving history entry:", event.target.error);
                 transaction.onerror = (event) => console.error("History save transaction error:", event.target.error);
             } catch (error) { console.error("Failed to initiate history save:", error); }
         }
-        async function pruneHistory() { 
-             try {
+        async function pruneHistory() {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
@@ -1541,15 +2298,15 @@
                     if (count > HISTORY_LIMIT) {
                         const itemsToDelete = count - HISTORY_LIMIT;
                         let deletedCount = 0;
-                        const index = store.index('timestamp'); 
-                        const cursorRequest = index.openCursor(null, 'next'); 
+                        const index = store.index('timestamp');
+                        const cursorRequest = index.openCursor(null, 'next');
                         cursorRequest.onsuccess = (event) => {
                             const cursor = event.target.result;
                             if (cursor && deletedCount < itemsToDelete) {
-                                cursor.delete(); 
-                                deletedCount++; 
+                                cursor.delete();
+                                deletedCount++;
                                 cursor.continue();
-                            } else { 
+                            } else {
                                 if (deletedCount > 0) console.log(`Pruning complete. Deleted ${deletedCount} entries.`);
                             }
                         };
@@ -1557,10 +2314,10 @@
                     }
                 };
                 countRequest.onerror = (event) => console.error("Error counting history items:", event.target.error);
-                 transaction.onerror = (event) => console.error("History prune transaction error:", event.target.error);
+                transaction.onerror = (event) => console.error("History prune transaction error: " + event.target.error);
             } catch (error) { console.error("Failed to initiate history pruning:", error); }
         }
-        async function loadAllHistory() { 
+        async function loadAllHistory() {
             try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
@@ -1568,17 +2325,17 @@
                 const index = store.index('timestamp');
                 const request = index.getAll();
                 return new Promise((resolve, reject) => {
-                     request.onsuccess = () => {
-                         const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp); 
-                         resolve(sortedResults);
-                     };
-                     request.onerror = (event) => reject("Error loading history: " + event.target.error);
-                     transaction.onerror = (event) => reject("Load history transaction error: " + event.target.error);
+                    request.onsuccess = () => {
+                        const sortedResults = request.result.sort((a, b) => b.timestamp - a.timestamp);
+                        resolve(sortedResults);
+                    };
+                    request.onerror = (event) => reject("Error loading history: " + event.target.error);
+                    transaction.onerror = (event) => reject("Load history transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`加载历史失败: ${error}`); return []; }
         }
-        async function loadHistoryById(id) { 
-             try {
+        async function loadHistoryById(id) {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
@@ -1586,63 +2343,59 @@
                 return new Promise((resolve, reject) => {
                     request.onsuccess = () => resolve(request.result);
                     request.onerror = (event) => reject("Error loading history ID: " + event.target.error);
-                     transaction.onerror = (event) => reject("Load history ID transaction error: " + event.target.error);
+                    transaction.onerror = (event) => reject("Load history ID transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`加载历史条目失败: ${error}`); return null; }
         }
-        async function deleteHistoryById(id) { 
-             try {
+        async function deleteHistoryById(id) {
+            try {
                 const dbInstance = await initDB();
                 const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(HISTORY_STORE_NAME);
                 const request = store.delete(id);
-                 return new Promise((resolve, reject) => {
+                return new Promise((resolve, reject) => {
                     request.onsuccess = () => resolve(true);
                     request.onerror = (event) => reject("Error deleting history: " + event.target.error);
-                     transaction.onerror = (event) => reject("Delete history transaction error: " + event.target.error);
+                    transaction.onerror = (event) => reject("Delete history transaction error: " + event.target.error);
                 });
             } catch (error) { showToast(`删除历史失败: ${error}`); return false; }
         }
-         async function getLastHistoryEntryContent() { 
-             return new Promise(async (resolve, reject) => {
-                 try {
+        async function getLastHistoryEntryContent() {
+            return new Promise(async (resolve, reject) => {
+                try {
                     const dbInstance = await initDB();
                     const transaction = dbInstance.transaction([HISTORY_STORE_NAME], 'readonly');
                     const store = transaction.objectStore(HISTORY_STORE_NAME);
                     const index = store.index('timestamp');
-                    const cursorRequest = index.openCursor(null, 'prev'); 
+                    const cursorRequest = index.openCursor(null, 'prev');
                     cursorRequest.onsuccess = (event) => {
                         const cursor = event.target.result;
                         resolve(cursor ? cursor.value.content : null);
                     };
                     cursorRequest.onerror = (event) => reject("Error getting last history entry: " + event.target.error);
                     transaction.onerror = (event) => reject("Last history transaction error: " + event.target.error);
-                 } catch (error) { reject("Failed to initiate get last history: " + error); }
-             });
-         }
+                } catch (error) { reject("Failed to initiate get last history: " + error); }
+            });
+        }
 
 
-        // --- Intelligent Association & Performance Logic ---
         function loadDiffSettings() {
             isDiffTrackingEnabled = localStorage.getItem('diffTrackingEnabled') === 'true';
             diffAlgorithmType = localStorage.getItem('diffAlgorithmType') || 'chars';
             diffDebounceTime = parseInt(localStorage.getItem('diffDebounceTime'), 10) || 1500;
             if (diffDebounceTime < 1000) diffDebounceTime = 1000;
-            diffMatchThreshold = parseFloat(localStorage.getItem('diffMatchThreshold')) || 0.85; 
+            diffMatchThreshold = parseFloat(localStorage.getItem('diffMatchThreshold')) || 0.85;
             if (diffMatchThreshold < 0.5) diffMatchThreshold = 0.5;
             if (diffMatchThreshold > 1.0) diffMatchThreshold = 1.0;
-            
             LONG_TEXT_THRESHOLD = parseInt(localStorage.getItem('longTextThreshold'), 10) || 20000;
             if (LONG_TEXT_THRESHOLD < 5000) LONG_TEXT_THRESHOLD = 5000;
             const autoDisable = localStorage.getItem('autoDisableDiffForLongText');
             autoDisableDiffForLongTextToggle.checked = autoDisable === null ? true : (autoDisable === 'true');
-
-
             diffTrackingToggle.checked = isDiffTrackingEnabled;
             diffAlgorithmSelect.value = diffAlgorithmType;
             diffDebounceTimeInput.value = diffDebounceTime;
-            diffMatchThresholdInput.value = Math.round(diffMatchThreshold * 100); 
-            diffMatchThresholdRange.value = Math.round(diffMatchThreshold * 100); 
+            diffMatchThresholdInput.value = Math.round(diffMatchThreshold * 100);
+            diffMatchThresholdRange.value = Math.round(diffMatchThreshold * 100);
             longTextThresholdInput.value = LONG_TEXT_THRESHOLD;
             updateAutoDisableDiffInfoSpan();
             updateDiffStatusIndicator();
@@ -1652,43 +2405,39 @@
             localStorage.setItem('diffTrackingEnabled', isDiffTrackingEnabled);
             localStorage.setItem('diffAlgorithmType', diffAlgorithmType);
             localStorage.setItem('diffDebounceTime', diffDebounceTime);
-            localStorage.setItem('diffMatchThreshold', diffMatchThreshold); 
+            localStorage.setItem('diffMatchThreshold', diffMatchThreshold);
             localStorage.setItem('longTextThreshold', LONG_TEXT_THRESHOLD);
             localStorage.setItem('autoDisableDiffForLongText', autoDisableDiffForLongTextToggle.checked);
         }
-        
+
         function updateAutoDisableDiffInfoSpan() {
-             if(autoDisableDiffInfoSpan) autoDisableDiffInfoSpan.textContent = `超过 ${LONG_TEXT_THRESHOLD.toLocaleString()} 字符时临时关闭`;
+            if (autoDisableDiffInfoSpan) autoDisableDiffInfoSpan.textContent = `超过 ${LONG_TEXT_THRESHOLD.toLocaleString()} 字符时临时关闭`;
         }
 
         function checkAndManageDiffForLongText() {
             const currentContentLength = editor.value.length;
             const autoDisableSetting = autoDisableDiffForLongTextToggle.checked;
-
             if (currentContentLength > LONG_TEXT_THRESHOLD) {
-                if (isDiffTrackingEnabled) { 
-                    if (wasDiffTrackingEnabledBeforeLongText === null) { 
-                        wasDiffTrackingEnabledBeforeLongText = true; 
+                if (isDiffTrackingEnabled) {
+                    if (wasDiffTrackingEnabledBeforeLongText === null) {
+                        wasDiffTrackingEnabledBeforeLongText = true;
                     }
-
-                    if (autoDisableSetting) { 
-                        isDiffTrackingEnabled = false; 
-                        diffTrackingToggle.checked = false; 
-                        updateDiffStatusIndicator(); 
+                    if (autoDisableSetting) {
+                        isDiffTrackingEnabled = false;
+                        diffTrackingToggle.checked = false;
+                        updateDiffStatusIndicator();
                         showToast("检测到长文本，为保持流畅，智能识别已临时关闭。", 4000);
-                    } else {
-                        updateLongTextWarningUI(true);
-                    }
+                    } else { updateLongTextWarningUI(true); }
                 }
-            } else { 
-                if (wasDiffTrackingEnabledBeforeLongText === true) { 
-                    isDiffTrackingEnabled = true; 
+            } else {
+                if (wasDiffTrackingEnabledBeforeLongText === true) {
+                    isDiffTrackingEnabled = true;
                     diffTrackingToggle.checked = true;
                     updateDiffStatusIndicator();
                     showToast("文本长度恢复，智能识别已自动重新开启。", 3000);
-                    wasDiffTrackingEnabledBeforeLongText = null; 
+                    wasDiffTrackingEnabledBeforeLongText = null;
                 }
-                updateLongTextWarningUI(false); 
+                updateLongTextWarningUI(false);
             }
         }
 
@@ -1701,7 +2450,7 @@
 
 
         function updateDiffStatusIndicator() {
-            if (!jsdiffInstance) { 
+            if (!jsdiffInstance) {
                 diffStatusIndicator.textContent = '智能识别: 不可用';
                 diffStatusIndicator.classList.remove('enabled');
                 diffStatusIndicator.classList.add('disabled');
@@ -1712,7 +2461,6 @@
                 updateLongTextWarningUI(false);
                 return;
             }
-
             if (isDiffTrackingEnabled) {
                 diffStatusIndicator.textContent = '智能识别: 开启';
                 diffStatusIndicator.classList.remove('disabled');
@@ -1721,27 +2469,23 @@
                 diffStatusIndicator.textContent = '智能识别: 关闭';
                 diffStatusIndicator.classList.remove('enabled');
                 diffStatusIndicator.classList.add('disabled');
-                currentDiffAnalysisResult.isRetained = false; 
-                updateLongTextWarningUI(false); 
+                currentDiffAnalysisResult.isRetained = false;
+                updateLongTextWarningUI(false);
             }
-            updateActiveDocIndicators(); 
+            updateActiveDocIndicators();
         }
 
         diffTrackingToggle.addEventListener('change', (event) => {
             isDiffTrackingEnabled = event.target.checked;
-            if (isDiffTrackingEnabled) {
-                wasDiffTrackingEnabledBeforeLongText = null; 
-            }
-            saveDiffSettings(); 
+            if (isDiffTrackingEnabled) { wasDiffTrackingEnabledBeforeLongText = null; }
+            saveDiffSettings();
             updateDiffStatusIndicator();
             showToast(`智能识别关联功能已${isDiffTrackingEnabled ? '开启' : '关闭'}`);
-            
-            checkAndManageDiffForLongText(); 
-
+            checkAndManageDiffForLongText();
             if (isDiffTrackingEnabled && activeSavedDocument.id) {
-                handleContentChangeForAssociation(); 
+                handleContentChangeForAssociation();
             } else {
-                currentDiffAnalysisResult.isRetained = false; 
+                currentDiffAnalysisResult.isRetained = false;
                 updateActiveDocIndicators();
             }
         });
@@ -1749,8 +2493,7 @@
         function showDiffConfigModal() {
             longTextThresholdInput.value = LONG_TEXT_THRESHOLD;
             autoDisableDiffForLongTextToggle.checked = localStorage.getItem('autoDisableDiffForLongText') === null ? true : (localStorage.getItem('autoDisableDiffForLongText') === 'true');
-            updateAutoDisableDiffInfoSpan(); 
-
+            updateAutoDisableDiffInfoSpan();
             diffAlgorithmSelect.value = diffAlgorithmType;
             diffAlgorithmSelect.disabled = !jsdiffInstance;
             diffDebounceTimeInput.value = diffDebounceTime;
@@ -1758,12 +2501,12 @@
             diffMatchThresholdInput.value = thresholdPercent;
             diffMatchThresholdRange.value = thresholdPercent;
             diffConfigModal.style.display = 'flex';
-			diffConfigModal.classList.add('show-flex'); 
+            diffConfigModal.classList.add('show-flex');
         }
-        function hideDiffConfigModal() { 
-			diffConfigModal.style.display = 'none'; 
-			diffConfigModal.classList.remove('show-flex');
-		}
+        function hideDiffConfigModal() {
+            diffConfigModal.style.display = 'none';
+            diffConfigModal.classList.remove('show-flex');
+        }
 
         diffMatchThresholdRange.addEventListener('input', (e) => {
             diffMatchThresholdInput.value = e.target.value;
@@ -1772,170 +2515,102 @@
             let val = parseInt(e.target.value, 10);
             if (val < 50) val = 50;
             if (val > 100) val = 100;
-            e.target.value = val; 
+            e.target.value = val;
             diffMatchThresholdRange.value = val;
         });
 
 
         function handleSaveDiffSettings() {
             const newLongTextThreshold = parseInt(longTextThresholdInput.value, 10);
-            if (newLongTextThreshold >= 5000) {
-                LONG_TEXT_THRESHOLD = newLongTextThreshold;
-            } else {
-                showToast("长文本阈值不能小于5000字符。", 3000);
-                longTextThresholdInput.value = LONG_TEXT_THRESHOLD; 
-                return; 
-            }
-            updateAutoDisableDiffInfoSpan(); 
-            const newAlgoType = diffAlgorithmSelect.value;
-            diffAlgorithmType = newAlgoType;
-
+            if (newLongTextThreshold >= 5000) { LONG_TEXT_THRESHOLD = newLongTextThreshold; }
+            else { showToast("长文本阈值不能小于5000字符。", 3000); longTextThresholdInput.value = LONG_TEXT_THRESHOLD; return; }
+            updateAutoDisableDiffInfoSpan();
+            diffAlgorithmType = diffAlgorithmSelect.value;
             const newDebounceTime = parseInt(diffDebounceTimeInput.value, 10);
-            if (newDebounceTime >= 1000) {
-                diffDebounceTime = newDebounceTime;
-            } else {
-                showToast("内容更新检测延迟不能小于1000毫秒 (即1秒)", 3000);
-                diffDebounceTimeInput.value = diffDebounceTime; 
-                return;
-            }
-
+            if (newDebounceTime >= 1000) { diffDebounceTime = newDebounceTime; }
+            else { showToast("内容更新检测延迟不能小于1000毫秒 (即1秒)", 3000); diffDebounceTimeInput.value = diffDebounceTime; return; }
             const newThresholdPercent = parseInt(diffMatchThresholdInput.value, 10);
-            if (newThresholdPercent >= 50 && newThresholdPercent <= 100) {
-                diffMatchThreshold = newThresholdPercent / 100; 
-            } else {
-                showToast("原文相似度要求必须在50%到100%之间", 3000);
-                diffMatchThresholdInput.value = Math.round(diffMatchThreshold * 100); 
-                diffMatchThresholdRange.value = Math.round(diffMatchThreshold * 100);
-                return;
-            }
-
-            saveDiffSettings(); 
+            if (newThresholdPercent >= 50 && newThresholdPercent <= 100) { diffMatchThreshold = newThresholdPercent / 100; }
+            else { showToast("原文相似度要求必须在50%到100%之间", 3000); diffMatchThresholdInput.value = Math.round(diffMatchThreshold * 100); diffMatchThresholdRange.value = Math.round(diffMatchThreshold * 100); return; }
+            saveDiffSettings();
             hideDiffConfigModal();
             showToast("智能识别设置已保存！");
-            
-            checkAndManageDiffForLongText(); 
-            if (isDiffTrackingEnabled && activeSavedDocument.id) { 
-                 handleContentChangeForAssociation(); 
-            }
+            checkAndManageDiffForLongText();
+            if (isDiffTrackingEnabled && activeSavedDocument.id) { handleContentChangeForAssociation(); }
         }
-        
+
         function analyzeContentDifference(originalText, currentText, threshold, algorithm) {
-            if (!jsdiffInstance) {
-                return { isRetained: (originalText === currentText), rate: (originalText === currentText ? 1 : 0), diffs: [] };
-            }
+            if (!jsdiffInstance) { return { isRetained: (originalText === currentText), rate: (originalText === currentText ? 1 : 0), diffs: [] }; }
             if (originalText === null || originalText === undefined) originalText = "";
             if (currentText === null || currentText === undefined) currentText = "";
-
             const countCharsRobust = (text) => text.length;
             const countWordsRobust = (text) => text.split(/\s+/).filter(Boolean).length;
             const countLinesRobust = (text) => (text === "" ? 0 : text.split('\n').length);
-
             let currentUnitCountFunc;
             switch (algorithm) {
                 case 'words': currentUnitCountFunc = countWordsRobust; break;
                 case 'lines': currentUnitCountFunc = countLinesRobust; break;
                 default: currentUnitCountFunc = countCharsRobust; break;
             }
-            
-            if (originalText === "") { 
+            if (originalText === "") {
                 const currentLengthInUnits = currentUnitCountFunc(currentText);
-                return { 
-                    isRetained: (currentLengthInUnits === 0), 
-                    rate: (currentLengthInUnits === 0 ? 1 : 0), 
-                    diffs: (currentLengthInUnits > 0 ? [{ added: true, value: currentText, count: currentLengthInUnits }] : [])
-                };
+                return { isRetained: (currentLengthInUnits === 0), rate: (currentLengthInUnits === 0 ? 1 : 0), diffs: (currentLengthInUnits > 0 ? [{ added: true, value: currentText, count: currentLengthInUnits }] : []) };
             }
-            if (originalText === currentText) {
-                return { 
-                    isRetained: true, 
-                    rate: 1, 
-                    diffs: [{ value: originalText, count: currentUnitCountFunc(originalText) }] 
-                };
-            }
-
+            if (originalText === currentText) { return { isRetained: true, rate: 1, diffs: [{ value: originalText, count: currentUnitCountFunc(originalText) }] }; }
             let diffs;
             switch (algorithm) {
                 case 'words': diffs = jsdiffInstance.diffWords(originalText, currentText); break;
                 case 'lines': diffs = jsdiffInstance.diffLines(originalText, currentText, { newlineIsToken: true }); break;
                 default: diffs = jsdiffInstance.diffChars(originalText, currentText); break;
             }
-            
             const originalLengthInUnits = currentUnitCountFunc(originalText);
             let commonCountInUnits = 0;
-            diffs.forEach(part => {
-                if (!part.added && !part.removed && part.value) {
-                    commonCountInUnits += currentUnitCountFunc(part.value);
-                }
-            });
-            
+            diffs.forEach(part => { if (!part.added && !part.removed && part.value) { commonCountInUnits += currentUnitCountFunc(part.value); } });
             let retentionRate = 0;
-            if (originalLengthInUnits > 0) {
-                retentionRate = commonCountInUnits / originalLengthInUnits;
-            } else if (commonCountInUnits === 0) { 
-                retentionRate = 1; 
-            }
+            if (originalLengthInUnits > 0) { retentionRate = commonCountInUnits / originalLengthInUnits; }
+            else if (commonCountInUnits === 0) { retentionRate = 1; }
             const finalRate = Math.min(retentionRate, 1.0);
-            return {
-                isRetained: finalRate >= threshold,
-                rate: finalRate,
-                diffs: diffs
-            };
+            return { isRetained: finalRate >= threshold, rate: finalRate, diffs: diffs };
         }
 
         function handleContentChangeForAssociation() {
             if (!activeSavedDocument.id || activeSavedDocument.originalContent === null) {
                 currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] };
-                updateActiveDocIndicators();
-                return;
+                updateActiveDocIndicators(); return;
             }
             clearTimeout(diffDebounceTimeout);
             diffDebounceTimeout = setTimeout(() => {
-                if (!isDiffTrackingEnabled) { 
-                    currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] }; 
-                    updateActiveDocIndicators();
-                    return;
-                }
+                if (!isDiffTrackingEnabled) { currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] }; updateActiveDocIndicators(); return; }
                 const currentContent = editor.value;
-                if (currentContent.length > LONG_TEXT_THRESHOLD && 
-                    (!autoDisableDiffForLongTextToggle.checked || wasDiffTrackingEnabledBeforeLongText === null) ) { 
+                if (currentContent.length > LONG_TEXT_THRESHOLD && (!autoDisableDiffForLongTextToggle.checked || wasDiffTrackingEnabledBeforeLongText === null)) {
                     showToast("正在进行长文本关联分析，请稍候...", 2000);
                 }
-                currentDiffAnalysisResult = analyzeContentDifference(
-                    activeSavedDocument.originalContent,
-                    currentContent,
-                    diffMatchThreshold,
-                    diffAlgorithmType
-                );
+                currentDiffAnalysisResult = analyzeContentDifference(activeSavedDocument.originalContent, currentContent, diffMatchThreshold, diffAlgorithmType);
                 updateActiveDocIndicators();
             }, diffDebounceTime);
         }
-        
+
         function calculateDiffSummary(diffs, algorithm) {
             if (!diffs || diffs.length === 0) return "";
-            let added = 0;
-            let removed = 0;
-            let unit = "字";
-
+            let added = 0; let removed = 0; let unit = "字";
             const countCharsRobust = (text) => text.length;
             const countWordsRobust = (text) => text.split(/\s+/).filter(Boolean).length;
             const countLinesRobust = (text) => (text === "" ? 0 : text.split('\n').length);
             let currentUnitCountFunc;
-
             if (algorithm === 'lines') {
                 unit = "行"; currentUnitCountFunc = countLinesRobust;
-                diffs.forEach(part => { 
+                diffs.forEach(part => {
                     if (part.added) added += (part.count || currentUnitCountFunc(part.value));
                     else if (part.removed) removed += (part.count || currentUnitCountFunc(part.value));
                 });
             } else {
-                 if (algorithm === 'words') { unit = "词"; currentUnitCountFunc = countWordsRobust; }
-                 else { unit = "字"; currentUnitCountFunc = countCharsRobust; }
-                 diffs.forEach(part => {
+                if (algorithm === 'words') { unit = "词"; currentUnitCountFunc = countWordsRobust; }
+                else { unit = "字"; currentUnitCountFunc = countCharsRobust; }
+                diffs.forEach(part => {
                     if (part.added) added += currentUnitCountFunc(part.value);
                     else if (part.removed) removed += currentUnitCountFunc(part.value);
                 });
             }
-            
             let summaryText = "";
             if (added > 0) summaryText += `+${added}${unit} `;
             if (removed > 0) summaryText += `-${removed}${unit}`;
@@ -1943,206 +2618,108 @@
         }
 
 
-        // --- Active Saved Document State ---
         function setActiveSavedDocumentState(id, name, content, isFromImport = false) {
-            activeSavedDocument.id = id;
-            activeSavedDocument.name = name;
-            activeSavedDocument.originalContent = content;
-            activeSavedDocument.isImported = isFromImport; // Track if it's from import
-
-            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] }; // Reset diff
-            
-            updateActiveDocIndicators();
-            updateLoadSampleOrRevertButtonState();
-            checkAndManageDiffForLongText(); 
+            activeSavedDocument.id = id; activeSavedDocument.name = name; activeSavedDocument.originalContent = content; activeSavedDocument.isImported = isFromImport;
+            currentDiffAnalysisResult = { isRetained: true, rate: 1.0, diffs: [] };
+            updateActiveDocIndicators(); updateLoadSampleOrRevertButtonState(); checkAndManageDiffForLongText();
             console.log(`Active document set: ID ${id}, Name "${name}", Imported: ${isFromImport}`);
         }
 
 
         function clearActiveSavedDocumentState(isDestructiveLoad = false) {
-            if (activeSavedDocument.id !== null) {
-                 console.log(`Active document cleared. Was: ID ${activeSavedDocument.id}, Name "${activeSavedDocument.name}"`);
-            }
-            activeSavedDocument.id = null;
-            activeSavedDocument.name = null;
-            activeSavedDocument.originalContent = null;
-            activeSavedDocument.isImported = false; // Reset imported flag
-
+            if (activeSavedDocument.id !== null) { console.log(`Active document cleared. Was: ID ${activeSavedDocument.id}, Name "${activeSavedDocument.name}"`); }
+            activeSavedDocument.id = null; activeSavedDocument.name = null; activeSavedDocument.originalContent = null; activeSavedDocument.isImported = false;
             currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] };
-            
-            if (isDestructiveLoad) { // Only if content is being replaced
-                 updateActiveDocIndicators();
-                 updateLoadSampleOrRevertButtonState();
-                 checkAndManageDiffForLongText(); 
-			     updateWordCount();
-            }
+            if (isDestructiveLoad) { updateActiveDocIndicators(); updateLoadSampleOrRevertButtonState(); checkAndManageDiffForLongText(); updateWordCount(); }
         }
-        
+
         function updateActiveDocIndicators() {
-            const { isRetained, rate, diffs } = currentDiffAnalysisResult; 
-        
+            const { isRetained, rate, diffs } = currentDiffAnalysisResult;
             if (activeSavedDocument.id && activeSavedDocument.name) {
                 if (activeDocInfoContainer) activeDocInfoContainer.style.display = 'inline-flex';
-        
                 activeDocNameEl.textContent = escapeHtml(truncateText(activeSavedDocument.name, 20));
                 activeDocNameEl.title = `当前编辑基于文档: ${escapeHtml(activeSavedDocument.name)}`;
-                
-                let statusText = "";
-                let statusTitle = "";
+                let statusText = ""; let statusTitle = "";
                 const docTypePrefix = activeSavedDocument.isImported ? "导入文件" : "文档";
-        
-                if (rate === 1.0 && normalizeTextForComparison(editor.value) === normalizeTextForComparison(activeSavedDocument.originalContent)) { 
-                    // Stricter check for original content, using normalized comparison
-                    statusText = "(原始内容)";
-                    statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致`;
-                    
-                    trackingStrengthIndicator.style.display = 'none'; 
-                    changeSummaryIndicator.style.display = 'none';    
-                    
+                if (rate === 1.0 && normalizeTextForComparison(editor.value) === normalizeTextForComparison(activeSavedDocument.originalContent)) {
+                    statusText = "(原始内容)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致`;
+                    trackingStrengthIndicator.style.display = 'none'; changeSummaryIndicator.style.display = 'none';
                     if (isDiffTrackingEnabled && jsdiffInstance) {
-                         trackingStrengthIndicator.textContent = `100%`;
-                         trackingStrengthIndicator.className = 'strong';
-                         trackingStrengthIndicator.style.display = 'inline-block';
+                        trackingStrengthIndicator.textContent = `100%`; trackingStrengthIndicator.className = 'strong';
+                        trackingStrengthIndicator.style.display = 'inline-block';
                     }
-                } 
-                else if (isDiffTrackingEnabled) { 
-                    if (isRetained) { 
-                        statusText = "(识别为修改版)"; 
-                        statusTitle = `内容已修改，系统仍认为与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 相关联 (相似度: ${Math.round(rate * 100)}%)`;
-                    } else {
-                        statusText = "(关联度低)"; 
-                        statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 差异较大 (相似度: ${Math.round(rate * 100)}%)，系统不再认为它们强相关`;
-                    }
-                    
+                }
+                else if (isDiffTrackingEnabled) {
+                    if (isRetained) { statusText = "(识别为修改版)"; statusTitle = `内容已修改，系统仍认为与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 相关联 (相似度: ${Math.round(rate * 100)}%)`; }
+                    else { statusText = "(关联度低)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 差异较大 (相似度: ${Math.round(rate * 100)}%)，系统不再认为它们强相关`; }
                     trackingStrengthIndicator.textContent = `${Math.round(rate * 100)}%`;
                     trackingStrengthIndicator.className = isRetained ? 'strong' : 'weak';
                     trackingStrengthIndicator.style.display = 'inline-block';
-                    
                     changeSummaryIndicator.textContent = calculateDiffSummary(diffs, diffAlgorithmType);
                     changeSummaryIndicator.style.display = changeSummaryIndicator.textContent ? 'inline-block' : 'none';
-        
-                } else { // Diff tracking is disabled
-                    // This 'else' implies content has changed or rate is not 1.0 (and diff tracking is off)
-                    if (activeSavedDocument.originalContent !== null && 
-                        normalizeTextForComparison(editor.value) !== normalizeTextForComparison(activeSavedDocument.originalContent)) {
-                         statusText = "(已修改)"; 
-                         statusTitle = `内容已修改 (智能识别已关闭${wasDiffTrackingEnabledBeforeLongText ? ' - 因长文本临时关闭':''})`;
-                    } else if (activeSavedDocument.originalContent !== null && 
-                               normalizeTextForComparison(editor.value) === normalizeTextForComparison(activeSavedDocument.originalContent)) {
-                        // This case is for when content IS original, but diff tracking is off
-                        statusText = "(原始内容)";
-                        statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致 (智能识别已关闭)`;
-                    } else if (wasDiffTrackingEnabledBeforeLongText) { // originalContent might be null if cleared after auto-disable
-                         statusText = ""; 
-                         statusTitle = `智能识别已因长文本临时关闭`;
-                    }
-                    trackingStrengthIndicator.style.display = 'none';
-                    changeSummaryIndicator.style.display = 'none';
+                } else {
+                    if (activeSavedDocument.originalContent !== null && normalizeTextForComparison(editor.value) !== normalizeTextForComparison(activeSavedDocument.originalContent)) {
+                        statusText = "(已修改)"; statusTitle = `内容已修改 (智能识别已关闭${wasDiffTrackingEnabledBeforeLongText ? ' - 因长文本临时关闭' : ''})`;
+                    } else if (activeSavedDocument.originalContent !== null && normalizeTextForComparison(editor.value) === normalizeTextForComparison(activeSavedDocument.originalContent)) {
+                        statusText = "(原始内容)"; statusTitle = `内容与${docTypePrefix} "${escapeHtml(activeSavedDocument.name)}" 的原始版本一致 (智能识别已关闭)`;
+                    } else if (wasDiffTrackingEnabledBeforeLongText) { statusText = ""; statusTitle = `智能识别已因长文本临时关闭`; }
+                    trackingStrengthIndicator.style.display = 'none'; changeSummaryIndicator.style.display = 'none';
                 }
-        
-                activeDocStatusEl.textContent = statusText;
-                activeDocStatusEl.title = statusTitle;
-        
-                if (dissociateActiveDocButton) {
-                    // Show button if there's an active document and it's not just sample content 
-                    // (though sample content would clear activeSavedDocument.id anyway)
-                    dissociateActiveDocButton.style.display = 'inline-block';
-                }
-        
-            } else { // No active document
-                if (activeDocInfoContainer) activeDocInfoContainer.style.display = 'none'; 
-                
-                activeDocNameEl.textContent = ''; 
-                activeDocNameEl.title = '';
-                activeDocStatusEl.textContent = ''; 
-                activeDocStatusEl.title = '';
+                activeDocStatusEl.textContent = statusText; activeDocStatusEl.title = statusTitle;
+                if (dissociateActiveDocButton) { dissociateActiveDocButton.style.display = 'inline-block'; }
+            } else {
+                if (activeDocInfoContainer) activeDocInfoContainer.style.display = 'none';
+                activeDocNameEl.textContent = ''; activeDocNameEl.title = '';
+                activeDocStatusEl.textContent = ''; activeDocStatusEl.title = '';
                 if (dissociateActiveDocButton) dissociateActiveDocButton.style.display = 'none';
-        
-                trackingStrengthIndicator.style.display = 'none';
-                changeSummaryIndicator.style.display = 'none';
+                trackingStrengthIndicator.style.display = 'none'; changeSummaryIndicator.style.display = 'none';
             }
         }
 
-		function manuallyDissociateActiveDocument() {
-		    if (activeSavedDocument.id) {
-		        if (confirm(`确定要解除当前编辑器内容与文档 "${activeSavedDocument.name}" 的关联吗？之后编辑器内容将被视为一个全新的文档。`)) {
-		            const oldDocName = activeSavedDocument.name;
-		            const editorContentBeforeDissociate = editor.value; // Preserve current editor content
-		
-		            // Clear the active document association.
-		            // Pass `false` to `clearActiveSavedDocumentState` if it means "don't clear editor content".
-		            // If `clearActiveSavedDocumentState` has a boolean to signify destructive load,
-		            // we want a non-destructive dissociation here regarding editor content.
-		            // Let's assume `clearActiveSavedDocumentState(true)` clears content and association,
-		            // and we need a way to *only* clear association.
-		            // For now, let's manually reset parts of activeSavedDocument and then call updates.
-		
-		            console.log(`Dissociating from: ID ${activeSavedDocument.id}, Name "${oldDocName}"`);
-		
-		            activeSavedDocument.id = null;
-		            activeSavedDocument.name = null;
-		            activeSavedDocument.originalContent = null; // No more original to compare against
-		            activeSavedDocument.isImported = false;
-		            
-		            currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] }; // Now it's a new, unassociated doc
-		
-		            editor.value = editorContentBeforeDissociate; // Ensure editor content is still there
-		
-		            // Update all UIs that depend on active document state
-		            updateActiveDocIndicators(); // Will now show no active document
-		            updateLoadSampleOrRevertButtonState(); // Should revert to "加载示例"
-		            // updateWordCount(); // Not strictly needed if content didn't change, but good practice
-		            
-		            showToast(`已解除与 "${oldDocName}" 的关联。编辑器内容现在是新文档。`);
-		            
-		            // Since the content in the editor is now considered "new" (unassociated),
-		            // save its current state to history.
-		            lastSavedHistoryContent = null; // Force save to history for this new state
-		            triggerHistorySave();
-		            
-		            // Optional: If diff tracking was on, it will now have nothing to compare to.
-		            // handleContentChangeForAssociation(); // This will confirm no active doc.
-		
-		            updateWordCount(); // Recalculate word count for the (potentially) "new" document
-		        }
-		    } else {
-		        showToast("当前没有活动的关联文档。");
-		    }
-		}
-		
-		function normalizeTextForComparison(text) {
-		    if (text === null || text === undefined) return "";
-		    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-		}
+        function manuallyDissociateActiveDocument() {
+            if (activeSavedDocument.id) {
+                if (confirm(`确定要解除当前编辑器内容与文档 "${activeSavedDocument.name}" 的关联吗？之后编辑器内容将被视为一个全新的文档。`)) {
+                    const oldDocName = activeSavedDocument.name;
+                    const editorContentBeforeDissociate = editor.value;
+                    console.log(`Dissociating from: ID ${activeSavedDocument.id}, Name "${oldDocName}"`);
+                    activeSavedDocument.id = null; activeSavedDocument.name = null; activeSavedDocument.originalContent = null;
+                    activeSavedDocument.isImported = false;
+                    currentDiffAnalysisResult = { isRetained: false, rate: 0, diffs: [] };
+                    editor.value = editorContentBeforeDissociate;
+                    updateActiveDocIndicators();
+                    updateLoadSampleOrRevertButtonState();
+                    showToast(`已解除与 "${oldDocName}" 的关联。编辑器内容现在是新文档。`);
+                    lastSavedHistoryContent = null;
+                    triggerHistorySave();
+                    updateWordCount();
+                }
+            } else { showToast("当前没有活动的关联文档。"); }
+        }
 
-        // --- UI Interaction for Modals ---
+        function normalizeTextForComparison(text) {
+            if (text === null || text === undefined) return "";
+            return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        }
+
         function showLoadModal() { populateModal(false); }
         function showSaveModal() { populateModal(true); }
-        function hideLoadModal() { 
-            loadModal.style.display = 'none'; 
+        function hideLoadModal() {
+            loadModal.style.display = 'none';
             loadModal.classList.remove('show-flex');
         }
 
         async function populateModal(isSavingMode = false) {
             modalTitle.textContent = isSavingMode ? "保存或更新 Markdown" : "加载已保存的 Markdown";
             saveNewButton.style.display = isSavingMode ? 'inline-flex' : 'none';
-            saveAsVersionButton.style.display = 'none'; 
+            saveAsVersionButton.style.display = 'none';
             searchInput.value = '';
             try {
                 const items = await loadAllMarkdown();
-                savedItemList.innerHTML = ''; 
+                savedItemList.innerHTML = '';
                 const noItemsLi = '<li class="no-items">没有找到已保存的文档。</li>';
                 if (isSavingMode) {
                     const { isRetained, rate } = currentDiffAnalysisResult;
-                    // Condition for "Save as Version":
-                    // 1. Diff tracking is enabled
-                    // 2. There is an active document (from DB or import)
-                    // 3. Content is different from original
-                    // 4. It's still considered "retained" (similarity >= diffMatchThreshold)
-                    // 5. Similarity is less than SIGNIFICANT_MODIFICATION_THRESHOLD (now 0.97)
-                    if (isDiffTrackingEnabled && activeSavedDocument.id && activeSavedDocument.name &&
-                        editor.value !== activeSavedDocument.originalContent &&
-                        isRetained && rate < SIGNIFICANT_MODIFICATION_THRESHOLD) {
+                    if (isDiffTrackingEnabled && activeSavedDocument.id && activeSavedDocument.name && editor.value !== activeSavedDocument.originalContent && isRetained && rate < SIGNIFICANT_MODIFICATION_THRESHOLD) {
                         saveAsVersionButton.textContent = `另存为 "${truncateText(activeSavedDocument.name, 15)} v.${getTimestampForFilename(true)}"`;
                         saveAsVersionButton.style.display = 'inline-flex';
                     }
@@ -2164,41 +2741,21 @@
                                 <button class="small danger" onclick="handleDeleteItem(event, ${item.id}, 'saved')" title="删除此项">删除</button>
                             </div>`;
                         savedItemList.appendChild(li);
-                        // Highlight if the active document (even imported one that's not yet saved with numeric ID)
-                        // matches a saved item by name AND its original content (if it was a loaded item).
-                        // This is tricky if an imported file has the same name as a saved one.
-                        // For simplicity, only highlight if activeSavedDocument.id is numeric (from DB)
-                        if (isSavingMode && isDiffTrackingEnabled && currentDiffAnalysisResult.isRetained &&
-                            activeSavedDocument.id && typeof activeSavedDocument.id === 'number' && // ensure it's from DB
-                            activeSavedDocument.id === item.id) {
+                        if (isSavingMode && isDiffTrackingEnabled && currentDiffAnalysisResult.isRetained && activeSavedDocument.id && typeof activeSavedDocument.id === 'number' && activeSavedDocument.id === item.id) {
                             li.classList.add('highlighted-active-doc');
                             activeItemElement = li;
                         }
                     });
                     if (activeItemElement) {
-                        loadModal.style.display = 'flex'; 
-						loadModal.classList.add('show-flex');
-                        requestAnimationFrame(() => { 
-                             activeItemElement.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' });
-                        });
-                    } else {
-                         loadModal.style.display = 'flex';
-						 loadModal.classList.add('show-flex');
-                    }
-                } else {
-                    savedItemList.innerHTML = noItemsLi;
-                    loadModal.style.display = 'flex';
-					loadModal.classList.add('show-flex');
-                }
+                        loadModal.style.display = 'flex';
+                        loadModal.classList.add('show-flex');
+                        requestAnimationFrame(() => { activeItemElement.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' }); });
+                    } else { loadModal.style.display = 'flex'; loadModal.classList.add('show-flex'); }
+                } else { savedItemList.innerHTML = noItemsLi; loadModal.style.display = 'flex'; loadModal.classList.add('show-flex'); }
                 filterSavedItems();
-            } catch (error) {
-                showToast(`加载列表失败: ${error}`);
-                savedItemList.innerHTML = '<li class="no-items" style="color:red;">加载列表时出错。</li>';
-                loadModal.style.display = 'flex';
-				loadModal.classList.add('show-flex');
-            }
+            } catch (error) { showToast(`加载列表失败: ${error}`); savedItemList.innerHTML = '<li class="no-items" style="color:red;">加载列表时出错。</li>'; loadModal.style.display = 'flex'; loadModal.classList.add('show-flex'); }
         }
-        function filterSavedItems() { 
+        function filterSavedItems() {
             const filter = searchInput.value.toLowerCase();
             const items = savedItemList.querySelectorAll('li.saved-item');
             let visibleCount = 0;
@@ -2210,17 +2767,17 @@
                 if (name.includes(filter)) { item.style.display = 'flex'; visibleCount++; }
                 else { item.style.display = 'none'; }
             });
-             if (visibleCount === 0 && items.length > 0) { if (!savedItemList.contains(noItemsMessage)) savedItemList.appendChild(noItemsMessage); noItemsMessage.style.display = 'block'; }
-             else if (visibleCount > 0) { if (savedItemList.contains(noItemsMessage)) noItemsMessage.style.display = 'none'; }
-             else if (items.length === 0) { if (!savedItemList.contains(noItemsMessage)) { savedItemList.innerHTML = ''; savedItemList.appendChild(noItemsMessage); } noItemsMessage.style.display = 'block'; }
+            if (visibleCount === 0 && items.length > 0) { if (!savedItemList.contains(noItemsMessage)) savedItemList.appendChild(noItemsMessage); noItemsMessage.style.display = 'block'; }
+            else if (visibleCount > 0) { if (savedItemList.contains(noItemsMessage)) noItemsMessage.style.display = 'none'; }
+            else if (items.length === 0) { if (!savedItemList.contains(noItemsMessage)) { savedItemList.innerHTML = ''; savedItemList.appendChild(noItemsMessage); } noItemsMessage.style.display = 'block'; }
         }
         function showHistoryModal() { populateHistoryModal(); }
-        function hideHistoryModal() { 
-            historyModal.style.display = 'none'; 
+        function hideHistoryModal() {
+            historyModal.style.display = 'none';
             historyModal.classList.remove('show-flex');
         }
-        async function populateHistoryModal() { 
-             try {
+        async function populateHistoryModal() {
+            try {
                 const items = await loadAllHistory();
                 historyItemList.innerHTML = '';
                 const noItemsLi = '<li class="no-items">没有编辑历史记录。</li>';
@@ -2242,33 +2799,23 @@
                         historyItemList.appendChild(li);
                     });
                 } else { historyItemList.innerHTML = noItemsLi; }
-                 historyModal.style.display = 'flex';
-				 historyModal.classList.add('show-flex');
-            } catch (error) {
-                showToast(`加载历史列表失败: ${error}`);
-                historyItemList.innerHTML = '<li class="no-items" style="color:red;">加载历史列表时出错。</li>';
                 historyModal.style.display = 'flex';
-				historyModal.classList.add('show-flex');
-            }
+                historyModal.classList.add('show-flex');
+            } catch (error) { showToast(`加载历史列表失败: ${error}`); historyItemList.innerHTML = '<li class="no-items" style="color:red;">加载历史列表时出错。</li>'; historyModal.style.display = 'flex'; historyModal.classList.add('show-flex'); }
         }
 
-        // --- Action Handlers ---
-        async function handleSaveNew() { 
+        async function handleSaveNew() {
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法保存。"); return; }
-            
             let defaultNameSuggestion = `Markdown ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
-            if (activeSavedDocument.id && activeSavedDocument.isImported && activeSavedDocument.name) {
-                 defaultNameSuggestion = activeSavedDocument.name; // Suggest imported filename if available
-            }
-
+            if (activeSavedDocument.id && activeSavedDocument.isImported && activeSavedDocument.name) { defaultNameSuggestion = activeSavedDocument.name; }
             const name = prompt("请输入新文档的名称:", defaultNameSuggestion);
             if (name === null || name.trim() === "") { showToast("已取消保存或名称无效。"); return; }
             try {
-                const newId = await saveMarkdown(name.trim(), content); 
+                const newId = await saveMarkdown(name.trim(), content);
                 showToast(`"${name.trim()}" 已成功保存！`);
-                if (newId) setActiveSavedDocumentState(newId, name.trim(), content, false); // Now it's a DB doc
-                else clearActiveSavedDocumentState(); 
+                if (newId) setActiveSavedDocumentState(newId, name.trim(), content, false);
+                else clearActiveSavedDocumentState();
                 hideLoadModal();
             }
             catch (error) { console.error("Save new failed:", error); }
@@ -2277,25 +2824,20 @@
         async function handleSaveAsVersion() {
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法保存。"); return; }
-            if (!activeSavedDocument.id || !activeSavedDocument.name) {
-                 showToast("没有可作为版本的原始文档。请先加载或导入一个文档。"); return;
-            }
+            if (!activeSavedDocument.id || !activeSavedDocument.name) { showToast("没有可作为版本的原始文档。请先加载或导入一个文档。"); return; }
             const versionedName = `${activeSavedDocument.name} v.${getTimestampForFilename(true)}`;
             const name = prompt("请输入新版本文档的名称:", versionedName);
             if (name === null || name.trim() === "") { showToast("已取消保存或名称无效。"); return; }
-
             try {
                 const newId = await saveMarkdown(name.trim(), content);
                 showToast(`版本 "${name.trim()}" 已成功另存！`);
-                if (newId) setActiveSavedDocumentState(newId, name.trim(), content, false); // New DB doc
+                if (newId) setActiveSavedDocumentState(newId, name.trim(), content, false);
                 hideLoadModal();
-            } catch (error) {
-                console.error("Save as version failed:", error);
-            }
+            } catch (error) { console.error("Save as version failed:", error); }
         }
 
 
-        async function handleUpdateItem(event, id) { 
+        async function handleUpdateItem(event, id) {
             event.stopPropagation();
             const content = editor.value;
             if (!content.trim()) { showToast("编辑器内容为空，无法更新。"); return; }
@@ -2304,56 +2846,55 @@
                 if (!itemToUpdate) { showToast("找不到要更新的项目。"); populateModal(true); return; }
                 if (confirm(`确定要用当前编辑器内容覆盖 "${itemToUpdate.name}" 吗？`)) {
                     const newName = prompt("请输入更新后的名称（留空则保留原名）:", itemToUpdate.name);
-                     if (newName === null) { showToast("更新已取消。"); return; }
+                    if (newName === null) { showToast("更新已取消。"); return; }
                     const finalName = (newName.trim() === "") ? itemToUpdate.name : newName.trim();
                     await updateMarkdown(id, finalName, content);
                     showToast(`"${finalName}" 已成功更新！`);
-                    setActiveSavedDocumentState(id, finalName, content, false); // DB doc
+                    setActiveSavedDocumentState(id, finalName, content, false);
                     hideLoadModal();
                 } else { showToast("更新已取消。"); }
             } catch (error) { console.error("Update failed:", error); }
         }
-        async function handleLoadItem(id) { 
-             try {
-                 const item = await loadMarkdownById(id);
-                 if (item) {
-                     editor.value = item.content;
-                     requestPreviewUpdate();
-                     setActiveSavedDocumentState(item.id, item.name, item.content, false); // DB doc
-                     hideLoadModal(); editor.scrollTop = 0;
-					 showToast(`已加载: ${item.name}`);
-                     triggerHistorySave(); 
-                     updateLoadSampleOrRevertButtonState();
-					 updateWordCount();
-                 } else { showToast("无法找到该项目。"); }
-             } catch (error) { console.error("Load item failed:", error); }
+        async function handleLoadItem(id) {
+            try {
+                const item = await loadMarkdownById(id);
+                if (item) {
+                    editor.value = item.content;
+                    requestPreviewUpdate();
+                    setActiveSavedDocumentState(item.id, item.name, item.content, false);
+                    hideLoadModal(); editor.scrollTop = 0;
+                    showToast(`已加载: ${item.name}`);
+                    triggerHistorySave();
+                    updateLoadSampleOrRevertButtonState();
+                    updateWordCount();
+                } else { showToast("无法找到该项目。"); }
+            } catch (error) { console.error("Load item failed:", error); }
         }
-        async function handleRestoreHistory(id) { 
-             try {
-                 const item = await loadHistoryById(id);
-                 if (item) {
-                     editor.value = item.content;
-                     requestPreviewUpdate();
-                     hideHistoryModal(); editor.scrollTop = 0;
-					 showToast(`已从 ${formatTimestamp(item.timestamp)} 恢复`);
-                     lastSavedHistoryContent = item.content;
-                     clearActiveSavedDocumentState(true); 
-                     updateLoadSampleOrRevertButtonState();
-					 updateWordCount();
-                 } else { showToast("无法找到该历史记录。"); }
-             } catch (error) { console.error("Restore history failed:", error); }
+        async function handleRestoreHistory(id) {
+            try {
+                const item = await loadHistoryById(id);
+                if (item) {
+                    editor.value = item.content;
+                    requestPreviewUpdate();
+                    hideHistoryModal(); editor.scrollTop = 0;
+                    showToast(`已从 ${formatTimestamp(item.timestamp)} 恢复`);
+                    lastSavedHistoryContent = item.content;
+                    clearActiveSavedDocumentState(true);
+                    updateLoadSampleOrRevertButtonState();
+                    updateWordCount();
+                } else { showToast("无法找到该历史记录。"); }
+            } catch (error) { console.error("Restore history failed:", error); }
         }
-        async function handleDeleteItem(event, id, type) { 
-             event.stopPropagation();
-             const listElement = (type === 'saved') ? savedItemList : historyItemList;
-             const itemElement = listElement.querySelector(`li[data-id='${id}']`);
-             const itemName = (type === 'saved' && itemElement) ? itemElement.dataset.name : `此${type === 'saved' ? '文档' : '历史记录'}`;
-             const deleteFunction = (type === 'saved') ? deleteMarkdownById : deleteHistoryById;
-
-             if (confirm(`确定要删除 "${itemName}" 吗？此操作无法撤销。`)) {
-                 try {
-                     const success = await deleteFunction(id);
-                     if (success) {
+        async function handleDeleteItem(event, id, type) {
+            event.stopPropagation();
+            const listElement = (type === 'saved') ? savedItemList : historyItemList;
+            const itemElement = listElement.querySelector(`li[data-id='${id}']`);
+            const itemName = (type === 'saved' && itemElement) ? itemElement.dataset.name : `此${type === 'saved' ? '文档' : '历史记录'}`;
+            const deleteFunction = (type === 'saved') ? deleteMarkdownById : deleteHistoryById;
+            if (confirm(`确定要删除 "${itemName}" 吗？此操作无法撤销。`)) {
+                try {
+                    const success = await deleteFunction(id);
+                    if (success) {
                         if (itemElement) {
                             itemElement.style.transition = 'opacity 0.3s ease-out, height 0.3s ease-out, margin 0.3s ease-out, padding 0.3s ease-out, border 0.3s ease-out';
                             itemElement.style.opacity = '0'; itemElement.style.height = '0'; itemElement.style.margin = '0'; itemElement.style.padding = '0'; itemElement.style.border = 'none';
@@ -2361,31 +2902,28 @@
                                 if (itemElement.parentNode) itemElement.remove();
                                 if (type === 'saved') {
                                     filterSavedItems();
-                                    if (activeSavedDocument.id === id) {
-                                        clearActiveSavedDocumentState(true);
-                                    }
+                                    if (activeSavedDocument.id === id) { clearActiveSavedDocumentState(true); }
                                 }
                                 else { if (historyItemList.querySelectorAll('.history-item').length === 0) { historyItemList.innerHTML = '<li class="no-items">没有编辑历史记录。</li>'; } }
                             }, 300);
                         }
                         showToast(`"${itemName}" 已删除。`);
-                     } else { showToast(`删除 "${itemName}" 失败。`); }
-                 } catch (error) { console.error(`Delete ${type} failed:`, error); }
-             }
+                    } else { showToast(`删除 "${itemName}" 失败。`); }
+                } catch (error) { console.error(`Delete ${type} failed:`, error); }
+            }
         }
 
-        // Close modals on outside click or Escape key
-        window.onclick = function(event) { 
+        window.onclick = function (event) {
             if (event.target == loadModal) hideLoadModal();
             if (event.target == historyModal) hideHistoryModal();
             if (event.target == diffConfigModal) hideDiffConfigModal();
         }
-        window.addEventListener('keydown', function(event) { 
+        window.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 if (['block', 'flex'].includes(loadModal.style.display)) hideLoadModal();
                 if (['block', 'flex'].includes(historyModal.style.display)) hideHistoryModal();
                 if (['block', 'flex'].includes(diffConfigModal.style.display)) hideDiffConfigModal();
-                if (dragDropOverlay.style.display === 'flex') { // Hide drag-drop overlay on Esc
+                if (dragDropOverlay.style.display === 'flex') {
                     dragDropOverlay.style.display = 'none';
                     document.body.classList.remove('drag-over');
                 }
@@ -2393,225 +2931,210 @@
         });
 
 
-        // --- Utility Functions ---
-        function escapeHtml(unsafe) { 
+        function escapeHtml(unsafe) {
             if (typeof unsafe !== 'string') return '';
             return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-         }
-         function formatTimestamp(date) { 
-             if (!(date instanceof Date)) date = new Date(date);
-             if (isNaN(date)) return "Invalid Date";
-             try { return date.toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
-             catch (e) { console.error("Error formatting date:", e); return "Error Date"; }
         }
-        function sanitizeFilenameComponent(name) { 
+        function formatTimestamp(date) {
+            if (!(date instanceof Date)) date = new Date(date);
+            if (isNaN(date)) return "Invalid Date";
+            try { return date.toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+            catch (e) { console.error("Error formatting date:", e); return "Error Date"; }
+        }
+        function sanitizeFilenameComponent(name) {
             if (!name || typeof name !== 'string') return '';
-            // Keep original case for display, but maybe lowercase for filesystem if needed
-            // For now, keep case, replace problematic chars
             return name.trim().replace(/[<>:"/\\|?*\s]+/g, '-').replace(/[\x00-\x1f\x7f]/g, '').substring(0, 100);
         }
-        function getTimestampForFilename(short = false) { 
+        function getTimestampForFilename(short = false) {
             const now = new Date();
-            if (short) { 
-                 return `${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-            }
+            if (short) { return `${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`; }
             return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
         }
         function truncateText(text, maxLength) {
             if (typeof text !== 'string') return '';
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         }
-        
-        function generateBaseFilename() { 
+
+        function generateBaseFilename() {
             let baseName = '';
-            // Priority for active document (either from DB or imported) if diff tracking is on and content is retained
-            if (isDiffTrackingEnabled && currentDiffAnalysisResult.isRetained && activeSavedDocument.id && activeSavedDocument.name) {
-                baseName = sanitizeFilenameComponent(activeSavedDocument.name);
-            } 
-            // If diff tracking is off, but there's an active imported file
-            else if (!isDiffTrackingEnabled && activeSavedDocument.id && activeSavedDocument.isImported && activeSavedDocument.name) {
-                 baseName = sanitizeFilenameComponent(activeSavedDocument.name);
-            }
-
-
-            if (!baseName) { 
+            if (isDiffTrackingEnabled && currentDiffAnalysisResult.isRetained && activeSavedDocument.id && activeSavedDocument.name) { baseName = sanitizeFilenameComponent(activeSavedDocument.name); }
+            else if (!isDiffTrackingEnabled && activeSavedDocument.id && activeSavedDocument.isImported && activeSavedDocument.name) { baseName = sanitizeFilenameComponent(activeSavedDocument.name); }
+            if (!baseName) {
                 const content = editor.value.trim();
                 const h1Match = content.match(/^#\s+(.*)/m);
-                if (h1Match && h1Match[1]) {
-                    baseName = sanitizeFilenameComponent(h1Match[1]);
-                } else {
-                    const firstLine = content.split('\n')[0];
-                    if (firstLine) {
-                        baseName = sanitizeFilenameComponent(firstLine.substring(0,50)); 
-                    }
-                }
+                if (h1Match && h1Match[1]) { baseName = sanitizeFilenameComponent(h1Match[1]); }
+                else { const firstLine = content.split('\n')[0]; if (firstLine) { baseName = sanitizeFilenameComponent(firstLine.substring(0, 50)); } }
             }
             if (!baseName || baseName.length === 0) baseName = 'markdown-export';
-            
-            // Add timestamp if it's not an active document being exported with its original name
-            // or if content has changed significantly from an active document.
-            // Simple approach: always add timestamp for now to avoid complex logic here.
             return `${baseName}-${getTimestampForFilename()}`;
         }
 
 
-        // --- Scroll Sync ---
-		function syncScroll(source, target) { 
-			if (isSyncing) return; isSyncing = true;
-			const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight || 1);
-			target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
-			requestAnimationFrame(() => { isSyncing = false; });
-		}
-		editor.addEventListener('scroll', () => syncScroll(editor, preview));
-		preview.addEventListener('scroll', () => syncScroll(preview, editor));
+        function syncScroll(source, target) {
+            if (isSyncing) return; isSyncing = true;
+            const ratio = source.scrollTop / (source.scrollHeight - source.clientHeight || 1);
+            target.scrollTop = ratio * (target.scrollHeight - target.clientHeight);
+            requestAnimationFrame(() => { isSyncing = false; });
+        }
+        editor.addEventListener('scroll', () => syncScroll(editor, preview));
+        preview.addEventListener('scroll', () => syncScroll(preview, editor));
 
-        // --- Drag and Drop File Import ---
-        let dragCounter = 0; // To handle nested dragenter/dragleave events
-        
+        let dragCounter = 0;
         function setupDragDropListeners() {
-            const body = document.body; // Listen on body for full page drop zone
-
+            const body = document.body;
             body.addEventListener('dragenter', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                dragCounter++;
-                if (dragCounter === 1 && dragDropOverlay) { // Show only on first enter
-                    dragDropOverlay.style.display = 'flex';
-                    dragDropOverlay.classList.add('visible'); // Use class for transition
+                event.preventDefault(); event.stopPropagation(); dragCounter++;
+                if (dragCounter === 1 && dragDropOverlay) {
+                    dragDropOverlay.style.display = 'flex'; dragDropOverlay.classList.add('visible');
                     body.classList.add('drag-over');
                 }
             }, false);
-
             body.addEventListener('dragover', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                event.dataTransfer.dropEffect = 'copy'; // Visual feedback
+                event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = 'copy';
             }, false);
-
             body.addEventListener('dragleave', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                dragCounter--;
-                if (dragCounter === 0 && dragDropOverlay) { // Hide only when counter is zero
-                    dragDropOverlay.style.display = 'none';
-                    dragDropOverlay.classList.remove('visible');
+                event.preventDefault(); event.stopPropagation(); dragCounter--;
+                if (dragCounter === 0 && dragDropOverlay) {
+                    dragDropOverlay.style.display = 'none'; dragDropOverlay.classList.remove('visible');
                     body.classList.remove('drag-over');
                 }
             }, false);
-
             body.addEventListener('drop', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                dragCounter = 0; // Reset counter
-                if (dragDropOverlay) {
-                    dragDropOverlay.style.display = 'none';
-                    dragDropOverlay.classList.remove('visible');
-                    body.classList.remove('drag-over');
-                }
-
+                event.preventDefault(); event.stopPropagation(); dragCounter = 0;
+                if (dragDropOverlay) { dragDropOverlay.style.display = 'none'; dragDropOverlay.classList.remove('visible'); body.classList.remove('drag-over'); }
                 const files = event.dataTransfer.files;
                 if (files.length > 0) {
-                    const file = files[0]; // Process the first file
-
-                    const allowedTypes = ['text/markdown', 'text/plain', '']; // Empty type for some .md files
+                    const file = files[0];
+                    const allowedTypes = ['text/markdown', 'text/plain', ''];
                     const allowedExtensions = ['.md', '.txt'];
                     const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-                    
                     console.log(`Dropped file: ${file.name}, type: ${file.type}, ext: ${fileExtension}`);
-
-                    // More lenient check for .md files that might not have a specific MIME type
                     if (allowedExtensions.includes(fileExtension) || allowedTypes.includes(file.type)) {
                         const reader = new FileReader();
-                        reader.onload = (e_reader) => {
-                            handleImportedFileContent(e_reader.target.result, file.name, 'drag-drop');
-                        };
-                        reader.onerror = (e_reader) => {
-                            console.error("File reading error (drag-drop):", e_reader.target.error);
-                            showToast("文件读取失败。");
-                        };
+                        reader.onload = (e_reader) => { handleImportedFileContent(e_reader.target.result, file.name, 'drag-drop'); };
+                        reader.onerror = (e_reader) => { console.error("File reading error (drag-drop):", e_reader.target.error); showToast("文件读取失败。"); };
                         reader.readAsText(file);
-                    } else {
-                        showToast(`不支持的文件类型: ${file.name} (仅支持 .md, .txt)`, 4000);
-                        console.warn(`Skipped non-text file (drag-drop): ${file.name}, type: ${file.type}`);
-                    }
+                    } else { showToast(`不支持的文件类型: ${file.name} (仅支持 .md, .txt)`, 4000); console.warn(`Skipped non-text file (drag-drop): ${file.name}, type: ${file.type}`); }
                 }
             }, false);
         }
 
+        // --- Pane Collapse Functions ---
+        function updateLayoutAndButtonStates() {
+            if (editorPaneCollapsed) {
+                pageContainer.style.gridTemplateColumns = 'var(--grid-columns-editor-collapsed)';
+                editorPane.classList.add('pane-collapsed');
+            } else {
+                editorPane.classList.remove('pane-collapsed');
+            }
 
-        // --- Initialization ---
+            if (previewPaneCollapsed) {
+                pageContainer.style.gridTemplateColumns = 'var(--grid-columns-preview-collapsed)';
+                previewPane.classList.add('pane-collapsed');
+            } else {
+                previewPane.classList.remove('pane-collapsed');
+            }
+
+            if (!editorPaneCollapsed && !previewPaneCollapsed) {
+                pageContainer.style.gridTemplateColumns = 'var(--grid-columns-normal)';
+            }
+
+            toggleEditorBtn.innerHTML = editorPaneCollapsed ? ICONS.chevronRight : ICONS.chevronLeft;
+            toggleEditorBtn.title = editorPaneCollapsed ? '展开编辑区' : '收起编辑区';
+            toggleEditorBtn.disabled = previewPaneCollapsed;
+
+            togglePreviewBtn.innerHTML = previewPaneCollapsed ? ICONS.chevronLeft : ICONS.chevronRight;
+            togglePreviewBtn.title = previewPaneCollapsed ? '展开预览区' : '收起预览区';
+            togglePreviewBtn.disabled = editorPaneCollapsed;
+        }
+
+        function toggleEditorPane() {
+            if (editorPaneCollapsed) { // Try to expand editor
+                editorPaneCollapsed = false;
+            } else { // Try to collapse editor
+                if (previewPaneCollapsed) { // If preview is already collapsed, expand it first
+                    previewPaneCollapsed = false;
+                }
+                editorPaneCollapsed = true;
+            }
+            updateLayoutAndButtonStates();
+        }
+
+        function togglePreviewPane() {
+            if (previewPaneCollapsed) { // Try to expand preview
+                previewPaneCollapsed = false;
+            } else { // Try to collapse preview
+                if (editorPaneCollapsed) { // If editor is already collapsed, expand it first
+                    editorPaneCollapsed = false;
+                }
+                previewPaneCollapsed = true;
+            }
+            updateLayoutAndButtonStates();
+        }
+
+
         editor.addEventListener('input', () => {
-            requestPreviewUpdate();
-            scheduleHistorySave();
-            checkAndManageDiffForLongText();
-            handleContentChangeForAssociation(); 
-            updateLoadSampleOrRevertButtonState();
-			updateWordCount();
+            requestPreviewUpdate(); scheduleHistorySave(); checkAndManageDiffForLongText();
+            handleContentChangeForAssociation(); updateLoadSampleOrRevertButtonState(); updateWordCount();
         });
         editor.addEventListener('paste', (event) => {
             const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-            if (pastedText.length > LONG_TEXT_THRESHOLD / 2) { 
-                if (isDiffTrackingEnabled && !autoDisableDiffForLongTextToggle.checked && pastedText.length > LONG_TEXT_THRESHOLD) {
-                    showToast("正在处理大量粘贴内容，智能识别分析可能需要一些时间...", 3000);
-                } else if (pastedText.length > LONG_TEXT_THRESHOLD) {
-                    showToast("正在处理大量粘贴内容...", 2000);
-                }
+            if (pastedText.length > LONG_TEXT_THRESHOLD / 2) {
+                if (isDiffTrackingEnabled && !autoDisableDiffForLongTextToggle.checked && pastedText.length > LONG_TEXT_THRESHOLD) { showToast("正在处理大量粘贴内容，智能识别分析可能需要一些时间...", 3000); }
+                else if (pastedText.length > LONG_TEXT_THRESHOLD) { showToast("正在处理大量粘贴内容...", 2000); }
             }
-            setTimeout(() => { 
-                requestPreviewUpdate();
-                triggerHistorySave();
-                checkAndManageDiffForLongText();
-                handleContentChangeForAssociation(); 
-                updateLoadSampleOrRevertButtonState();
-				updateWordCount();
-            }, 0);
+            setTimeout(() => { requestPreviewUpdate(); triggerHistorySave(); checkAndManageDiffForLongText(); handleContentChangeForAssociation(); updateLoadSampleOrRevertButtonState(); updateWordCount(); }, 0);
         });
-        editor.addEventListener('blur', () => {
-             clearTimeout(historySaveTimeout);
-             saveCurrentStateToHistory(); 
-        });
-        
-        handleLoadSampleOrRevert(); 
-        updateLoadSampleOrRevertButtonState(); 
+        editor.addEventListener('blur', () => { clearTimeout(historySaveTimeout); saveCurrentStateToHistory(); });
 
-        initDB().then(() => {
-            console.log("DB Initialized.");
-            pruneHistory();
-            setupDragDropListeners(); // Initialize drag and drop
-            
-            if (typeof Diff === 'undefined') { 
-                console.error("jsdiff library (Diff) not loaded!");
-                showToast("错误：智能识别组件未加载，关联功能将不可用。", 5000);
-                isDiffTrackingEnabled = false; 
-                jsdiffInstance = null; 
-            } else {
-                jsdiffInstance = Diff; 
-                console.log("jsdiff (Diff) instance ready.");
-            }
-            loadDiffSettings(); 
-            const diffConfigButton = document.querySelector('button[onclick="showDiffConfigModal()"]');
-            if (diffConfigButton && !jsdiffInstance) diffConfigButton.disabled = true;
-            
-            checkAndManageDiffForLongText();
-			
-			console.warn(
-			    "\n %c🗿 MARKDOWN EDITOR - 开发者守则 🤏%c\n\n" +
-			    " %c1. 所有新功能需通过 \"7天冷静期测试\"%c （如果7天后还觉得非加不可，再议）\n" +
-			    " %c2. 每增一按钮，需要删除一个旧按钮%c （规则1例外时此条也失效）\n" +
-			    " %c3. 克制是美德%c —— 不为满足5%的边缘需求，添加95%的复杂度\n" +
-			    "    %c「简单是终极的复杂」%c —— 达芬奇如是说（大概）\n\n" +
-			    " %c—— Self @ " + new Date('2025/05/19').toLocaleDateString('zh-CN', {year: 'numeric', month: '2-digit', day: '2-digit'}) + "%c\n" +
-			    " %c[写于打消了增加若干个\"酷但是复杂功能\"的念头后留此存照]%c ",
-			    "color:#D32F2F;font-weight:bold;font-size:13px;font-family:Menlo,monospace;border-bottom:2px solid #FFCC80;", "", 
-			    "color:#1976D2;font-weight:600;", "color:#757575;", 
-			    "color:#1976D2;font-weight:600;", "color:#757575;", 
-			    "color:#1976D2;font-weight:600;", "color:#757575;", 
-			    "color:#43A047;font-style:italic;", "color:#757575;", 
-			    "color:#616161;letter-spacing:.5px;", "", 
-			    "color:#9E9E9E;font-size:0.9em;", ""  
-			);
-        }).catch(err => console.error("Initial DB connection failed:", err));
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeMarkdownIt();
+            handleLoadSampleOrRevert();
+            updateLoadSampleOrRevertButtonState();
+
+            initDB().then(() => {
+                console.log("DB Initialized.");
+                pruneHistory();
+                setupDragDropListeners();
+
+                if (typeof Diff === 'undefined') {
+                    console.error("jsdiff library (Diff) not loaded!");
+                    showToast("错误：智能识别组件未加载，关联功能将不可用。", 5000);
+                    isDiffTrackingEnabled = false; jsdiffInstance = null;
+                } else { jsdiffInstance = Diff; console.log("jsdiff (Diff) instance ready."); }
+                loadDiffSettings();
+                const diffConfigButton = document.querySelector('button[onclick="showDiffConfigModal()"]');
+                if (diffConfigButton && !jsdiffInstance) diffConfigButton.disabled = true;
+
+                checkAndManageDiffForLongText();
+                updateWordCount(); // Initial word count
+
+                // Pane collapse setup
+                toggleEditorBtn.addEventListener('click', toggleEditorPane);
+                togglePreviewBtn.addEventListener('click', togglePreviewPane);
+                updateLayoutAndButtonStates(); // Set initial button icons and states
+
+                console.warn(
+                    "\n %c🗿 MARKDOWN EDITOR (Markdown-it Edition) - 开发者守则 🤏%c\n\n" +
+                    " %c1. 所有新功能需通过 \"7天冷静期测试\"%c （如果7天后还觉得非加不可，再议）\n" +
+                    " %c2. 每增一按钮，需要删除一个旧按钮%c （规则1例外时此条也失效）\n" +
+                    " %c3. 克制是美德%c —— 不为满足5%的边缘需求，添加95%的复杂度\n" +
+                    "    %c「简单是终极的复杂」%c —— 达芬奇如是说（大概）\n\n" +
+                    " %c—— Self @ " + new Date('2025/05/20').toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) + "%c\n" +
+                    " %c[Markdown-it 迁移完成，新插件已集成。]%c ",
+                    "color:#D32F2F;font-weight:bold;font-size:13px;font-family:Menlo,monospace;border-bottom:2px solid #FFCC80;", "",
+                    "color:#1976D2;font-weight:600;", "color:#757575;",
+                    "color:#1976D2;font-weight:600;", "color:#757575;",
+                    "color:#1976D2;font-weight:600;", "color:#757575;",
+                    "color:#43A047;font-style:italic;", "color:#757575;",
+                    "color:#616161;letter-spacing:.5px;", "",
+                    "color:#9E9E9E;font-size:0.9em;", ""
+                );
+            }).catch(err => console.error("Initial DB connection failed:", err));
+        });
 
     </script>
 </body>
+
 </html>
