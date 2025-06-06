@@ -418,7 +418,7 @@
         }
 
         .editor {
-            width: 100%;
+            /* width: 100%; */
             font-family: 'Fira Code', 'Consolas', monospace;
             border-radius: 6px;
             overflow: hidden;
@@ -1093,6 +1093,52 @@
         .external-link:hover::after {
             width: 100%;
         }
+        .autocomplete-container {
+            background-color: rgb(255, 255, 255);
+            position: absolute;
+            border-radius: 6px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            min-width: 200px;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #84c1c4;
+            color: #fff;
+        }
+
+        .autocomplete-item .syntax {
+            font-weight: bold;
+        }
+
+        .autocomplete-item .description {
+            color: #888;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .status-bar {
+            background: #1a1a1a;
+            padding: 8px 20px;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #333;
+        }
     </style>
 </head>
 
@@ -1172,7 +1218,8 @@
                 <div class="editor">
                     <div class="toolbar">Markdown Editor (Tab/Shift+Tab supported)</div>
                     <textarea id="editor"
-                        placeholder="Start typing markdown here... or drag & drop a .md/.txt file onto the page."></textarea>
+                        placeholder="在这里输入Markdown, 或是将.md/.txt文件拖到页面, 按 / 展示快捷选项。"></textarea>
+                    <div class="autocomplete-container" id="autocomplete"></div>
                 </div>
             </div>
         </div>
@@ -1634,7 +1681,339 @@ graph TD
 
 > 感谢您的耐心阅读！希望本指南能助您轻松驾驭这款 Markdown 工具。祝您使用愉快！🎉
     </script>
+    <script>
+        class MarkdownAutocomplete {
+            constructor(textarea, onSelect) {
+                this.textarea = textarea;
+                this.autocompleteDiv = document.getElementById('autocomplete');
+                this.statusDiv = document.getElementById('status');
+                this.selectedIndex = 0;
+                this.suggestions = [];
+                this.isVisible = false;
+                this.onSelect = onSelect;
+                
+                this.initSuggestions();
+                this.bindEvents();
+            }
 
+            initSuggestions() {
+                this.markdownSuggestions = [
+                    { trigger: '#', syntax: '# 标题', description: '一级标题' },
+                    { trigger: '##', syntax: '## 标题', description: '二级标题' },
+                    { trigger: '###', syntax: '### 标题', description: '三级标题' },
+                    { trigger: '####', syntax: '#### 标题', description: '四级标题' },
+                    { trigger: '#####', syntax: '##### 标题', description: '五级标题' },
+                    { trigger: '######', syntax: '###### 标题', description: '六级标题' },
+                    { trigger: '*', syntax: '**粗体**', description: '粗体文本' },
+                    { trigger: '_', syntax: '_斜体_', description: '斜体文本' },
+                    { trigger: '`', syntax: '`代码`', description: '行内代码' },
+                    { trigger: '```', syntax: '```\n代码块\n```', description: '代码块' },
+                    { trigger: '[', syntax: '[链接文本](URL)', description: '链接' },
+                    { trigger: '![', syntax: '![图片描述](图片URL)', description: '图片' },
+                    { trigger: '>', syntax: '> 引用', description: '引用块' },
+                    { trigger: '-', syntax: '- 列表项', description: '无序列表' },
+                    { trigger: '1.', syntax: '1. 列表项', description: '有序列表' },
+                    { trigger: '|', syntax: '| 表头1 | 表头2 |\n|------|------|\n| 内容1 | 内容2 |', description: '表格' },
+                    { trigger: '---', syntax: '---', description: '分隔线' },
+                    { trigger: '~~', syntax: '~~删除线~~', description: '删除线' },
+                    { trigger: '==', syntax: '==高亮==', description: '高亮文本' },
+                    { trigger: '- [ ]', syntax: '- [ ] 任务', description: '待办事项' },
+                    { trigger: '- [x]', syntax: '- [x] 已完成', description: '已完成任务' },
+                    { trigger: '+', syntax: '++下划线++', description: '下划线' },
+                    { trigger: '^', syntax: '^上标^', description: '上标' },
+                    { trigger: '~', syntax: '~下标~', description: '下标' },
+                    { trigger: ':', syntax: ':smile:', description: 'Emoji'},
+                    { trigger: '*', syntax: '*[HTML]: 缩写标签的描述', description: '缩写标签'},
+                    { trigger: ':::', syntax: '::: warning-text\n这是一个警告类型的自定义容器。注意安全！\n:::', description: '警告容器'},
+                    { trigger: ':::', syntax: "::: tip-text\n这是一个提示类型的自定义容器。\n:::", description: '提示容器'},
+                    { trigger: ':::', syntax: "::: info-text\n这是一个信息类型的自定义容器。\n:::", description: '信息容器'},
+                    { trigger: ':::', syntax: "::: danger-text\n这是一个危险类型的自定义容器。\n:::", description: '危险容器'},
+                    { trigger: '[^', syntax: "[^1]\n[^1]: 这是脚注的具体内容。", description: '注脚'},
+                    { trigger: '```mermaid', syntax: '```mermaid\n\n```', description: 'Mermaid流程图' },
+                    { trigger: 'graph', prefix: '```mermaid\n', syntax: 'graph TD\n    A[节点A] --> B[节点B]\n    A --> C[节点C]\n    B --> D[节点D]\n    C --> D', description: 'Mermaid流程图结构 (graph)' },
+                    { trigger: 'flowchart', prefix: '```mermaid\n', syntax: 'flowchart TD\n    A[开始] --> B{条件}\n    B -->|Yes| C[操作1]\n    B -->|No| D[操作2]\n    C --> E[结束]\n    D --> E', description: 'Mermaid流程图 (flowchart)' },
+                    { trigger: 'sequenceDiagram', prefix: '```mermaid\n', syntax: 'sequenceDiagram\n    participant A as 用户\n    participant B as 系统\n    A->>B: 请求\n    B-->>A: 响应', description: 'Mermaid时序图' },
+                    { trigger: 'classDiagram', prefix: '```mermaid\n', syntax: 'classDiagram\n    class Animal {\n        +String name\n        +int age\n        +eat()\n        +sleep()\n    }\n    class Dog {\n        +bark()\n    }\n    Animal <|-- Dog', description: 'Mermaid类图' },
+                    { trigger: 'erDiagram', prefix: '```mermaid\n', syntax: 'erDiagram\n    CUSTOMER {\n        string name\n        string email\n        int id\n    }\n    ORDER {\n        int orderNumber\n        date orderDate\n    }\n    CUSTOMER ||--o{ ORDER : places', description: 'Mermaid实体关系图' },
+                    { trigger: 'gantt', prefix: '```mermaid\n', syntax: 'gantt\n    title 项目时间线\n    dateFormat  YYYY-MM-DD\n    section 开发阶段\n    需求分析    :a1, 2024-01-01, 30d\n    设计阶段    :after a1, 20d\n    编码阶段    :20d\n    测试阶段    :10d', description: 'Mermaid甘特图' },
+                    { trigger: 'pie', prefix: '```mermaid\n', syntax: 'pie title 数据分布\n    "类别A" : 45\n    "类别B" : 30\n    "类别C" : 15\n    "类别D" : 10', description: 'Mermaid饼图' },
+                    { trigger: 'journey', prefix: '```mermaid\n', syntax: 'journey\n    title 用户旅程\n    section 访问网站\n      进入首页: 5: 用户\n      浏览产品: 3: 用户\n    section 购买流程\n      添加购物车: 4: 用户\n      结算付款: 2: 用户', description: 'Mermaid用户旅程图' },
+                    { trigger: 'mindmap', prefix: '```mermaid\n', syntax: 'mindmap\n  root((思维导图))\n    主题1\n      子主题1\n      子主题2\n    主题2\n      子主题3\n      子主题4', description: 'Mermaid思维导图' },
+                    { trigger: 'timeline', prefix: '```mermaid\n', syntax: 'timeline\n    title 项目时间线\n    2024-01 : 项目启动\n    2024-02 : 需求分析\n    2024-03 : 开发阶段\n    2024-04 : 测试上线', description: 'Mermaid时间线' }
+                ];
+            }
+
+            bindEvents() {
+                this.textarea.addEventListener('input', (e) => this.handleInput(e));
+                this.textarea.addEventListener('keydown', (e) => this.handleKeydown(e));
+                document.addEventListener('click', (e) => this.handleClickOutside(e));
+            }
+
+            handleInput(e) {
+                const cursorPos = this.textarea.selectionStart;
+                const text = this.textarea.value;
+                const currentLineText = this.getCurrentLine(text, cursorPos); // 获取当前光标所在行的文本直到光标处
+                
+                this.filterSuggestions(currentLineText, text, cursorPos); // 传递更多上下文
+            }
+
+            getCurrentLine(text, cursorPos) {
+                // 获取从当前行开始到光标位置的文本
+                const lineStartIndex = text.lastIndexOf('\n', cursorPos - 1) + 1;
+                return text.substring(lineStartIndex, cursorPos);
+            }
+
+            filterSuggestions(currentLineInput, fullText, cursorPos) {
+                // currentLineInput 是当前行从行首到光标处的文本
+                // fullText 是整个文本域的内容
+                // cursorPos 是当前光标位置
+
+                if (currentLineInput.endsWith('/')) {
+                    this.suggestions = this.markdownSuggestions;
+                    this.showSuggestions();
+                    return;
+                }
+
+                const trimmedInput = currentLineInput.trim(); // 用于匹配 item.trigger 的部分 (通常是最后一个词)
+
+                if (trimmedInput === '' && !currentLineInput.endsWith(' ') && currentLineInput.length > 0) {
+                    // 如果 trimmedInput 为空，但 currentLineInput 不为空且不以空格结尾
+                    // 这意味着用户可能刚输入了一个符号，比如 `#` 或 `*`
+                    // 在这种情况下，我们用 currentLineInput 的最后一个字符作为匹配项
+                    // 但为了简单，我们还是依赖 currentLineInput (未trim)来匹配 item.trigger
+                    // 或者，我们可以用 currentLineInput 的最后一个非空部分作为 `whatUserIsTyping`
+                }
+
+
+                // `whatUserIsTyping` 是用户当前正在输入的、我们希望用来匹配 `item.trigger` 的那部分文本。
+                // 它可以是当前行光标前的最后一个 "词" 或符号序列。
+                const matches = currentLineInput.match(/([^\s]+)$/);
+                const whatUserIsTyping = matches ? matches[1] : "";
+
+
+                if (whatUserIsTyping === '' && !['#', '*', '`', '[', '>', '-','|'].includes(currentLineInput.slice(-1)) ) {
+                     // 如果正在输入的词为空，并且行尾不是一个直接的触发符，则不显示建议
+                    this.hideSuggestions();
+                    return;
+                }
+
+
+                this.suggestions = this.markdownSuggestions.filter(item => {
+                    let triggerMatches = false;
+                    // 主要匹配逻辑: item.trigger 是否以用户正在输入的内容开头
+                    // 或者，如果用户输入的是一个简单的符号，如'#', '`', '*', '-', currentLineInput本身就是trigger
+                    if (item.trigger.startsWith(whatUserIsTyping) && whatUserIsTyping.length > 0) {
+                        triggerMatches = true;
+                    } else if (item.trigger.startsWith(currentLineInput) && currentLineInput.length > 0) { // 处理 '#', '##' 等情况
+                        triggerMatches = true;
+                    }
+                     else if (whatUserIsTyping.length > 0 && item.description.toLowerCase().includes(whatUserIsTyping.toLowerCase())) {
+                        // 允许通过描述搜索，可以考虑作为次要匹配
+                        // triggerMatches = true; 
+                    }
+
+
+                    if (!triggerMatches) {
+                        return false;
+                    }
+
+                    // 如果 item 有 prefix 条件
+                    if (item.prefix) {
+                        // 获取光标位置前、*不包括* whatUserIsTyping 的文本
+                        const textBeforeWhatUserIsTyping = fullText.substring(0, cursorPos - whatUserIsTyping.length);
+                        // 检查这段文本是否以 item.prefix 结尾
+                        // 使用 trimRight() 来忽略 prefix 末尾和实际文本中可能存在的尾随空格差异
+                        if (!textBeforeWhatUserIsTyping.trimRight().endsWith(item.prefix.trimRight())) {
+                            return false; // 前缀不匹配
+                        }
+                    }
+                    return true; // 所有条件满足
+                });
+
+                if (this.suggestions.length > 0) {
+                    this.showSuggestions();
+                } else {
+                    this.hideSuggestions();
+                }
+            }
+
+
+            showSuggestions() {
+                this.autocompleteDiv.innerHTML = '';
+                this.selectedIndex = 0;
+                
+                this.suggestions.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-item';
+                    if (index === 0) div.classList.add('selected');
+                    const syntaxList = item.syntax.split('\n')
+
+                    const description = syntaxList.length > 1 ? `${syntaxList[0]} ...` : item.syntax;
+                    div.innerHTML = `
+                        <div class="syntax">${item.description}</div>
+                        <div class="description">${description}</div>
+                    `;
+                    
+                    div.addEventListener('click', () => this.selectSuggestion(index));
+                    this.autocompleteDiv.appendChild(div);
+                });
+
+                this.positionAutocomplete();
+                this.autocompleteDiv.style.display = 'block';
+                this.isVisible = true;
+            }
+
+            hideSuggestions() {
+                this.autocompleteDiv.style.display = 'none';
+                this.isVisible = false;
+            }
+
+            positionAutocomplete() {
+                // 获取光标相对于textarea的精确位置
+                const textareaStyles = window.getComputedStyle(this.textarea);
+                const paddingLeft = parseFloat(textareaStyles.paddingLeft);
+                const paddingTop = parseFloat(textareaStyles.paddingTop);
+                const lineHeight = parseFloat(textareaStyles.lineHeight);
+                const charWidthEstimate = parseFloat(textareaStyles.fontSize) * 0.6; // 估算字符宽度
+
+                const textToCursor = this.textarea.value.substring(0, this.textarea.selectionStart);
+                const lines = textToCursor.split('\n');
+                const currentLineNumber = lines.length -1; // 0-indexed
+                const charsInCurrentLine = lines[currentLineNumber].length;
+
+                const topOffset = this.textarea.offsetTop + paddingTop;
+                const leftOffset = this.textarea.offsetLeft + paddingLeft;
+
+                let top = topOffset + (currentLineNumber * lineHeight) + lineHeight; // 定位到当前行下方
+                let left = leftOffset + (charsInCurrentLine * charWidthEstimate);
+
+                // 确保提示框在视窗内
+                const containerRect = this.textarea.getBoundingClientRect();
+                const autocompleteRect = this.autocompleteDiv.getBoundingClientRect(); // 获取当前尺寸（如果可见）
+                
+                // 简单的边界检查，可以进一步完善
+                if (left + (this.autocompleteDiv.offsetWidth || 200) > window.innerWidth - 20) {
+                    left = window.innerWidth - (this.autocompleteDiv.offsetWidth || 200) - 20;
+                }
+                if (top + (this.autocompleteDiv.offsetHeight || 200) > window.innerHeight - 20) {
+                    top = topOffset + (currentLineNumber * lineHeight) - (this.autocompleteDiv.offsetHeight || 200) - 5; // 显示在上方
+                }
+                
+                this.autocompleteDiv.style.top = `${top}px`;
+                this.autocompleteDiv.style.left = `${left}px`;
+            }
+
+
+            handleKeydown(e) {
+                if (!this.isVisible) return;
+
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.selectedIndex = (this.selectedIndex + 1) % this.suggestions.length;
+                        this.updateSelection();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.selectedIndex = this.selectedIndex > 0 ? this.selectedIndex - 1 : this.suggestions.length - 1;
+                        this.updateSelection();
+                        break;
+                    case 'Tab':
+                    case 'Enter':
+                        e.preventDefault();
+                        this.selectSuggestion(this.selectedIndex);
+                        break;
+                    case 'Escape':
+                        this.hideSuggestions();
+                        break;
+                }
+            }
+
+            updateSelection() {
+                const items = this.autocompleteDiv.querySelectorAll('.autocomplete-item');
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === this.selectedIndex);
+                });
+                
+                const selectedItem = items[this.selectedIndex];
+                if (selectedItem) {
+                    selectedItem.scrollIntoView({ 
+                        block: 'nearest',
+                        behavior: 'smooth'
+                    });
+                }
+            }
+
+            selectSuggestion(index) {
+                if (index >= this.suggestions.length || index < 0) return;
+
+                const suggestion = this.suggestions[index];
+                const cursorPos = this.textarea.selectionStart;
+                const text = this.textarea.value;
+
+                // 确定要替换的文本范围
+                // `whatUserIsTyping` 是之前在 filterSuggestions 中计算的，这里需要重新获取或传递
+                const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
+                const currentLineTextToCursor = text.substring(lineStart, cursorPos);
+                const matches = currentLineTextToCursor.match(/([^\s]*)$/); // 获取光标前的非空格字符序列
+                const textToReplace = matches ? matches[1] : "";
+
+
+                const textBefore = text.substring(0, cursorPos - textToReplace.length);
+                const textAfter = text.substring(cursorPos);
+                
+                let replacementText = suggestion.syntax;
+                // 如果是带prefix的项，并且prefix已经存在，我们可能只想插入触发器之后的部分
+                // 但通常我们会替换掉用户输入的触发器文本，然后插入完整的语法
+                // 例如，用户输入 ````mermaid\ngraph`，我们选择 `graph` 的建议，
+                // 会用 `graph TD...` 替换掉 `graph`。
+
+                this.textarea.value = textBefore + replacementText + textAfter;
+                
+                let newCursorPos = textBefore.length + replacementText.length;
+
+                // 智能光标定位逻辑 (可以根据 suggestion.syntax 的结构进一步细化)
+                const placeholderKeywords = ['标题', '链接文本', 'URL', '图片描述', '图片URL', '代码', '引用', '列表项', '任务'];
+                let placeholderFound = false;
+                for (const keyword of placeholderKeywords) {
+                    const placeholderIndex = replacementText.indexOf(keyword);
+                    if (placeholderIndex !== -1) {
+                        newCursorPos = textBefore.length + placeholderIndex;
+                        placeholderFound = true;
+                        break;
+                    }
+                }
+                // 对于Mermaid代码块，通常光标在最后
+                if (replacementText.includes('\n```') && !placeholderFound) {
+                    // 如果是代码块且没有特定占位符，光标可以放在代码块内部的末尾，或根据具体语法调整
+                     const lastTripleBacktick = replacementText.lastIndexOf('\n```');
+                     if (lastTripleBacktick > 0) { // 确保不是开头的```
+                        newCursorPos = textBefore.length + lastTripleBacktick;
+                     }
+                }
+
+
+                this.textarea.focus();
+                this.textarea.setSelectionRange(newCursorPos, newCursorPos);
+                this.hideSuggestions();
+                this.handleInput(); // 重新触发输入处理，以防插入的内容又触发了新的提示
+                if (this.onSelect) {
+                    try {
+                        this.onSelect({suggestion, textarea: this.textarea, totalValue: this.textarea.value})
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+            }
+
+            handleClickOutside(e) {
+                if (!this.autocompleteDiv.contains(e.target) && e.target !== this.textarea) {
+                    this.hideSuggestions();
+                }
+            }
+        }
+
+    </script>
     <script>
         // --- Global Variables & Constants ---
         const editor = document.getElementById('editor');
@@ -3087,11 +3466,23 @@ graph TD
         });
         editor.addEventListener('blur', () => { clearTimeout(historySaveTimeout); saveCurrentStateToHistory(); });
 
+        function onSuggestionSelect({suggestion, textarea, totalValue}) {
+            preview.innerHTML = md.render(totalValue)
+            if (window.mermaid) {
+                mermaid.run({
+                    nodes: preview.querySelectorAll('.mermaid')
+                }).catch(err => {
+                    console.error("Mermaid rendering error in preview:", err);
+                });
+            }
+        }
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             initializeMarkdownIt();
             handleLoadSampleOrRevert();
             updateLoadSampleOrRevertButtonState();
+            new MarkdownAutocomplete(editor, onSuggestionSelect);
 
             initDB().then(() => {
                 console.log("DB Initialized.");
