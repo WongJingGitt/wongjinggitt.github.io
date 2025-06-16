@@ -5,460 +5,990 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工具导航</title>
     <style>
-        /* --- Base Styles (mostly unchanged) --- */
         :root {
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #343a40;
-            --heading-color: #007bff;
-            --link-color: #0056b3;
-            --border-color: #dee2e6;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --hover-bg: #e9ecef;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --tooltip-bg: #343a40;
-            --tooltip-text: #ffffff;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+            --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #2a2a2a;
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            
+            --text-primary: #e0e0ff; /* [优化] 从纯白改为带色调的亮色 */
+            --text-secondary: #b4b4b4;
+            --text-muted: #6b7280;
+            
+            --glow-primary: 0 0 20px rgba(102, 126, 234, 0.3);
+            --glow-secondary: 0 0 20px rgba(240, 147, 251, 0.3);
+            --glow-success: 0 0 20px rgba(79, 172, 254, 0.3);
+            
+            --border-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 16px; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: var(--font-family);
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: var(--font-primary);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            text-shadow: 0 0 5px rgba(180, 180, 255, 0.1); /* [优化] 全局文字辉光/阴影 */
             line-height: 1.6;
-            padding-top: 20px;
-            padding-bottom: 40px;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { text-align: center; margin-bottom: 1rem; }
-        header h1 { color: var(--heading-color); font-size: 2.5rem; font-weight: 600; margin-bottom: 0.5rem;}
-        .header-actions { margin-bottom: 1.5rem; text-align: center; }
-        .btn { display: inline-block; font-weight: 400; color: #fff; text-align: center; vertical-align: middle; user-select: none; background-color: var(--heading-color); border: 1px solid var(--heading-color); padding: 0.375rem 0.75rem; font-size: 1rem; line-height: 1.5; border-radius: 0.25rem; transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out; cursor: pointer; text-decoration: none; }
-        .btn:hover { background-color: var(--link-color); border-color: var(--link-color); }
-        .btn-danger { background-color: var(--danger-color); border-color: var(--danger-color); }
-        .btn-danger:hover { background-color: #c82333; border-color: #bd2130; }
-        .btn-warning { background-color: var(--warning-color); border-color: var(--warning-color); color: #212529;}
-        .btn-warning:hover { background-color: #e0a800; border-color: #d39e00; color: #212529;}
-        .btn-secondary { background-color: #6c757d; border-color: #6c757d; }
-        .btn-secondary:hover { background-color: #5a6268; border-color: #545b62; }
-        .btn-sm { padding: 0.25rem 0.5rem; font-size: .875rem; line-height: 1.5; border-radius: 0.2rem;}
-        .category-section { margin-bottom: 1.5rem; background-color: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 10px var(--shadow-color); overflow: hidden; }
-        .category-title { background-color: var(--heading-color); color: white; padding: 0.8rem 1.5rem; font-size: 1.3rem; font-weight: 500; margin: 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; transition: background-color 0.2s ease; }
-        .category-title:hover { background-color: var(--link-color); }
-        .toggle-icon { font-size: 1rem; font-weight: bold; transition: transform 0.3s ease; display: inline-block; }
-        .toggle-icon::before { content: '▼'; }
-        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; padding: 1.5rem; max-height: 1000px; overflow: hidden; transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out; }
-        .tool-card {
-            position: relative; /* Needed for absolute tooltip and z-index */
-            display: block;
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 1rem;
-            text-decoration: none;
-            color: var(--text-color);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease;
-            /* overflow: hidden; */ /* <-- 移除或注释掉这行，如果存在的话 */
-            overflow: visible; /* <-- 确保是 visible，允许伪元素溢出 */
-            text-align: center;
-            z-index: 100; /* 给一个基础 z-index */
-        }
-        .tool-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px var(--shadow-color);
-            background-color: var(--hover-bg);
-            color: var(--link-color);
-            /* 提高 hover 时的 z-index，使其覆盖同级元素 */
-            /* z-index: 10;  <-- 可以稍微提高，例如 20，但主要目的是覆盖同级 */
-            z-index: 200;
-        }
-        .tool-card .tool-name { font-weight: 500; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 0.5rem; }
-        .tool-card-actions { display: flex; justify-content: center; gap: 5px; margin-top: 8px; }
-        .category-section.collapsed .tools-grid { max-height: 0; padding-top: 0; padding-bottom: 0; }
-        .category-section.collapsed .toggle-icon { transform: rotate(-90deg); }
-        .message { text-align: center; font-size: 1.1rem; color: #6c757d; margin-top: 3rem; }
-        footer { text-align: center; margin-top: 3rem; color: #6c757d; font-size: 0.9rem; }
-        #tool-modal { border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin: 5vh auto; width: 25%; }
-        #tool-modal::backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); }
-        #tool-modal h2 { margin-top: 0; margin-bottom: 1.5rem; color: var(--heading-color); text-align: center; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        .form-group input[type="text"], .form-group input[type="url"], .form-group input[type="number"], .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; font-family: inherit; /* Ensure textarea uses same font */ }
-        .form-group textarea { min-height: 60px; resize: vertical; } /* Basic textarea styling */
-        .form-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem; }
 
-        /* --- NEW: Tooltip Styles --- */
-        .tool-card[data-tooltip] {
-            position: relative; /* Needed for absolute positioning of pseudo-element */
-            max-width: 300px; /* Limit width */
+        /* 动态背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundShift 20s ease-in-out infinite;
         }
-        .tool-card[data-tooltip]::after {
-            content: attr(data-tooltip); /* Display text from data-tooltip attribute */
-            position: absolute;
-            left: 50%;
-            bottom: 105%;
-            transform: translateX(-50%); /* Center horizontally */
-            background-color: var(--tooltip-bg);
-            color: var(--tooltip-text);
-            padding: 0.4rem 0.8rem;
+
+        @keyframes backgroundShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
             border-radius: 4px;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            white-space: nowrap; /* Prevent wrapping initially */
-            max-width: 300px; /* Limit width */
-            overflow: hidden; /* Hide overflow */
-            text-overflow: ellipsis; /* Add ellipsis if too long */
-            z-index: 1000; /* Ensure tooltip is above everything */
-            opacity: 0; /* Hidden by default */
-            visibility: hidden;
-            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-            pointer-events: none; /* Tooltip itself shouldn't be interactive */
-        }
-        /* Show tooltip on hover */
-        .tool-card[data-tooltip]:hover::after {
-            opacity: 1;
-            visibility: visible;
-            white-space: normal; /* Allow wrapping when visible */
-            text-overflow: clip; /* Remove ellipsis when visible */
-            z-index: 100;
         }
 
-        @media (max-width: 768px) { header h1 { font-size: 2rem; } .category-title { font-size: 1.1rem; padding: 0.7rem 1rem; } .tools-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); padding: 1rem; gap: 0.8rem; } .tool-card { padding: 0.8rem; } .toggle-icon { font-size: 0.9rem; } #tool-modal { width: 90%; padding: 1rem 1.5rem;} .tool-card[data-tooltip]::after { font-size: 0.8rem; padding: 0.3rem 0.6rem; } }
-        @media (max-width: 480px) { .tools-grid { grid-template-columns: 1fr; } .tool-card .tool-name { font-size: 0.9rem; } }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* 头部区域 */
+        .header {
+            text-align: center;
+            padding: 40px 0 60px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 32px;
+        }
+
+        .add-btn {
+            background: var(--primary-gradient);
+            border: none;
+            padding: 16px 32px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--glow-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .add-btn:hover::before {
+            left: 100%;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 搜索栏 */
+        .search-section {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 24px 16px 60px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: var(--glow-primary);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        /* 分类标签 */
+        .filter-tags {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-tag {
+            padding: 8px 16px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-tag:hover,
+        .filter-tag.active {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--glow-primary);
+        }
+
+        /* 工具网格 */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .tool-card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: var(--transition);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 160px;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tool-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), var(--glow-primary);
+        }
+
+        .tool-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .tool-category {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .tool-description {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            flex-grow: 1;
+            line-height: 1.5;
+        }
+        
+        .tool-content-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            flex-grow: 1;
+        }
+
+        .tool-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .tool-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-btn-edit {
+            background: var(--warning-gradient);
+            color: white;
+        }
+
+        .tool-btn-delete {
+            background: var(--danger-gradient);
+            color: white;
+        }
+
+        .tool-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 模态框 */
+        #tool-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--border-radius);
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            margin: auto; /* [优化] 实现模态框垂直和水平居中 */
+        }
+
+        #tool-modal::backdrop {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea.form-input {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .modal-btn-primary:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .modal-btn-secondary {
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-glass);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-glass);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .tools-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .filter-tags {
+                gap: 8px;
+            }
+            
+            #tool-modal {
+                padding: 24px;
+                margin: 20px auto; /* 在小屏幕上保持上下边距，同时水平居中 */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 24px 0 40px;
+            }
+            
+            .tool-actions {
+                flex-direction: column;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
+        <header class="header">
             <h1>工具导航</h1>
-            <div class="header-actions">
-                <button id="add-tool-btn" class="btn">添加自定义网址</button>
-            </div>
+            <button id="add-tool-btn" class="add-btn">
+                ✨ 添加新工具
+            </button>
         </header>
+
+        <section class="search-section">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" class="search-input" placeholder="搜索工具...">
+            </div>
+            <div class="filter-tags" id="filter-tags">
+                <span class="filter-tag active" data-category="all">全部</span>
+            </div>
+        </section>
+
         <main id="navigation-container">
-            <p class="message" id="loading-message">正在加载工具列表...</p>
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
         </main>
-        <footer>
-            <p>导航页面 © 2025</p>
-        </footer>
     </div>
 
     <dialog id="tool-modal">
-        <h2 id="modal-title">添加网址</h2>
+        <h2 class="modal-title" id="modal-title">添加新工具</h2>
         <form id="tool-form">
             <input type="hidden" id="tool-id">
-            <div class="form-group"> <label for="tool-name">名称:</label> <input type="text" id="tool-name" name="name" required> </div>
-            <div class="form-group"> <label for="tool-url">网址 (URL):</label> <input type="url" id="tool-url" name="url" required placeholder="https://example.com"> </div>
-            <div class="form-group"> <label for="tool-type">分类:</label> <input type="text" id="tool-type" name="type" required placeholder="例如: 开发工具"> </div>
-            <div class="form-group"> <label for="tool-index">分类排序 Index:</label> <input type="number" id="tool-index" name="index" required value="9999"> </div>
-            <!-- NEW: Info Field -->
+            
             <div class="form-group">
-                <label for="tool-info">说明 (Info - 可选):</label>
-                <textarea id="tool-info" name="info" placeholder="关于此工具的简短说明..."></textarea>
+                <label for="tool-name">工具名称</label>
+                <input type="text" id="tool-name" class="form-input" name="name" required placeholder="输入工具名称">
             </div>
-            <div class="form-actions"> <button type="button" id="cancel-btn" class="btn btn-secondary">取消</button> <button type="submit" id="save-btn" class="btn">保存</button> </div>
+            
+            <div class="form-group">
+                <label for="tool-url">工具链接</label>
+                <input type="url" id="tool-url" class="form-input" name="url" required placeholder="https://example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="tool-type">分类</label>
+                <input type="text" id="tool-type" class="form-input" name="type" required placeholder="例如: 开发工具">
+            </div>
+            
+            <div class="form-group">
+                <label for="tool-index">排序权重</label>
+                <input type="number" id="tool-index" class="form-input" name="index" value="9999" title="数字越小，分类越靠前">
+            </div>
+            
+            <div class="form-group">
+                <label for="tool-info">工具描述</label>
+                <textarea id="tool-info" class="form-input" name="info" placeholder="简单描述这个工具的用途..."></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" id="cancel-btn" class="modal-btn modal-btn-secondary">取消</button>
+                <button type="submit" class="modal-btn modal-btn-primary">保存</button>
+            </div>
         </form>
     </dialog>
 
     <script>
-        // --- Config ---
+        // 配置
         const API_ENDPOINT = `https://wongjinggitt.github.io/public/tool_list.json?_v=${new Date().getTime()}`;
         const DB_NAME = 'userToolsDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'tools';
         const DEFAULT_CATEGORY_INDEX = 9999;
 
-        // --- IndexedDB Helpers (Unchanged structurally, ensure 'info' is handled if needed during upgrades) ---
-        let db;
-        async function dbSetup() { /* ... same ... */
-            return new Promise((resolve, reject) => {
-                if (db) { resolve(db); return; }
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = (event) => { console.error("IndexedDB error:", event.target.error); reject("Database error: " + event.target.error); };
-                request.onsuccess = (event) => { db = event.target.result; console.log("Database opened successfully"); resolve(db); };
-                request.onupgradeneeded = (event) => {
-                    const dbInstance = event.target.result; console.log("Upgrading database...");
-                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-                        // If creating fresh, ensure 'info' could be indexed if needed later
-                        const store = dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                        // Example: store.createIndex('by_type', 'type', { unique: false });
-                        console.log(`Object store "${STORE_NAME}" created.`);
-                    }
-                    // Handle potential future addition of 'info' index here in upgrades
-                };
-            });
-        }
-        // Add/Update/Delete/GetAll now implicitly handle 'info' as part of the tool object
-        async function addLocalTool(tool) { /* ... same ... */
-             await dbSetup();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                delete tool.id;
-                const request = store.add(tool); // tool object now includes 'info'
-                request.onsuccess = (event) => resolve(event.target.result);
-                request.onerror = (event) => reject("Error adding tool: " + event.target.error);
-            });
-        }
-        async function updateLocalTool(tool) { /* ... same ... */
-             await dbSetup();
-             return new Promise((resolve, reject) => {
-                 if (!tool.id) return reject("Cannot update tool without an ID.");
-                 const transaction = db.transaction([STORE_NAME], 'readwrite');
-                 const store = transaction.objectStore(STORE_NAME);
-                 const request = store.put(tool); // tool object now includes 'info'
-                 request.onsuccess = () => resolve();
-                 request.onerror = (event) => reject("Error updating tool: " + event.target.error);
-             });
-        }
-        async function deleteLocalTool(id) { /* ... same ... */
-            await dbSetup();
-             return new Promise((resolve, reject) => {
-                 const transaction = db.transaction([STORE_NAME], 'readwrite');
-                 const store = transaction.objectStore(STORE_NAME);
-                 const request = store.delete(id);
-                 request.onsuccess = () => resolve();
-                 request.onerror = (event) => reject("Error deleting tool: " + event.target.error);
-             });
-         }
-        async function getAllLocalTools() { /* ... same, 'info' is part of the result object ... */
-             await dbSetup();
-             return new Promise((resolve, reject) => {
-                 const transaction = db.transaction([STORE_NAME], 'readonly');
-                 const store = transaction.objectStore(STORE_NAME);
-                 const request = store.getAll();
-                 request.onsuccess = (event) => {
-                     const localTools = event.target.result.map(tool => ({
-                         ...tool, // Includes 'info' if it was saved
-                         index: Number(tool.index),
-                         isLocal: true
-                     }));
-                     resolve(localTools);
-                 };
-                 request.onerror = (event) => reject("Error getting tools: " + event.target.error);
-             });
-        }
-
-        // --- Main Logic ---
+        // DOM 元素
         const navigationContainer = document.getElementById('navigation-container');
-        const loadingMessage = document.getElementById('loading-message');
         const addToolBtn = document.getElementById('add-tool-btn');
         const toolModal = document.getElementById('tool-modal');
         const toolForm = document.getElementById('tool-form');
         const cancelBtn = document.getElementById('cancel-btn');
         const modalTitle = document.getElementById('modal-title');
         const toolIdInput = document.getElementById('tool-id');
+        const searchInput = document.getElementById('search-input');
+        const filterTags = document.getElementById('filter-tags');
 
+        // 全局状态
+        let allTools = [];
+        let filteredTools = [];
+        let currentFilter = 'all';
+        let db;
+
+        // IndexedDB 操作
+        async function dbSetup() {
+            return new Promise((resolve, reject) => {
+                if (db) { resolve(db); return; }
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.error);
+                    reject("Database error: " + event.target.error);
+                };
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+                request.onupgradeneeded = (event) => {
+                    const dbInstance = event.target.result;
+                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                        const store = dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        async function addLocalTool(tool) {
+            await dbSetup();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                delete tool.id;
+                const request = store.add(tool);
+                request.onsuccess = (event) => resolve(event.target.result);
+                request.onerror = (event) => reject("Error adding tool: " + event.target.error);
+            });
+        }
+
+        async function updateLocalTool(tool) {
+            await dbSetup();
+            return new Promise((resolve, reject) => {
+                if (!tool.id) return reject("Cannot update tool without an ID.");
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(tool);
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject("Error updating tool: " + event.target.error);
+            });
+        }
+
+        async function deleteLocalTool(id) {
+            await dbSetup();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = (event) => reject("Error deleting tool: " + event.target.error);
+            });
+        }
+
+        async function getAllLocalTools() {
+            await dbSetup();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = (event) => {
+                    const localTools = event.target.result.map(tool => ({
+                        ...tool,
+                        index: Number(tool.index),
+                        isLocal: true
+                    }));
+                    resolve(localTools);
+                };
+                request.onerror = (event) => reject("Error getting tools: " + event.target.error);
+            });
+        }
+
+        // [优化] 重构数据合并与排序逻辑，确保本地工具优先
+        async function fetchAndRenderTools() {
+            try {
+                // 1. 获取并处理 API 工具
+                let apiTools = [];
+                try {
+                    const response = await fetch(API_ENDPOINT);
+                    if (response.ok) {
+                        const apiGroupedData = await response.json() || {};
+                        Object.entries(apiGroupedData).forEach(([type, groupData]) => {
+                            if (groupData.tools && groupData.tools.length > 0) {
+                                groupData.tools.forEach(tool => {
+                                    apiTools.push({
+                                        ...tool,
+                                        type: type,
+                                        category: type,
+                                        index: Number(groupData.index) || DEFAULT_CATEGORY_INDEX,
+                                        isLocal: false // 明确标记为非本地
+                                    });
+                                });
+                            }
+                        });
+                    }
+                } catch (apiError) {
+                    console.warn("Failed to fetch from API, proceeding with local data only.", apiError);
+                }
+
+                // 2. 获取本地工具
+                let localTools = [];
+                try {
+                    localTools = await getAllLocalTools(); // isLocal: true 已在内部设置
+                } catch (dbError) {
+                    console.error("Failed to fetch from IndexedDB.", dbError);
+                }
+                
+                // 3. 分别排序，然后合并
+                localTools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+                apiTools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+
+                allTools = [...localTools, ...apiTools]; // 本地工具在前，API工具在后
+
+                // 后续流程不变
+                updateFilterTags();
+                filterTools(currentFilter, searchInput.value.trim());
+
+            } catch (error) {
+                console.error('获取工具数据时出错:', error);
+                navigationContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">❌</div>
+                        <p>加载工具列表失败: ${error.message || error}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 更新过滤器标签
+        function updateFilterTags() {
+            const categoriesData = allTools.reduce((acc, tool) => {
+                const category = tool.category;
+                if (!acc[category]) {
+                    acc[category] = { count: 0, index: Infinity };
+                }
+                acc[category].count++;
+                
+                const toolIndex = Number(tool.index);
+                if (!isNaN(toolIndex) && toolIndex < acc[category].index) {
+                     acc[category].index = toolIndex;
+                }
+                return acc;
+            }, {});
+
+            const sortedCategories = Object.keys(categoriesData).sort((a, b) => {
+                const indexA = categoriesData[a].index;
+                const indexB = categoriesData[b].index;
+                if (indexA !== indexB) return indexA - indexB;
+                return a.localeCompare(b, 'zh-CN');
+            });
+
+            filterTags.innerHTML = `<span class="filter-tag" data-category="all">全部 (${allTools.length})</span>`;
+            
+            sortedCategories.forEach(category => {
+                const count = categoriesData[category].count;
+                const tag = document.createElement('span');
+                tag.className = 'filter-tag';
+                tag.dataset.category = category;
+                tag.textContent = `${category} (${count})`;
+                filterTags.appendChild(tag);
+            });
+            
+            const activeTag = filterTags.querySelector(`[data-category="${currentFilter}"]`);
+            if(activeTag) activeTag.classList.add('active');
+        }
+
+        // 过滤工具
+        function filterTools(category, searchTerm = '') {
+            currentFilter = category;
+            
+            let tempFiltered = (category === 'all')
+                ? [...allTools]
+                : allTools.filter(tool => tool.category === category);
+            
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                tempFiltered = tempFiltered.filter(tool => 
+                    tool.name.toLowerCase().includes(term) ||
+                    (tool.info && tool.info.toLowerCase().includes(term)) ||
+                    tool.category.toLowerCase().includes(term)
+                );
+            }
+            
+            filteredTools = tempFiltered;
+            renderTools();
+
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.classList.toggle('active', tag.dataset.category === currentFilter);
+            });
+        }
+
+        // 渲染工具
+        function renderTools() {
+            if (filteredTools.length === 0) {
+                navigationContainer.innerHTML = `
+                    <div class="empty-state fade-in">
+                        <div class="empty-icon">🧐</div>
+                        <p>没有找到匹配的工具</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const toolsGrid = document.createElement('div');
+            toolsGrid.className = 'tools-grid fade-in';
+
+            filteredTools.forEach(tool => {
+                const toolCard = document.createElement('div');
+                toolCard.className = 'tool-card scale-in';
+                
+                const toolContentLink = document.createElement('a');
+                toolContentLink.href = tool.url;
+                toolContentLink.target = '_blank';
+                toolContentLink.rel = 'noopener noreferrer';
+                toolContentLink.className = 'tool-content-link';
+                
+                toolContentLink.innerHTML = `
+                    <div class="tool-name">${tool.name}</div>
+                    <div class="tool-category">${tool.type}</div>
+                    <div class="tool-description">${tool.info || '暂无描述'}</div>
+                `;
+
+                toolCard.appendChild(toolContentLink);
+
+                if (tool.isLocal) {
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'tool-actions';
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'tool-btn tool-btn-edit';
+                    editBtn.innerHTML = '✏️ 编辑';
+                    editBtn.onclick = (e) => {
+                        e.preventDefault();
+                        editTool(tool);
+                    };
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'tool-btn tool-btn-delete';
+                    deleteBtn.innerHTML = '🗑️ 删除';
+                    deleteBtn.onclick = (e) => {
+                        e.preventDefault();
+                        deleteTool(tool);
+                    };
+                    
+                    actionsDiv.appendChild(editBtn);
+                    actionsDiv.appendChild(deleteBtn);
+                    toolCard.appendChild(actionsDiv);
+                }
+
+                toolsGrid.appendChild(toolCard);
+            });
+
+            navigationContainer.innerHTML = '';
+            navigationContainer.appendChild(toolsGrid);
+        }
+
+        // 编辑工具
+        function editTool(tool) {
+            modalTitle.textContent = "编辑工具";
+            toolForm.reset();
+            toolIdInput.value = tool.id;
+            document.getElementById('tool-name').value = tool.name;
+            document.getElementById('tool-url').value = tool.url;
+            document.getElementById('tool-type').value = tool.type;
+            document.getElementById('tool-index').value = tool.index || DEFAULT_CATEGORY_INDEX;
+            document.getElementById('tool-info').value = tool.info || '';
+            toolModal.showModal();
+        }
+
+        // 删除工具
+        async function deleteTool(tool) {
+            if (confirm(`确定要删除工具 "${tool.name}" 吗？此操作无法撤销。`)) {
+                try {
+                    await deleteLocalTool(tool.id);
+                    await fetchAndRenderTools();
+                } catch (error) {
+                    console.error('Error deleting tool:', error);
+                    alert('删除工具失败: ' + error.message);
+                }
+            }
+        }
+
+        // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             fetchAndRenderTools();
 
             addToolBtn.addEventListener('click', () => {
-                modalTitle.textContent = "添加网址";
+                modalTitle.textContent = "添加新工具";
                 toolForm.reset();
-                document.getElementById('tool-index').value = DEFAULT_CATEGORY_INDEX;
                 toolIdInput.value = '';
+                document.getElementById('tool-index').value = DEFAULT_CATEGORY_INDEX;
                 toolModal.showModal();
             });
 
-            cancelBtn.addEventListener('click', () => toolModal.close());
-
-            // UPDATED: Form submission to include 'info'
-            toolForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
+            toolForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
                 const formData = new FormData(toolForm);
                 const toolData = {
-                    name: formData.get('name'),
-                    url: formData.get('url'),
-                    type: formData.get('type'),
-                    info: formData.get('info') || '' // Get info, default to empty string if null/undefined
+                    name: formData.get('name').trim(),
+                    url: formData.get('url').trim(),
+                    type: formData.get('type').trim(),
+                    index: Number(formData.get('index')) || DEFAULT_CATEGORY_INDEX,
+                    info: formData.get('info').trim(),
+                    isLocal: true
                 };
-                const rawIndex = parseInt(formData.get('index'), 10);
-                toolData.index = isNaN(rawIndex) ? DEFAULT_CATEGORY_INDEX : rawIndex;
-                const currentToolId = toolIdInput.value;
+
+                if (!toolData.name || !toolData.url || !toolData.type) {
+                    alert('工具名称、链接和分类是必填项。');
+                    return;
+                }
+
+                const id = toolIdInput.value;
+                const submitButton = toolForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = '保存中...';
 
                 try {
-                    if (currentToolId) {
-                        toolData.id = parseInt(currentToolId, 10);
+                    if (id) {
+                        toolData.id = parseInt(id, 10);
                         await updateLocalTool(toolData);
-                        alert('网址更新成功！');
                     } else {
                         await addLocalTool(toolData);
-                        alert('网址添加成功！');
                     }
                     toolModal.close();
-                    fetchAndRenderTools();
+                    await fetchAndRenderTools();
                 } catch (error) {
-                    console.error("Error saving tool:", error);
-                    alert(`保存失败: ${error}`);
+                    console.error('Error saving tool:', error);
+                    alert('保存工具失败: ' + error.message);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = '保存';
                 }
             });
 
-            // UPDATED: Event Delegation to handle 'info' in edit mode
-            navigationContainer.addEventListener('click', async (event) => {
-                const target = event.target;
-                const titleElement = target.closest('.category-title');
-                if (titleElement && !target.closest('.btn')) {
-                    const sectionElement = titleElement.closest('.category-section');
-                    if (sectionElement) sectionElement.classList.toggle('collapsed');
-                    return;
+            cancelBtn.addEventListener('click', () => {
+                toolModal.close();
+            });
+
+            toolModal.addEventListener('click', (event) => {
+                if (event.target === toolModal) {
+                    toolModal.close();
                 }
-                if (target.classList.contains('edit-btn')) {
-                    const toolCard = target.closest('.tool-card');
-                    modalTitle.textContent = "编辑网址";
-                    toolIdInput.value = toolCard.dataset.id;
-                    document.getElementById('tool-name').value = toolCard.dataset.name;
-                    document.getElementById('tool-url').value = toolCard.dataset.url;
-                    document.getElementById('tool-type').value = toolCard.dataset.type;
-                    document.getElementById('tool-index').value = toolCard.dataset.index;
-                    // Populate the info field
-                    document.getElementById('tool-info').value = toolCard.dataset.info || ''; // Use default if not present
-                    toolModal.showModal();
-                }
-                if (target.classList.contains('delete-btn')) {
-                    const toolCard = target.closest('.tool-card');
-                    const id = parseInt(toolCard.dataset.id, 10);
-                    const name = toolCard.dataset.name;
-                    if (confirm(`确定要删除 "${name}" 吗？此操作不可撤销。`)) {
-                        try {
-                            await deleteLocalTool(id);
-                            alert('删除成功！');
-                            fetchAndRenderTools();
-                        } catch (error) { console.error("Error deleting tool:", error); alert(`删除失败: ${error}`); }
-                    }
+            });
+
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const searchTerm = e.target.value.trim();
+                    filterTools(currentFilter, searchTerm);
+                }, 250); // Debounce input
+            });
+
+            filterTags.addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-tag')) {
+                    const category = e.target.dataset.category;
+                    const searchTerm = searchInput.value.trim();
+                    filterTools(category, searchTerm);
                 }
             });
         });
 
-        // --- Core Rendering Logic ---
-        async function fetchAndRenderTools() {
-            if(loadingMessage) loadingMessage.style.display = 'block';
-            navigationContainer.innerHTML = '';
-            navigationContainer.appendChild(loadingMessage);
-
-            try {
-                // 1. Fetch API Data
-                let apiGroupedData = {};
-                try {
-                    const response = await fetch(API_ENDPOINT);
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    apiGroupedData = await response.json() || {};
-                    // Ensure API data tools also have an 'info' field (even if empty) for consistency, optional
-                    // for (const type in apiGroupedData) {
-                    //     if (apiGroupedData[type].tools) {
-                    //         apiGroupedData[type].tools = apiGroupedData[type].tools.map(t => ({ ...t, info: t.info || '' }));
-                    //     }
-                    // }
-                } catch (apiError) {
-                    console.warn("Failed to fetch from API, proceeding with local data only.", apiError);
-                     console.error(apiError); // Log the actual error
-                }
-
-                // 2. Fetch Local Data
-                let localToolsArray = [];
-                try { localToolsArray = await getAllLocalTools(); }
-                catch(dbError) { console.error("Failed to fetch from IndexedDB.", dbError); }
-
-                // 3. Merge Data (Logic remains the same, 'info' is just another property)
-                 let combinedGroupedData = typeof structuredClone === 'function'
-                                          ? structuredClone(apiGroupedData)
-                                          : JSON.parse(JSON.stringify(apiGroupedData));
-                 for (const type in combinedGroupedData) {
-                     if (!combinedGroupedData[type].tools) combinedGroupedData[type].tools = [];
-                      const apiIndex = parseInt(combinedGroupedData[type].index, 10);
-                      combinedGroupedData[type].index = isNaN(apiIndex) ? DEFAULT_CATEGORY_INDEX : apiIndex;
-                 }
-                localToolsArray.forEach(localTool => {
-                    const type = localTool.type; const localIndex = localTool.index;
-                    if (!combinedGroupedData[type]) {
-                        combinedGroupedData[type] = { index: localIndex, tools: [] };
-                    } else {
-                         const existingIndex = parseInt(combinedGroupedData[type].index, 10);
-                         combinedGroupedData[type].index = isNaN(existingIndex) ? DEFAULT_CATEGORY_INDEX : existingIndex;
-                        if (localIndex < combinedGroupedData[type].index) {
-                            combinedGroupedData[type].index = localIndex;
-                        }
-                    }
-                    combinedGroupedData[type].tools.push(localTool);
-                });
-
-                // 4. Prepare for Sorting
-                const groupInfoArray = Object.entries(combinedGroupedData).map(([type, groupData]) => ({
-                    type: type,
-                    sortIndex: Number(groupData.index) || DEFAULT_CATEGORY_INDEX,
-                    tools: groupData.tools || []
-                }));
-                 if (groupInfoArray.length === 0) {
-                     loadingMessage.textContent = '未能加载工具列表或列表为空。';
-                     return;
-                 }
-
-                // 5. Sort groups
-                groupInfoArray.sort((a, b) => a.sortIndex - b.sortIndex);
-
-                // 6. Clear container
-                navigationContainer.innerHTML = '';
-
-                // 7. Render sorted groups and tools
-                for (const groupInfo of groupInfoArray) {
-                    if (!groupInfo.tools || groupInfo.tools.length === 0) continue; // Skip empty
-                    const { type, tools } = groupInfo;
-                    const section = document.createElement('section'); section.className = 'category-section';
-                    const title = document.createElement('h2'); title.className = 'category-title';
-                    const titleText = document.createElement('span'); titleText.textContent = type;
-                    const toggleIcon = document.createElement('span'); toggleIcon.className = 'toggle-icon';
-                    title.appendChild(titleText); title.appendChild(toggleIcon); section.appendChild(title);
-                    const grid = document.createElement('div'); grid.className = 'tools-grid';
-                    tools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')); // Sort tools by name
-
-                    tools.forEach(tool => {
-                        const toolLink = document.createElement('a');
-                        toolLink.className = 'tool-card';
-                        toolLink.href = tool.url;
-                        toolLink.target = '_blank';
-                        toolLink.rel = 'noopener noreferrer';
-
-                        // *** ADD TOOLTIP DATA ATTRIBUTE ***
-                        if (tool.info && tool.info.trim() !== '') {
-                            toolLink.dataset.tooltip = tool.info;
-                        }
-
-                        const toolName = document.createElement('span');
-                        toolName.className = 'tool-name';
-                        toolName.textContent = tool.name;
-                        // Use title attribute as a fallback or alternative simple tooltip
-                        // toolLink.title = tool.info || tool.name;
-                        toolLink.appendChild(toolName);
-
-                        if (tool.isLocal) {
-                            toolLink.dataset.id = tool.id;
-                            toolLink.dataset.name = tool.name;
-                            toolLink.dataset.url = tool.url;
-                            toolLink.dataset.type = tool.type;
-                            toolLink.dataset.index = tool.index;
-                            toolLink.dataset.info = tool.info || ''; // Store info for editing
-
-                            const actionsDiv = document.createElement('div'); actionsDiv.className = 'tool-card-actions';
-                            const editBtn = document.createElement('button'); editBtn.textContent = '编辑'; editBtn.className = 'btn btn-sm btn-warning edit-btn'; editBtn.addEventListener('click', (e) => e.preventDefault());
-                            const deleteBtn = document.createElement('button'); deleteBtn.textContent = '删除'; deleteBtn.className = 'btn btn-sm btn-danger delete-btn'; deleteBtn.addEventListener('click', (e) => e.preventDefault());
-                            actionsDiv.appendChild(editBtn); actionsDiv.appendChild(deleteBtn);
-                            toolLink.appendChild(actionsDiv);
-                        }
-                        grid.appendChild(toolLink);
-                    });
-                    section.appendChild(grid);
-                    navigationContainer.appendChild(section);
-                }
-
-            } catch (error) {
-                console.error('渲染工具时出错:', error);
-                navigationContainer.innerHTML = `<p class="message" style="color: red;">加载或渲染工具列表失败: ${error.message || error}</p>`;
-            } finally {
-                 const finalLoadingMsg = document.getElementById('loading-message');
-                 if(finalLoadingMsg) finalLoadingMsg.style.display = 'none';
-            }
-        }
     </script>
 </body>
 </html>
