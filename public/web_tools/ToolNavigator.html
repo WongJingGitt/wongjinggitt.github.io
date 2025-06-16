@@ -6,6 +6,7 @@
     <title>工具导航</title>
     <style>
         :root {
+            /* --- 深色主题变量 --- */
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -18,17 +19,38 @@
             --bg-glass: rgba(255, 255, 255, 0.05);
             --border-glass: rgba(255, 255, 255, 0.1);
             
-            --text-primary: #e0e0ff; /* [优化] 从纯白改为带色调的亮色 */
+            --text-primary: #e0e0ff;
             --text-secondary: #b4b4b4;
             --text-muted: #6b7280;
             
-            --glow-primary: 0 0 20px rgba(102, 126, 234, 0.3);
-            --glow-secondary: 0 0 20px rgba(240, 147, 251, 0.3);
-            --glow-success: 0 0 20px rgba(79, 172, 254, 0.3);
+            --glow-primary: 0 0 20px rgba(102, 126, 234, 0.2);
+            --dynamic-bg-opacity: 0.3;
+            --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            --scrollbar-track: var(--bg-secondary);
             
             --border-radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        /* --- 浅色主题变量 --- */
+        body.light-theme {
+            --bg-primary: #f4f5f7;
+            --bg-secondary: #e5e7eb;
+            
+            /* [优化] 恢复浅色模式下的玻璃拟态效果 */
+            --bg-card: rgba(255, 255, 255, 0.5); 
+            --bg-glass: rgba(255, 255, 255, 0.3);
+            --border-glass: rgba(255, 255, 255, 0.2);
+            
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
+
+            --glow-primary: 0 0 20px rgba(102, 126, 234, 0.2);
+            --dynamic-bg-opacity: 0.1;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            --scrollbar-track: #e5e7eb;
         }
 
         * {
@@ -41,11 +63,12 @@
             font-family: var(--font-primary);
             background: var(--bg-primary);
             color: var(--text-primary);
-            text-shadow: 0 0 5px rgba(180, 180, 255, 0.1); /* [优化] 全局文字辉光/阴影 */
+            text-shadow: 0 0 5px rgba(180, 180, 255, 0.05);
             line-height: 1.6;
             overflow-x: hidden;
             min-height: 100vh;
             position: relative;
+            transition: background 0.3s, color 0.3s;
         }
 
         /* 动态背景 */
@@ -57,11 +80,12 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, var(--dynamic-bg-opacity)) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, var(--dynamic-bg-opacity)) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, calc(var(--dynamic-bg-opacity) - 0.1)) 0%, transparent 50%);
             z-index: -1;
             animation: backgroundShift 20s ease-in-out infinite;
+            transition: opacity 0.3s;
         }
 
         @keyframes backgroundShift {
@@ -70,14 +94,8 @@
         }
 
         /* 滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-        }
-
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
         ::-webkit-scrollbar-thumb {
             background: var(--primary-gradient);
             border-radius: 4px;
@@ -91,6 +109,10 @@
 
         /* 头部区域 */
         .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
             text-align: center;
             padding: 40px 0 60px;
             position: relative;
@@ -104,7 +126,6 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 16px;
-            position: relative;
         }
 
         .header p {
@@ -113,6 +134,65 @@
             margin-bottom: 32px;
         }
 
+        /* --- 主题切换开关 --- */
+        .theme-switch-wrapper {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+        }
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3c3c3c;
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider .icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            transition: opacity 0.3s;
+        }
+        .slider .sun { left: 8px; opacity: 0; }
+        .slider .moon { right: 8px; opacity: 1; }
+        input:checked + .slider .sun { opacity: 1; }
+        input:checked + .slider .moon { opacity: 0; }
+
+
+        /* 其他样式保持不变，但会因变量改变而改变外观 */
         .add-btn {
             background: var(--primary-gradient);
             border: none;
@@ -127,110 +207,26 @@
             position: relative;
             overflow: hidden;
         }
+        .add-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s; }
+        .add-btn:hover::before { left: 100%; }
+        .add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
 
-        .add-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
+        .search-section { margin-bottom: 40px; text-align: center; }
+        .search-box { position: relative; max-width: 500px; margin: 0 auto; }
+        .search-input { width: 100%; padding: 16px 24px 16px 60px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--border-radius); color: var(--text-primary); font-size: 1rem; backdrop-filter: blur(10px); transition: var(--transition); }
+        .search-input:focus { outline: none; border-color: rgba(102, 126, 234, 0.5); box-shadow: var(--glow-primary); }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.2rem; }
 
-        .add-btn:hover::before {
-            left: 100%;
-        }
-
-        .add-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        /* 搜索栏 */
-        .search-section {
-            margin-bottom: 40px;
-            text-align: center;
-        }
-
-        .search-box {
-            position: relative;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 16px 24px 16px 60px;
-            background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
-            border-radius: var(--border-radius);
-            color: var(--text-primary);
-            font-size: 1rem;
-            backdrop-filter: blur(10px);
-            transition: var(--transition);
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: rgba(102, 126, 234, 0.5);
-            box-shadow: var(--glow-primary);
-        }
-
-        .search-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 1.2rem;
-        }
-
-        /* 分类标签 */
-        .filter-tags {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin: 24px 0;
-            flex-wrap: wrap;
-        }
-
-        .filter-tag {
-            padding: 8px 16px;
-            background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
-            border-radius: 24px;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-            backdrop-filter: blur(10px);
-        }
-
+        .filter-tags { display: flex; justify-content: center; gap: 12px; margin: 24px 0; flex-wrap: wrap; }
+        .filter-tag { padding: 8px 16px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 24px; color: var(--text-secondary); font-size: 0.9rem; cursor: pointer; transition: var(--transition); backdrop-filter: blur(10px); }
         .filter-tag:hover,
-        .filter-tag.active {
-            background: var(--primary-gradient);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: var(--glow-primary);
-        }
+        .filter-tag.active { background: var(--primary-gradient); color: white; transform: translateY(-2px); box-shadow: var(--glow-primary); text-shadow: none; }
 
-        /* 工具网格 */
-        .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 60px;
-        }
-
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-bottom: 60px; }
         .tool-card {
             background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
+            /* border: 1px solid var(--border-glass); */
             border-radius: var(--border-radius);
             padding: 24px;
             text-decoration: none;
@@ -265,279 +261,82 @@
             border-color: rgba(102, 126, 234, 0.3);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), var(--glow-primary);
         }
+        body.light-theme .tool-card:hover { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), var(--glow-primary); }
 
-        .tool-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
+        .tool-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+        .tool-category { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
+        .tool-description { font-size: 0.95rem; color: var(--text-secondary); flex-grow: 1; line-height: 1.5; }
+        .tool-content-link { text-decoration: none; color: inherit; display: block; flex-grow: 1; }
+        .tool-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-glass); }
+        .tool-btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+        .tool-btn-edit { background: var(--warning-gradient); color: white; }
+        .tool-btn-delete { background: var(--danger-gradient); color: white; }
+        .tool-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
 
-        .tool-category {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
+        #tool-modal { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--border-radius); padding: 32px; max-width: 500px; width: 90%; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); margin: auto; }
+        #tool-modal::backdrop { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
+        body.light-theme #tool-modal::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+        .modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-weight: 500; }
+        .form-input { width: 100%; padding: 12px 16px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 8px; color: var(--text-primary); font-size: 1rem; transition: var(--transition); backdrop-filter: blur(10px); }
+        .form-input:focus { outline: none; border-color: rgba(102, 126, 234, 0.5); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        textarea.form-input { min-height: 80px; resize: vertical; }
+        .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+        .modal-btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .modal-btn-primary { background: var(--primary-gradient); color: white; }
+        .modal-btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; }
+        .modal-btn-secondary { background: var(--bg-glass); color: var(--text-secondary); border: 1px solid var(--border-glass); }
+        .modal-btn:hover { transform: translateY(-2px); }
 
-        .tool-description {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            flex-grow: 1;
-            line-height: 1.5;
-        }
-        
-        .tool-content-link {
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            flex-grow: 1;
-        }
+        .empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+        .empty-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.5; }
+        .loading { display: flex; justify-content: center; align-items: center; padding: 60px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--bg-glass); border-top: 4px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .tool-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-glass);
-        }
-
-        .tool-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-
-        .tool-btn-edit {
-            background: var(--warning-gradient);
-            color: white;
-        }
-
-        .tool-btn-delete {
-            background: var(--danger-gradient);
-            color: white;
-        }
-
-        .tool-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        /* 模态框 */
-        #tool-modal {
-            background: var(--bg-card);
-            border: 1px solid var(--border-glass);
-            border-radius: var(--border-radius);
-            padding: 32px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-            margin: auto; /* [优化] 实现模态框垂直和水平居中 */
-        }
-
-        #tool-modal::backdrop {
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(4px);
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--bg-glass);
-            border: 1px solid var(--border-glass);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            transition: var(--transition);
-            backdrop-filter: blur(10px);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: rgba(102, 126, 234, 0.5);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        textarea.form-input {
-            min-height: 80px;
-            resize: vertical;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 24px;
-        }
-
-        .modal-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .modal-btn-primary {
-            background: var(--primary-gradient);
-            color: white;
-        }
-        
-        .modal-btn-primary:disabled {
-            background: var(--text-muted);
-            cursor: not-allowed;
-        }
-
-        .modal-btn-secondary {
-            background: var(--bg-glass);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-glass);
-        }
-
-        .modal-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        /* 空状态 */
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        /* 加载状态 */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 60px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--bg-glass);
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 响应式设计 */
         @media (max-width: 768px) {
-            .container {
-                padding: 0 16px;
-            }
-            
-            .tools-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-            
-            .filter-tags {
-                gap: 8px;
-            }
-            
-            #tool-modal {
-                padding: 24px;
-                margin: 20px auto; /* 在小屏幕上保持上下边距，同时水平居中 */
-            }
+            .container { padding: 0 16px; }
+            .theme-switch-wrapper { top: 16px; right: 16px; }
+            .header { padding-top: 80px; } /* 为开关留出空间 */
+            .tools-grid { grid-template-columns: 1fr; gap: 16px; }
+            .filter-tags { gap: 8px; }
+            #tool-modal { padding: 24px; margin: 20px auto; }
         }
-
         @media (max-width: 480px) {
-            .header {
-                padding: 24px 0 40px;
-            }
-            
-            .tool-actions {
-                flex-direction: column;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
+            .header { padding: 60px 0 40px; }
+            .tool-actions, .form-actions { flex-direction: column; }
         }
 
-        /* 动画效果 */
-        .fade-in {
-            animation: fadeIn 0.6s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .scale-in {
-            animation: scaleIn 0.3s ease-out;
-        }
-
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
+        .fade-in { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .scale-in { animation: scaleIn 0.3s ease-out; }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
+
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'light') {
+          document.body.classList.add('light-theme');
+        }
+      })();
+    </script>
+
     <div class="container">
         <header class="header">
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="theme-toggle">
+                    <input type="checkbox" id="theme-toggle" />
+                    <span class="slider">
+                         <span class="icon sun">☀️</span>
+                         <span class="icon moon">🌙</span>
+                    </span>
+                </label>
+            </div>
+            
             <h1>工具导航</h1>
             <button id="add-tool-btn" class="add-btn">
                 ✨ 添加新工具
@@ -565,143 +364,29 @@
         <h2 class="modal-title" id="modal-title">添加新工具</h2>
         <form id="tool-form">
             <input type="hidden" id="tool-id">
-            
-            <div class="form-group">
-                <label for="tool-name">工具名称</label>
-                <input type="text" id="tool-name" class="form-input" name="name" required placeholder="输入工具名称">
-            </div>
-            
-            <div class="form-group">
-                <label for="tool-url">工具链接</label>
-                <input type="url" id="tool-url" class="form-input" name="url" required placeholder="https://example.com">
-            </div>
-            
-            <div class="form-group">
-                <label for="tool-type">分类</label>
-                <input type="text" id="tool-type" class="form-input" name="type" required placeholder="例如: 开发工具">
-            </div>
-            
-            <div class="form-group">
-                <label for="tool-index">排序权重</label>
-                <input type="number" id="tool-index" class="form-input" name="index" value="9999" title="数字越小，分类越靠前">
-            </div>
-            
-            <div class="form-group">
-                <label for="tool-info">工具描述</label>
-                <textarea id="tool-info" class="form-input" name="info" placeholder="简单描述这个工具的用途..."></textarea>
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" id="cancel-btn" class="modal-btn modal-btn-secondary">取消</button>
-                <button type="submit" class="modal-btn modal-btn-primary">保存</button>
-            </div>
+            <div class="form-group"> <label for="tool-name">工具名称</label> <input type="text" id="tool-name" class="form-input" name="name" required placeholder="输入工具名称"> </div>
+            <div class="form-group"> <label for="tool-url">工具链接</label> <input type="url" id="tool-url" class="form-input" name="url" required placeholder="https://example.com"> </div>
+            <div class="form-group"> <label for="tool-type">分类</label> <input type="text" id="tool-type" class="form-input" name="type" required placeholder="例如: 开发工具"> </div>
+            <div class="form-group"> <label for="tool-index">排序权重</label> <input type="number" id="tool-index" class="form-input" name="index" value="9999" title="数字越小，分类越靠前"> </div>
+            <div class="form-group"> <label for="tool-info">工具描述</label> <textarea id="tool-info" class="form-input" name="info" placeholder="简单描述这个工具的用途..."></textarea> </div>
+            <div class="form-actions"> <button type="button" id="cancel-btn" class="modal-btn modal-btn-secondary">取消</button> <button type="submit" class="modal-btn modal-btn-primary">保存</button> </div>
         </form>
     </dialog>
 
     <script>
-        // 配置
         const API_ENDPOINT = `https://wongjinggitt.github.io/public/tool_list.json?_v=${new Date().getTime()}`;
-        const DB_NAME = 'userToolsDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'tools';
-        const DEFAULT_CATEGORY_INDEX = 9999;
+        const DB_NAME = 'userToolsDB', DB_VERSION = 1, STORE_NAME = 'tools', DEFAULT_CATEGORY_INDEX = 9999;
+        const navigationContainer = document.getElementById('navigation-container'), addToolBtn = document.getElementById('add-tool-btn'), toolModal = document.getElementById('tool-modal'), toolForm = document.getElementById('tool-form'), cancelBtn = document.getElementById('cancel-btn'), modalTitle = document.getElementById('modal-title'), toolIdInput = document.getElementById('tool-id'), searchInput = document.getElementById('search-input'), filterTags = document.getElementById('filter-tags'), themeToggle = document.getElementById('theme-toggle');
+        let allTools = [], filteredTools = [], currentFilter = 'all', db;
 
-        // DOM 元素
-        const navigationContainer = document.getElementById('navigation-container');
-        const addToolBtn = document.getElementById('add-tool-btn');
-        const toolModal = document.getElementById('tool-modal');
-        const toolForm = document.getElementById('tool-form');
-        const cancelBtn = document.getElementById('cancel-btn');
-        const modalTitle = document.getElementById('modal-title');
-        const toolIdInput = document.getElementById('tool-id');
-        const searchInput = document.getElementById('search-input');
-        const filterTags = document.getElementById('filter-tags');
-
-        // 全局状态
-        let allTools = [];
-        let filteredTools = [];
-        let currentFilter = 'all';
-        let db;
-
-        // IndexedDB 操作
-        async function dbSetup() {
-            return new Promise((resolve, reject) => {
-                if (db) { resolve(db); return; }
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = (event) => {
-                    console.error("IndexedDB error:", event.target.error);
-                    reject("Database error: " + event.target.error);
-                };
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    resolve(db);
-                };
-                request.onupgradeneeded = (event) => {
-                    const dbInstance = event.target.result;
-                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
-                        const store = dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                    }
-                };
-            });
-        }
-
-        async function addLocalTool(tool) {
-            await dbSetup();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                delete tool.id;
-                const request = store.add(tool);
-                request.onsuccess = (event) => resolve(event.target.result);
-                request.onerror = (event) => reject("Error adding tool: " + event.target.error);
-            });
-        }
-
-        async function updateLocalTool(tool) {
-            await dbSetup();
-            return new Promise((resolve, reject) => {
-                if (!tool.id) return reject("Cannot update tool without an ID.");
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(tool);
-                request.onsuccess = () => resolve();
-                request.onerror = (event) => reject("Error updating tool: " + event.target.error);
-            });
-        }
-
-        async function deleteLocalTool(id) {
-            await dbSetup();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.delete(id);
-                request.onsuccess = () => resolve();
-                request.onerror = (event) => reject("Error deleting tool: " + event.target.error);
-            });
-        }
-
-        async function getAllLocalTools() {
-            await dbSetup();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = (event) => {
-                    const localTools = event.target.result.map(tool => ({
-                        ...tool,
-                        index: Number(tool.index),
-                        isLocal: true
-                    }));
-                    resolve(localTools);
-                };
-                request.onerror = (event) => reject("Error getting tools: " + event.target.error);
-            });
-        }
-
-        // [优化] 重构数据合并与排序逻辑，确保本地工具优先
+        async function dbSetup() { return new Promise((resolve, reject) => { if (db) { resolve(db); return; } const request = indexedDB.open(DB_NAME, DB_VERSION); request.onerror = (event) => { console.error("IndexedDB error:", event.target.error); reject("Database error: " + event.target.error); }; request.onsuccess = (event) => { db = event.target.result; resolve(db); }; request.onupgradeneeded = (event) => { const dbInstance = event.target.result; if (!dbInstance.objectStoreNames.contains(STORE_NAME)) { dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true }); } }; }); }
+        async function addLocalTool(tool) { await dbSetup(); return new Promise((resolve, reject) => { const transaction = db.transaction([STORE_NAME], 'readwrite'); const store = transaction.objectStore(STORE_NAME); delete tool.id; const request = store.add(tool); request.onsuccess = (event) => resolve(event.target.result); request.onerror = (event) => reject("Error adding tool: " + event.target.error); }); }
+        async function updateLocalTool(tool) { await dbSetup(); return new Promise((resolve, reject) => { if (!tool.id) return reject("Cannot update tool without an ID."); const transaction = db.transaction([STORE_NAME], 'readwrite'); const store = transaction.objectStore(STORE_NAME); const request = store.put(tool); request.onsuccess = () => resolve(); request.onerror = (event) => reject("Error updating tool: " + event.target.error); }); }
+        async function deleteLocalTool(id) { await dbSetup(); return new Promise((resolve, reject) => { const transaction = db.transaction([STORE_NAME], 'readwrite'); const store = transaction.objectStore(STORE_NAME); const request = store.delete(id); request.onsuccess = () => resolve(); request.onerror = (event) => reject("Error deleting tool: " + event.target.error); }); }
+        async function getAllLocalTools() { await dbSetup(); return new Promise((resolve, reject) => { const transaction = db.transaction([STORE_NAME], 'readonly'); const store = transaction.objectStore(STORE_NAME); const request = store.getAll(); request.onsuccess = (event) => { const localTools = event.target.result.map(tool => ({ ...tool, index: Number(tool.index), isLocal: true })); resolve(localTools); }; request.onerror = (event) => reject("Error getting tools: " + event.target.error); }); }
+        
         async function fetchAndRenderTools() {
             try {
-                // 1. 获取并处理 API 工具
                 let apiTools = [];
                 try {
                     const response = await fetch(API_ENDPOINT);
@@ -710,285 +395,48 @@
                         Object.entries(apiGroupedData).forEach(([type, groupData]) => {
                             if (groupData.tools && groupData.tools.length > 0) {
                                 groupData.tools.forEach(tool => {
-                                    apiTools.push({
-                                        ...tool,
-                                        type: type,
-                                        category: type,
-                                        index: Number(groupData.index) || DEFAULT_CATEGORY_INDEX,
-                                        isLocal: false // 明确标记为非本地
-                                    });
+                                    apiTools.push({ ...tool, type: type, category: type, index: Number(groupData.index) || DEFAULT_CATEGORY_INDEX, isLocal: false });
                                 });
                             }
                         });
                     }
-                } catch (apiError) {
-                    console.warn("Failed to fetch from API, proceeding with local data only.", apiError);
-                }
-
-                // 2. 获取本地工具
-                let localTools = [];
-                try {
-                    localTools = await getAllLocalTools(); // isLocal: true 已在内部设置
-                } catch (dbError) {
-                    console.error("Failed to fetch from IndexedDB.", dbError);
-                }
+                } catch (apiError) { console.warn("Failed to fetch from API, proceeding with local data only.", apiError); }
                 
-                // 3. 分别排序，然后合并
+                let rawLocalTools = [];
+                try {
+                    rawLocalTools = await getAllLocalTools();
+                } catch (dbError) { console.error("Failed to fetch from IndexedDB.", dbError); }
+
+                // [修复] 统一数据结构，确保所有本地工具对象都有 category 属性
+                const localTools = rawLocalTools.map(tool => ({ ...tool, category: tool.type }));
+                
                 localTools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
                 apiTools.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+                allTools = [...localTools, ...apiTools];
 
-                allTools = [...localTools, ...apiTools]; // 本地工具在前，API工具在后
-
-                // 后续流程不变
                 updateFilterTags();
                 filterTools(currentFilter, searchInput.value.trim());
-
-            } catch (error) {
-                console.error('获取工具数据时出错:', error);
-                navigationContainer.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">❌</div>
-                        <p>加载工具列表失败: ${error.message || error}</p>
-                    </div>
-                `;
-            }
+            } catch (error) { console.error('获取工具数据时出错:', error); navigationContainer.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><p>加载工具列表失败: ${error.message || error}</p></div>`; }
         }
+        
+        function updateFilterTags() { const categoriesData = allTools.reduce((acc, tool) => { const category = tool.category; if (!acc[category]) { acc[category] = { count: 0, index: Infinity }; } acc[category].count++; const toolIndex = Number(tool.index); if (!isNaN(toolIndex) && toolIndex < acc[category].index) { acc[category].index = toolIndex; } return acc; }, {}); const sortedCategories = Object.keys(categoriesData).sort((a, b) => { const indexA = categoriesData[a].index; const indexB = categoriesData[b].index; if (indexA !== indexB) return indexA - indexB; return a.localeCompare(b, 'zh-CN'); }); filterTags.innerHTML = `<span class="filter-tag" data-category="all">全部 (${allTools.length})</span>`; sortedCategories.forEach(category => { const count = categoriesData[category].count; const tag = document.createElement('span'); tag.className = 'filter-tag'; tag.dataset.category = category; tag.textContent = `${category} (${count})`; filterTags.appendChild(tag); }); const activeTag = filterTags.querySelector(`[data-category="${currentFilter}"]`); if(activeTag) activeTag.classList.add('active'); }
+        function filterTools(category, searchTerm = '') { currentFilter = category; let tempFiltered = (category === 'all') ? [...allTools] : allTools.filter(tool => tool.category === category); if (searchTerm) { const term = searchTerm.toLowerCase(); tempFiltered = tempFiltered.filter(tool => tool.name.toLowerCase().includes(term) || (tool.info && tool.info.toLowerCase().includes(term)) || tool.category.toLowerCase().includes(term)); } filteredTools = tempFiltered; renderTools(); document.querySelectorAll('.filter-tag').forEach(tag => { tag.classList.toggle('active', tag.dataset.category === currentFilter); }); }
+        function renderTools() { if (filteredTools.length === 0) { navigationContainer.innerHTML = `<div class="empty-state fade-in"><div class="empty-icon">🧐</div><p>没有找到匹配的工具</p></div>`; return; } const toolsGrid = document.createElement('div'); toolsGrid.className = 'tools-grid fade-in'; filteredTools.forEach(tool => { const toolCard = document.createElement('div'); toolCard.className = 'tool-card scale-in'; const toolContentLink = document.createElement('a'); toolContentLink.href = tool.url; toolContentLink.target = '_blank'; toolContentLink.rel = 'noopener noreferrer'; toolContentLink.className = 'tool-content-link'; toolContentLink.innerHTML = `<div class="tool-name">${tool.name}</div><div class="tool-category">${tool.category}</div><div class="tool-description">${tool.info || '暂无描述'}</div>`; toolCard.appendChild(toolContentLink); if (tool.isLocal) { const actionsDiv = document.createElement('div'); actionsDiv.className = 'tool-actions'; const editBtn = document.createElement('button'); editBtn.className = 'tool-btn tool-btn-edit'; editBtn.innerHTML = '✏️ 编辑'; editBtn.onclick = (e) => { e.preventDefault(); editTool(tool); }; const deleteBtn = document.createElement('button'); deleteBtn.className = 'tool-btn tool-btn-delete'; deleteBtn.innerHTML = '🗑️ 删除'; deleteBtn.onclick = (e) => { e.preventDefault(); deleteTool(tool); }; actionsDiv.appendChild(editBtn); actionsDiv.appendChild(deleteBtn); toolCard.appendChild(actionsDiv); } toolsGrid.appendChild(toolCard); }); navigationContainer.innerHTML = ''; navigationContainer.appendChild(toolsGrid); }
+        function editTool(tool) { modalTitle.textContent = "编辑工具"; toolForm.reset(); toolIdInput.value = tool.id; document.getElementById('tool-name').value = tool.name; document.getElementById('tool-url').value = tool.url; document.getElementById('tool-type').value = tool.type; document.getElementById('tool-index').value = tool.index || DEFAULT_CATEGORY_INDEX; document.getElementById('tool-info').value = tool.info || ''; toolModal.showModal(); }
+        async function deleteTool(tool) { if (confirm(`确定要删除工具 "${tool.name}" 吗？此操作无法撤销。`)) { try { await deleteLocalTool(tool.id); await fetchAndRenderTools(); } catch (error) { console.error('Error deleting tool:', error); alert('删除工具失败: ' + error.message); } } }
 
-        // 更新过滤器标签
-        function updateFilterTags() {
-            const categoriesData = allTools.reduce((acc, tool) => {
-                const category = tool.category;
-                if (!acc[category]) {
-                    acc[category] = { count: 0, index: Infinity };
-                }
-                acc[category].count++;
-                
-                const toolIndex = Number(tool.index);
-                if (!isNaN(toolIndex) && toolIndex < acc[category].index) {
-                     acc[category].index = toolIndex;
-                }
-                return acc;
-            }, {});
-
-            const sortedCategories = Object.keys(categoriesData).sort((a, b) => {
-                const indexA = categoriesData[a].index;
-                const indexB = categoriesData[b].index;
-                if (indexA !== indexB) return indexA - indexB;
-                return a.localeCompare(b, 'zh-CN');
-            });
-
-            filterTags.innerHTML = `<span class="filter-tag" data-category="all">全部 (${allTools.length})</span>`;
-            
-            sortedCategories.forEach(category => {
-                const count = categoriesData[category].count;
-                const tag = document.createElement('span');
-                tag.className = 'filter-tag';
-                tag.dataset.category = category;
-                tag.textContent = `${category} (${count})`;
-                filterTags.appendChild(tag);
-            });
-            
-            const activeTag = filterTags.querySelector(`[data-category="${currentFilter}"]`);
-            if(activeTag) activeTag.classList.add('active');
-        }
-
-        // 过滤工具
-        function filterTools(category, searchTerm = '') {
-            currentFilter = category;
-            
-            let tempFiltered = (category === 'all')
-                ? [...allTools]
-                : allTools.filter(tool => tool.category === category);
-            
-            if (searchTerm) {
-                const term = searchTerm.toLowerCase();
-                tempFiltered = tempFiltered.filter(tool => 
-                    tool.name.toLowerCase().includes(term) ||
-                    (tool.info && tool.info.toLowerCase().includes(term)) ||
-                    tool.category.toLowerCase().includes(term)
-                );
-            }
-            
-            filteredTools = tempFiltered;
-            renderTools();
-
-            document.querySelectorAll('.filter-tag').forEach(tag => {
-                tag.classList.toggle('active', tag.dataset.category === currentFilter);
-            });
-        }
-
-        // 渲染工具
-        function renderTools() {
-            if (filteredTools.length === 0) {
-                navigationContainer.innerHTML = `
-                    <div class="empty-state fade-in">
-                        <div class="empty-icon">🧐</div>
-                        <p>没有找到匹配的工具</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const toolsGrid = document.createElement('div');
-            toolsGrid.className = 'tools-grid fade-in';
-
-            filteredTools.forEach(tool => {
-                const toolCard = document.createElement('div');
-                toolCard.className = 'tool-card scale-in';
-                
-                const toolContentLink = document.createElement('a');
-                toolContentLink.href = tool.url;
-                toolContentLink.target = '_blank';
-                toolContentLink.rel = 'noopener noreferrer';
-                toolContentLink.className = 'tool-content-link';
-                
-                toolContentLink.innerHTML = `
-                    <div class="tool-name">${tool.name}</div>
-                    <div class="tool-category">${tool.type}</div>
-                    <div class="tool-description">${tool.info || '暂无描述'}</div>
-                `;
-
-                toolCard.appendChild(toolContentLink);
-
-                if (tool.isLocal) {
-                    const actionsDiv = document.createElement('div');
-                    actionsDiv.className = 'tool-actions';
-                    
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'tool-btn tool-btn-edit';
-                    editBtn.innerHTML = '✏️ 编辑';
-                    editBtn.onclick = (e) => {
-                        e.preventDefault();
-                        editTool(tool);
-                    };
-                    
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'tool-btn tool-btn-delete';
-                    deleteBtn.innerHTML = '🗑️ 删除';
-                    deleteBtn.onclick = (e) => {
-                        e.preventDefault();
-                        deleteTool(tool);
-                    };
-                    
-                    actionsDiv.appendChild(editBtn);
-                    actionsDiv.appendChild(deleteBtn);
-                    toolCard.appendChild(actionsDiv);
-                }
-
-                toolsGrid.appendChild(toolCard);
-            });
-
-            navigationContainer.innerHTML = '';
-            navigationContainer.appendChild(toolsGrid);
-        }
-
-        // 编辑工具
-        function editTool(tool) {
-            modalTitle.textContent = "编辑工具";
-            toolForm.reset();
-            toolIdInput.value = tool.id;
-            document.getElementById('tool-name').value = tool.name;
-            document.getElementById('tool-url').value = tool.url;
-            document.getElementById('tool-type').value = tool.type;
-            document.getElementById('tool-index').value = tool.index || DEFAULT_CATEGORY_INDEX;
-            document.getElementById('tool-info').value = tool.info || '';
-            toolModal.showModal();
-        }
-
-        // 删除工具
-        async function deleteTool(tool) {
-            if (confirm(`确定要删除工具 "${tool.name}" 吗？此操作无法撤销。`)) {
-                try {
-                    await deleteLocalTool(tool.id);
-                    await fetchAndRenderTools();
-                } catch (error) {
-                    console.error('Error deleting tool:', error);
-                    alert('删除工具失败: ' + error.message);
-                }
-            }
-        }
-
-        // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             fetchAndRenderTools();
-
-            addToolBtn.addEventListener('click', () => {
-                modalTitle.textContent = "添加新工具";
-                toolForm.reset();
-                toolIdInput.value = '';
-                document.getElementById('tool-index').value = DEFAULT_CATEGORY_INDEX;
-                toolModal.showModal();
-            });
-
-            toolForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const formData = new FormData(toolForm);
-                const toolData = {
-                    name: formData.get('name').trim(),
-                    url: formData.get('url').trim(),
-                    type: formData.get('type').trim(),
-                    index: Number(formData.get('index')) || DEFAULT_CATEGORY_INDEX,
-                    info: formData.get('info').trim(),
-                    isLocal: true
-                };
-
-                if (!toolData.name || !toolData.url || !toolData.type) {
-                    alert('工具名称、链接和分类是必填项。');
-                    return;
-                }
-
-                const id = toolIdInput.value;
-                const submitButton = toolForm.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.textContent = '保存中...';
-
-                try {
-                    if (id) {
-                        toolData.id = parseInt(id, 10);
-                        await updateLocalTool(toolData);
-                    } else {
-                        await addLocalTool(toolData);
-                    }
-                    toolModal.close();
-                    await fetchAndRenderTools();
-                } catch (error) {
-                    console.error('Error saving tool:', error);
-                    alert('保存工具失败: ' + error.message);
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = '保存';
-                }
-            });
-
-            cancelBtn.addEventListener('click', () => {
-                toolModal.close();
-            });
-
-            toolModal.addEventListener('click', (event) => {
-                if (event.target === toolModal) {
-                    toolModal.close();
-                }
-            });
-
+            if (localStorage.getItem('theme') === 'light') { themeToggle.checked = true; }
+            themeToggle.addEventListener('change', (e) => { document.body.classList.toggle('light-theme', e.target.checked); localStorage.setItem('theme', e.target.checked ? 'light' : 'dark'); });
+            addToolBtn.addEventListener('click', () => { modalTitle.textContent = "添加新工具"; toolForm.reset(); toolIdInput.value = ''; document.getElementById('tool-index').value = DEFAULT_CATEGORY_INDEX; toolModal.showModal(); });
+            toolForm.addEventListener('submit', async (e) => { e.preventDefault(); const formData = new FormData(toolForm); const toolData = { name: formData.get('name').trim(), url: formData.get('url').trim(), type: formData.get('type').trim(), index: Number(formData.get('index')) || DEFAULT_CATEGORY_INDEX, info: formData.get('info').trim(), isLocal: true }; if (!toolData.name || !toolData.url || !toolData.type) { alert('工具名称、链接和分类是必填项。'); return; } const id = toolIdInput.value; const submitButton = toolForm.querySelector('button[type="submit"]'); submitButton.disabled = true; submitButton.textContent = '保存中...'; try { if (id) { toolData.id = parseInt(id, 10); await updateLocalTool(toolData); } else { await addLocalTool(toolData); } toolModal.close(); await fetchAndRenderTools(); } catch (error) { console.error('Error saving tool:', error); alert('保存工具失败: ' + error.message); } finally { submitButton.disabled = false; submitButton.textContent = '保存'; } });
+            cancelBtn.addEventListener('click', () => { toolModal.close(); });
+            toolModal.addEventListener('click', (event) => { if (event.target === toolModal) { toolModal.close(); } });
             let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    const searchTerm = e.target.value.trim();
-                    filterTools(currentFilter, searchTerm);
-                }, 250); // Debounce input
-            });
-
-            filterTags.addEventListener('click', (e) => {
-                if (e.target.classList.contains('filter-tag')) {
-                    const category = e.target.dataset.category;
-                    const searchTerm = searchInput.value.trim();
-                    filterTools(category, searchTerm);
-                }
-            });
+            searchInput.addEventListener('input', (e) => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const searchTerm = e.target.value.trim(); filterTools(currentFilter, searchTerm); }, 250); });
+            filterTags.addEventListener('click', (e) => { if (e.target.classList.contains('filter-tag')) { const category = e.target.dataset.category; const searchTerm = searchInput.value.trim(); filterTools(category, searchTerm); } });
         });
-
     </script>
 </body>
 </html>
