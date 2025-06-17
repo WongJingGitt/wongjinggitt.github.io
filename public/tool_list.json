@@ -2,58 +2,136 @@
     "常用工具": {
         "index": -1,
         "tools": [
-            { "url": "https://translate.google.com", "name": "Google 翻译" },
-            { "url": "https://tinypng.com/", "name": "TinyPNG 图片压缩" },
-            { "url": "https://fanyi.baidu.com", "name": "百度翻译"  },
+            { "url": "https://translate.google.com", "name": "Google 翻译", "info": "Google提供的免费在线翻译服务，可在100多种语言之间即时翻译字词、短语和网页。" },
+            { "url": "https://tinypng.com/", "name": "TinyPNG 图片压缩", "info": "智能PNG和JPEG压缩，优化您的图片，以获得更快的加载速度和更少的带宽占用。" },
+            { "url": "https://fanyi.baidu.com", "name": "百度翻译", "info": "百度推出的免费在线翻译服务，支持全球200多种语言的互译，提供文档翻译、网站翻译等多种功能。" },
             { "url": "https://wongjinggitt.github.io/public/web_tools/MarkdownEditor.html", "name": "在线Markdown编辑器", "info": "支持在线预览，导出为图片/PDF/HTML，本地存储模板等功能。" },
-            { "url": "https://wongjinggitt.github.io/public/web_tools/DiffString.html", "name": "在线字符串对比" }
+            { "url": "https://wongjinggitt.github.io/public/web_tools/DiffString.html", "name": "在线字符串对比", "info": "一个简单易用的在线工具，用于比较两个字符串之间的差异。" },
+            { "url": "https://www.ilovepdf.com/zh-cn", "name": "iLovePDF", "info": "免费且易于使用的在线PDF工具，可合并、拆分、压缩、转换、旋转、解锁和给PDF文件加水印。" },
+            { "url": "https://convertio.co/zh/", "name": "Convertio", "info": "在线文件转换器，支持超过25600种不同的转换，涵盖视频、音频、文档、电子书、存档、图像等。" },
+            { "url": "https://www.remove.bg/zh", "name": "Remove.bg", "info": "一个非常强大的在线自动抠图工具，可以快速移除图片背景。" }
         ]
     },
     "开发工具": {
         "index": 1,
         "tools": [
-            { "url": "https://www.github.com", "name": "GitHub" },
-            { "url": "https://www.stackoverflow.com", "name": "Stack Overflow" },
-            { "url": "https://developer.mozilla.org", "name": "MDN Web Docs" },
-            { "url": "https://jsonformatter.curiousconcept.com/", "name": "JSON Formatter" },
-            { "url": "https://regex101.com/", "name": "Regex101 正则测试" }
+            { "url": "https://www.github.com", "name": "GitHub", "info": "全球最大的代码托管平台和开源社区，提供Git版本控制、项目管理、代码审查等功能。" },
+            { "url": "https://www.stackoverflow.com", "name": "Stack Overflow", "info": "一个专为程序员而设的问答网站，是解决编程、算法和开发中各种技术问题的首选社区。" },
+            { "url": "https://developer.mozilla.org", "name": "MDN Web Docs", "info": "由Mozilla维护的Web技术文档资源库，是前端开发者学习和查询HTML, CSS, JavaScript等技术的权威网站。" },
+            { "url": "https://jsonformatter.curiousconcept.com/", "name": "JSON Formatter", "info": "一个简单易用的在线JSON格式化和校验工具，可以美化和验证JSON数据。" },
+            { "url": "https://regex101.com/", "name": "Regex101 正则测试", "info": "功能强大的在线正则表达式测试、调试和分享工具，支持多种编程语言的正则引擎。" },
+            { "url": "https://codesandbox.io/", "name": "CodeSandbox", "info": "一个在线的代码编辑器和原型工具，专注于Web开发，支持快速创建和分享项目。" },
+            { "url": "https://www.postman.com/", "name": "Postman", "info": "一个强大的API开发协作平台，用于构建、测试和文档化API。 " },
+            { "url": "https://hoppscotch.io/", "name": "Hoppscotch", "info": "一个开源、轻量级的API开发生态系统，被认为是Postman的免费替代品。 " }
         ]
     },
     "AI工具": {
         "index": 2,
         "tools": [
-            { "url": "https://chatgpt.com/", "name": "Chat GPT", "info": "需要翻墙", "icon": "https://cdn.oaistatic.com/assets/favicon-miwirzcw.ico" },
-            { "url": "https://aistudio.google.com/app/prompts/new_chat", "name": "Google AI Studio", "info": "需要翻墙，可以免费白嫖无限次数的Gemini最新模型。"},
-            { "url": "https://gemini.google.com", "name": "Gemini", "info": "需要翻墙" },
-            { "url": "https://yuanbao.tencent.com/", "name": "腾讯元宝" },
-            { "url": "https://chat.deepseek.com/", "name": "DeepSeek" },
-            { "url": "https://kimi.moonshot.cn/", "name": "KIMI" },
-            { "url": "https://claude.ai/new", "name": "Claude", "info": "需要翻墙" },
-            { "url": "https://www.tongyi.com/qianwen/", "name": "通义千问" },
-            { "url": "https://chatglm.cn/", "name": "智谱轻言" },
-            { "url": "https://yiyan.baidu.com/", "name": "文心一言" },
-            { "url": "https://chat.baidu.com/", "name": "百度AI搜索" }
+            { "url": "https://chatgpt.com/", "name": "Chat GPT", "info": "由OpenAI开发的强大的对话式AI模型，能够进行自然语言交互和完成各种任务。需要翻墙。" },
+            { "url": "https://gemini.google.com", "name": "Gemini", "info": "Google开发的多模态AI模型，能够理解和处理文本、代码、图片等多种信息。需要翻墙。" },
+            { "url": "https://claude.ai/", "name": "Claude", "info": "Anthropic公司开发的AI助手，以其在安全性和对话上下文长度方面的优势而闻名。需要翻墙。" },
+            { "url": "https://www.doubao.com/", "name": "豆包", "info": "字节跳动推出的AI对话助手，功能丰富，能够满足聊天、创作、学习等多场景需求。" },
+            { "url": "https://kimi.moonshot.cn/", "name": "KIMI", "info": "月之暗面公司推出的AI助手，以其强大的长文本处理能力而著称，支持高达20万字的上下文。" },
+            { "url": "https://yiyan.baidu.com/", "name": "文心一言", "info": "百度推出的知识增强大语言模型，能够进行对话互动、回答问题并协助创作。" },
+            { "url": "https://www.tongyi.com/qianwen/", "name": "通义千问", "info": "阿里巴巴达摩院研发的超大规模语言模型，功能全面，响应快速。" },
+            { "url": "https://chat.deepseek.com/", "name": "DeepSeek", "info": "深度求索公司开发的AI对话工具，在代码和数学方面表现出色。" },
+            { "url": "https://chatglm.cn/", "name": "智谱清言", "info": "智谱AI与清华大学KEG实验室共同研发的大语言模型，具备强大的中英文理解和生成能力。" },
+            { "url": "https://yuanbao.tencent.com/", "name": "腾讯元宝", "info": "腾讯推出的AI助手App，集成了腾讯的优势服务，提供AI搜索、总结和生产力工具。" },
+            { "url": "https://sora.openai.com/", "name": "Sora", "info": "OpenAI开发的文生视频模型，能够根据文本指令创建逼真且富有想象力的视频场景。" },
+            { "url": "https://tongyi.aliyun.com/wanxiang/", "name": "通义万相", "info": "阿里巴巴推出的AI绘画创作模型，能够将文字描述转化为富有创意的图像。" },
+            { "url": "https://www.midjourney.com", "name": "Midjourney", "info": "一个非常流行的AI绘画工具，通过文本提示生成高质量的艺术图像。需要翻墙。" }
         ]
     },
     "搜索引擎": {
         "index": 3,
         "tools": [
-            { "url": "https://www.google.com", "name": "Google 搜索" },
-            { "url": "https://www.bing.com", "name": "Bing 搜索" }
+            { "url": "https://www.google.com", "name": "Google 搜索", "info": "全球最受欢迎的搜索引擎，提供快速、准确和相关的搜索结果。需要翻墙。" },
+            { "url": "https://www.bing.com", "name": "Bing 搜索", "info": "微软推出的搜索引擎，集成了AI功能，提供创新的搜索体验。" },
+            { "url": "https://www.baidu.com", "name": "百度搜索", "info": "中国最大的中文搜索引擎，提供网页、新闻、图片、视频等多种搜索服务。" },
+            { "url": "https://duckduckgo.com/", "name": "DuckDuckGo", "info": "一个注重用户隐私的搜索引擎，不会跟踪您的搜索历史。" },
+            { "url": "https://www.perplexity.ai/", "name": "Perplexity AI", "info": "一个对话式AI搜索引擎，可以直接回答用户的问题并提供信息来源。" }
         ]
     },
     "设计工具": {
         "index": 20,
         "tools": [
-            { "url": "https://www.canva.com", "name": "Canva 设计" },
-            { "url": "https://www.figma.com", "name": "Figma" }
+            { "url": "https://www.canva.com", "name": "Canva 设计", "info": "一个在线平面设计平台，提供大量模板，即使没有设计经验也能轻松创建海报、PPT、社交媒体图片等。" },
+            { "url": "https://www.figma.com", "name": "Figma", "info": "一个强大的协作式UI/UX设计工具，支持实时协作和原型设计，是产品和设计团队的首选。" },
+            { "url": "https://www.drawio.com/", "name": "draw.io", "info": "免费的在线图表绘制工具，支持流程图、UML图、网络拓扑图等多种图表的绘制。" },
+            { "url": "https://www.processon.com/", "name": "ProcessOn", "info": "一个在线协作绘图平台，支持流程图、思维导图、原型图等的实时协作与分享。" }
+        ]
+    },
+    "图片&视频": {
+        "index": 21,
+        "tools": [
+            { "url": "https://pixabay.com/", "name": "Pixabay", "info": "一个充满活力的创意社区，分享免费的图片和视频，无版权风险。" },
+            { "url": "https://unsplash.com/", "name": "Unsplash", "info": "提供大量免费高分辨率照片的网站，图片质量非常高。" },
+            { "url": "https://www.pexels.com/", "name": "Pexels", "info": "提供免费的库存照片和视频，素材丰富，适合各种创意项目。" },
+            { "url": "https://www.iconfont.cn/", "name": "Iconfont", "info": "阿里巴巴出品的图标库，功能强大，图标内容丰富，设计师和前端开发的福音。" }
+        ]
+    },
+    "学习&社区": {
+        "index": 50,
+        "tools": [
+            { "url": "https://www.juejin.cn", "name": "稀土掘金", "info": "一个面向开发者的技术内容分享社区，帮助开发者成长。" },
+            { "url": "https://www.v2ex.com/", "name": "V2EX", "info": "一个汇集了技术、创意和生活方式的社区，是程序员和创意工作者的聚集地。" },
+            { "url": "https://www.imooc.com/", "name": "慕课网", "info": "一个IT技能学习平台，提供丰富的编程实战课程。" },
+            { "url": "https://www.coursera.org/", "name": "Coursera", "info": "一个在线学习平台，与世界顶尖大学和公司合作，提供海量在线课程。需要翻墙。" }
+        ]
+    },
+    "生活服务": {
+        "index": 90,
+        "tools": [
+            { "url": "https://ditu.amap.com/", "name": "高德地图", "info": "提供精准的地图导航、路况信息和生活服务查询。" },
+            { "url": "https://map.baidu.com/", "name": "百度地图", "info": "百度提供的地图服务，支持地点查询、路线规划、实时路况等功能。" },
+            { "url": "https://flights.google.com/", "name": "Google Flights", "info": "Google的航班搜索服务，可以快速比较和预订机票。需要翻墙。" }
         ]
     },
     "娱乐": {
         "index": 100,
         "tools": [
-            { "url": "https://www.bilibili.com", "name": "Bilibili" },
-            { "url": "https://www.youtube.com", "name": "YouTube" }
+            { "url": "https://www.bilibili.com", "name": "Bilibili", "info": "国内领先的年轻人文化社区，提供丰富的动漫、游戏、生活等视频内容。" },
+            { "url": "https://www.youtube.com", "name": "YouTube", "info": "全球最大的视频分享网站，内容包罗万象。需要翻墙。" },
+            { "url": "https://www.douyin.com/", "name": "抖音", "info": "一个记录美好生活的短视频平台。" },
+            { "url": "https://www.netflix.com/", "name": "Netflix", "info": "全球领先的流媒体娱乐服务公司，提供海量电影、电视剧和原创内容。需要翻墙。" }
+        ]
+    },    
+    "开发者文档": {
+        "index": 14,
+        "tools": [
+            { "url": "https://devdocs.io/", "name": "DevDocs", "info": "聚合多语言API文档，支持离线访问，开发者高效查阅工具。" },
+            { "url": "https://docs.python.org/zh-cn/3/", "name": "Python官方文档", "info": "Python编程语言官方中文文档，权威参考。" }
+        ]
+    },
+    "效率工具": {
+        "index": 10,
+        "tools": [
+            { "url": "https://www.notion.so/", "name": "Notion", "info": "一体化工作空间，整合笔记、任务管理、数据库等功能，支持团队协作。" },
+            { "url": "https://trello.com/", "name": "Trello", "info": "看板式项目管理工具，直观易用，适合个人和小团队任务跟踪。" },
+            { "url": "https://www.wolai.com/", "name": "我来", "info": "国产类Notion工具，中文优化，支持双向链接和知识图谱。" }
+        ]
+    },
+    "代码工具": {
+        "index": 11,
+        "tools": [
+            { "url": "https://jsfiddle.net/", "name": "JSFiddle", "info": "在线前端代码编辑器，支持HTML/CSS/JS实时预览，方便快速测试代码片段。" },
+            { "url": "https://www.codepen.io/", "name": "CodePen", "info": "前端开发者的社交开发环境，可展示和分享前端作品。" },
+            { "url": "https://devhints.io/", "name": "Devhints", "info": "程序员备忘清单大全，收集各种编程语言的速查表。" }
+        ]
+    },
+    "云服务": {
+        "index": 12,
+        "tools": [
+            { "url": "https://vercel.com/", "name": "Vercel", "info": "前端部署平台，支持自动部署Next.js等现代前端框架，个人项目免费。" },
+            { "url": "https://www.netlify.com/", "name": "Netlify", "info": "一体化Web开发平台，提供静态网站托管、Serverless函数等服务。" }
+        ]
+    },
+    "网络安全": {
+        "index": 13,
+        "tools": [
+            { "url": "https://haveibeenpwned.com/", "name": "Have I Been Pwned", "info": "查询邮箱/密码是否在已知数据泄露事件中暴露。" },
+            { "url": "https://www.virustotal.com/", "name": "VirusTotal", "info": "免费在线病毒扫描服务，可检测文件和URL的安全性。" }
         ]
     }
 }

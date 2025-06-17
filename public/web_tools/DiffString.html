@@ -1,239 +1,708 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8">
-        <title>文本对比工具</title>
-        <!-- Link to the CSS file -->
-        <style>
-            /* --- Root Variables (Adapted from Markdown Editor) --- */
-            :root {
-                --bg-color: #f8f9fa;
-                --panel-bg: #ffffff;
-                --border-color: #e1e4e8;
-                --text-color: #24292e;
-                --secondary-text-color: #6a737d;
-                --input-bg: #fafafa; /* Slightly different background for inputs */
-                --diff-added-bg: #e6ffed;
-                --diff-added-text: #22863a;
-                --diff-removed-bg: #fff8c5; /* Using a more orange/yellow tone */
-                --diff-removed-text: #b08800; /* Corresponding darker text */
-                --diff-removed-decoration: line-through; /* Strikethrough for removed */
-            }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能文本对比工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-            /* --- Basic Body & Layout --- */
-            html, body {
-                height: 100%;
-                width: 100%;
-                margin: 0;
-                overflow: hidden; /* Prevent body scrollbars */
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                background-color: var(--bg-color);
-                color: var(--text-color);
-                font-size: 14px; /* Base font size */
-            }
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
 
-            .container {
-                padding: 1.5rem; /* Slightly reduced padding */
-                display: grid;
-                grid-template-columns: 1fr 2fr; /* Equal split */
-                gap: 1.5rem;
-                height: calc(100vh - 3rem); /* Full height minus padding */
-                box-sizing: border-box;
-            }
+        /* Dark Theme (Default) */
+        [data-theme="dark"] {
+            --bg-main: #0f0f23;
+            --bg-card: #1a1a2e;
+            --bg-input: #16213e;
+            --bg-surface: #0e1628;
+            
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --border: #334155;
+            --border-focus: var(--primary);
+            
+            --diff-added-bg: rgba(16, 185, 129, 0.15);
+            --diff-added-border: rgba(16, 185, 129, 0.3);
+            --diff-removed-bg: rgba(239, 68, 68, 0.15);
+            --diff-removed-border: rgba(239, 68, 68, 0.3);
 
-            /* --- Panel Styling (Input & Preview) --- */
-            .panel {
-                background: var(--panel-bg);
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                padding: 1.5rem;
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-                overflow: hidden; /* Let children handle scroll */
-                min-width: 0; /* Allow grid item to shrink */
-            }
+            --drag-overlay-bg: rgba(99, 102, 241, 0.2);
+        }
 
-            .panel-title {
-                font-size: 1.1em; /* Slightly smaller title */
-                font-weight: 600;
-                color: var(--text-color);
-                padding-bottom: 0.8rem;
-                border-bottom: 1px solid var(--border-color);
-                margin-bottom: 0.5rem; /* Space below title */
-                flex-shrink: 0; /* Prevent title shrinking */
-                /* user-select: none; */
-            }
+        /* Light Theme */
+        [data-theme="light"] {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --bg-surface: #f1f5f9;
+            
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            
+            --border: #e2e8f0;
+            --border-focus: var(--primary);
+            
+            --diff-added-bg: rgba(16, 185, 129, 0.1);
+            --diff-removed-bg: rgba(239, 68, 68, 0.1);
 
-            /* --- Input Panel Specifics --- */
-            .input-panel {
-                /* Uses default panel styles */
-                gap: 1.5rem; /* Space between the two input boxes */
-            }
+            --drag-overlay-bg: rgba(99, 102, 241, 0.1);
+        }
 
-            .input-box {
-                display: flex;
-                flex-direction: column;
-                flex-grow: 1; /* Make boxes share space */
-                min-height: 0; /* Allow shrinking */
-                overflow: hidden; /* Clip content within box */
-            }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
 
-            .input-textarea {
-                width: 100%;
-                flex-grow: 1; /* Textarea fills the box */
-                padding: 15px;
-                font-size: 1em; /* Use base font size */
-                line-height: 1.6;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                background: var(--input-bg);
-                resize: none; /* Disable manual resizing */
-                overflow-y: auto; /* Allow vertical scroll */
-                box-sizing: border-box;
-                font-family: 'Fira Code', 'Consolas', monospace; /* Monospaced font for code/text */
-                tab-size: 4;
-            }
+        .container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 0;
+        }
 
-            .input-textarea:focus {
-                outline: none;
-                border-color: var(--primary-color); /* Highlight focus */
-                box-shadow: 0 0 0 2px rgba(3, 102, 214, 0.3);
-            }
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 2rem; /* Adjusted padding for height */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s, border-color 0.3s;
+            position: relative;
+            z-index: 100;
+        }
 
-            /* --- Preview Panel Specifics --- */
-            .preview-panel {
-                /* Uses default panel styles */
-            }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-            .diff-output {
-                flex-grow: 1; /* Output area fills the panel body */
-                overflow-y: auto; /* Allow vertical scroll */
-                padding: 10px; /* Padding inside the output area */
-                border: 1px solid var(--border-color); /* Optional border */
-                border-radius: 6px;
-                background-color: #fff; /* White background for contrast */
-                font-family: 'Fira Code', 'Consolas', monospace; /* Match input font */
-                line-height: 1.6;
-                white-space: pre-wrap; /* Important: Preserve whitespace and wrap lines */
-                word-wrap: break-word; /* Ensure long words break */
-            }
+        .logo::before {
+            content: "⚡";
+            font-size: 1.2rem;
+        }
 
-            /* --- Diff Highlighting Styles --- */
-            .diff-added {
-                background-color: var(--diff-added-bg);
-                color: var(--diff-added-text);
-                text-decoration: none; /* Remove potential underlines */
-                /* Add subtle padding/border for better visual separation if needed */
-                /* padding: 0 2px; */
-                /* border-radius: 3px; */
-            }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
 
-            .diff-removed {
-                background-color: var(--diff-removed-bg);
-                color: var(--diff-removed-text);
-                text-decoration: var(--diff-removed-decoration);
-                /* padding: 0 2px; */
-                /* border-radius: 3px; */
-            }
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
 
-            /* Style for unchanged text (optional) */
-            /* .diff-common { */
-                /* color: var(--text-color); */
-            /* } */
-        </style>
-        <!-- JSDiff Library -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js" crossorigin="anonymous" defer></script>
-    </head>
-    <body>
-        <div class="container">
-            <!-- Input Panel (Left) -->
-            <div class="panel input-panel">
-                <div class="input-box">
-                    <div class="panel-title">原始文本 (Original Text)</div>
-                    <textarea
-                        id="originalText"
-                        class="input-textarea"
-                        placeholder="在此处粘贴或输入原始文本..."
-                        spellcheck="true"
-                        lang="en-US"
-                    ></textarea>
+        .theme-toggle:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .diff-mode-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.25rem 2.5rem 0.25rem 1rem; /* Adjusted padding for height */
+            height: 32px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            appearance: none;
+            min-width: 140px;
+        }
+
+        .diff-mode-select:hover {
+            border-color: var(--primary);
+        }
+
+        .diff-mode-select:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .select-wrapper::after {
+            content: "▼";
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+            font-size: 0.75rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-added { color: var(--success); }
+        .stat-removed { color: var(--error); }
+        .stat-changed { color: var(--warning); }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            height: calc(100vh - 65px); /* Adjusted for new header height */
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background 0.3s, border-color 0.3s;
+            position: relative;
+        }
+        
+        .panel.drag-over::before {
+            content: '拖拽文件到此处';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--drag-overlay-bg);
+            border: 3px dashed var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            z-index: 20;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .panel:last-child { border-right: none; }
+
+        .panel-header {
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+            transition: background 0.3s, border-color 0.3s, color 0.3s;
+        }
+
+        .panel-content { flex: 1; overflow: hidden; position: relative; }
+        .input-wrapper { position: relative; height: 100%; }
+
+        .clear-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            line-height: 22px;
+            text-align: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            display: none;
+            z-index: 10;
+            opacity: 0.7;
+        }
+        .clear-btn:hover {
+            opacity: 1;
+            color: var(--error);
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+            transform: scale(1.1);
+        }
+        .clear-btn.show { display: block; }
+
+        .input-area {
+            width: 100%; height: 100%;
+            background: transparent; border: none;
+            padding: 1.5rem;
+            font-family: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.875rem; line-height: 1.6;
+            color: var(--text-primary);
+            resize: none; outline: none; tab-size: 4;
+            transition: background 0.3s, border-color 0.3s;
+            border: 2px solid transparent;
+        }
+        .input-area.error-flash { border-color: var(--error) !important; }
+        .input-area::placeholder { color: var(--text-muted); transition: color 0.3s; }
+        .input-area:focus { background: rgba(99, 102, 241, 0.05); }
+
+        .diff-output {
+            height: 100%;
+            overflow-y: auto;
+            padding: 1.5rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar Styling */
+        .diff-output::-webkit-scrollbar, .input-area::-webkit-scrollbar { width: 8px; }
+        .diff-output::-webkit-scrollbar-track, .input-area::-webkit-scrollbar-track { background: var(--bg-surface); }
+        .diff-output::-webkit-scrollbar-thumb, .input-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .diff-output::-webkit-scrollbar-thumb:hover, .input-area::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* --- Diff Styles --- */
+        .inline-diff {
+             white-space: pre-wrap;
+             word-wrap: break-word;
+             font-family: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        }
+        .diff-added { background: var(--diff-added-bg); }
+        .diff-removed { background: var(--diff-removed-bg); text-decoration: line-through; opacity: 0.8; }
+        
+        .unified-diff {
+            font-family: 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        }
+        .diff-line { display: flex; width: 100%; min-height: 1.6em; }
+        .diff-line-prefix {
+            flex-shrink: 0;
+            width: 2em;
+            text-align: center;
+            user-select: none;
+        }
+        .diff-line-content {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .diff-line-added { background: var(--diff-added-bg); }
+        .diff-line-added .diff-line-prefix { color: var(--success); }
+        .diff-line-removed { background: var(--diff-removed-bg); }
+        .diff-line-removed .diff-line-prefix { color: var(--error); }
+        
+        /* Loading States */
+        .loading { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; gap: 1.5rem; color: var(--text-secondary); }
+        .loading-content { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .cancel-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; }
+        .cancel-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top: 3px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr 1fr; }
+            .panel { border-right: none; border-bottom: 1px solid var(--border); }
+            .panel:last-child { border-bottom: none; }
+        }
+
+        /* Empty State */
+        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; gap: 1rem; color: var(--text-muted); text-align: center; padding: 2rem; }
+        .empty-state-icon { font-size: 3rem; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">智能文本对比</div>
+            <div class="controls">
+                <button id="themeToggle" class="theme-toggle" title="切换主题 (Ctrl/Cmd + T)">
+                    <span id="themeIcon">🌙</span>
+                </button>
+                <div class="select-wrapper">
+                    <select id="diffMode" class="diff-mode-select">
+                        <option value="chars">字符级对比</option>
+                        <option value="words">单词级对比</option>
+                        <option value="lines">行级对比</option>
+                        <option value="sentences">句子级对比</option>
+                        <option value="json">JSON结构对比</option>
+                    </select>
                 </div>
-                <div class="input-box">
-                    <div class="panel-title">对比文本 (Comparison Text)</div>
-                    <textarea
-                        id="comparisonText"
-                        class="input-textarea"
-                        placeholder="在此处粘贴或输入要对比的文本..."
-                        spellcheck="true"
-                        lang="en-US"
-                    ></textarea>
+                <div class="stats">
+                    <div class="stat-item stat-added">
+                        <span>+</span>
+                        <span id="addedCount">0</span>
+                    </div>
+                    <div class="stat-item stat-removed">
+                        <span>-</span>
+                        <span id="removedCount">0</span>
+                    </div>
+                    <div class="stat-item stat-changed">
+                        <span>~</span>
+                        <span id="changedCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="panel">
+                <div class="panel-header">原始文本</div>
+                <div class="panel-content">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="originalText" 
+                            class="input-area scroll-sync" 
+                            placeholder="粘贴或拖拽文件到此处...
+
+支持大文件，已优化性能 🚀"
+                            spellcheck="false"
+                        ></textarea>
+                        <button class="clear-btn" id="clearOriginal" title="清空">×</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Preview Panel (Right) -->
-            <div class="panel preview-panel">
-                <div class="panel-title">对比结果 (Comparison Result)</div>
-                <div id="diffOutput" class="diff-output">
-                    <!-- Diff results will be rendered here -->
+            <div class="panel">
+                <div class="panel-header">对比文本</div>
+                <div class="panel-content">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="comparisonText" 
+                            class="input-area scroll-sync" 
+                            placeholder="粘贴或拖拽文件到此处...
+
+实时对比，无延迟 ⚡"
+                            spellcheck="false"
+                        ></textarea>
+                        <button class="clear-btn" id="clearComparison" title="清空">×</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <script>
-            // Get references to the DOM elements
-            const originalTextArea = document.getElementById('originalText');
-            const comparisonTextArea = document.getElementById('comparisonText');
-            const diffOutputDiv = document.getElementById('diffOutput');
+            <div class="panel">
+                <div class="panel-header">对比结果</div>
+                <div class="panel-content">
+                    <div id="diffOutput" class="diff-output scroll-sync">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div>输入文本开始对比</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">支持粘贴文本或直接拖拽文件</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
-            function escapeHtml(unsafe) {
-                if (typeof unsafe !== 'string') return '';
-                return unsafe
-                    .replace(/&/g, "&")
-                    .replace(/</g, "<")
-                    .replace(/>/g, ">")
-                    .replace(/"/g, "\"")
-                    .replace(/'/g, "'");
+    <!-- JSDiff Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js"></script>
+    
+    <script>
+        class DiffTool {
+            constructor() {
+                this.MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+                this.originalTextArea = document.getElementById('originalText');
+                this.comparisonTextArea = document.getElementById('comparisonText');
+                this.originalPanel = this.originalTextArea.closest('.panel');
+                this.comparisonPanel = this.comparisonTextArea.closest('.panel');
+                this.diffOutputDiv = document.getElementById('diffOutput');
+                this.diffModeSelect = document.getElementById('diffMode');
+                this.addedCount = document.getElementById('addedCount');
+                this.removedCount = document.getElementById('removedCount');
+                this.changedCount = document.getElementById('changedCount');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.themeIcon = document.getElementById('themeIcon');
+                this.clearOriginal = document.getElementById('clearOriginal');
+                this.clearComparison = document.getElementById('clearComparison');
+                
+                this.worker = null;
+                this.debounceTimer = null;
+                this.currentWorkerId = null;
+                
+                this.initTheme();
+                this.initWorker();
+                this.bindEvents();
+                this.checkInitialClearButtons();
+                this.initDragAndDrop();
+                this.initScrollSync();
             }
 
+            initTheme() {
+                const savedTheme = localStorage.getItem('diffTool_theme') || 'dark';
+                this.setTheme(savedTheme);
+            }
 
-            function updateDiff() {
-                const originalText = originalTextArea.value;
-                const comparisonText = comparisonTextArea.value;
+            setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                this.themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
+                localStorage.setItem('diffTool_theme', theme);
+            }
 
-                // Clear previous output
-                diffOutputDiv.innerHTML = '';
+            toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                this.setTheme(newTheme);
+            }
 
-                // Perform the diff (using diffWords for better readability with text)
-                // Other options: diffChars, diffLines, diffJson, etc.
-                const diff = Diff.diffChars(originalText, comparisonText); // Using JsDiff global
+            initWorker() {
+                const workerCode = `
+                    importScripts('https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js');
+                    self.onmessage = e => {
+                        const { originalText, comparisonText, mode, id } = e.data;
+                        try {
+                            let diff;
+                            let stats = { added: 0, removed: 0, changed: 0 };
+                            switch(mode) {
+                                case 'chars': diff = Diff.diffChars(originalText, comparisonText); break;
+                                case 'words': diff = Diff.diffWords(originalText, comparisonText); break;
+                                case 'lines': diff = Diff.diffLines(originalText, comparisonText, { newlineIsToken: true }); break;
+                                case 'sentences': diff = Diff.diffSentences(originalText, comparisonText); break;
+                                case 'json':
+                                    try {
+                                        const obj1 = JSON.parse(originalText || '{}');
+                                        const obj2 = JSON.parse(comparisonText || '{}');
+                                        diff = Diff.diffJson(obj1, obj2);
+                                    } catch (err) {
+                                        diff = [{ value: 'JSON格式错误: ' + err.message, added: false, removed: false }];
+                                    }
+                                    break;
+                                default: diff = Diff.diffChars(originalText, comparisonText);
+                            }
+                            diff.forEach(part => {
+                                if (part.added) stats.added++;
+                                else if (part.removed) stats.removed++;
+                            });
+                            self.postMessage({ id, success: true, diff, stats });
+                        } catch (error) {
+                            self.postMessage({ id, success: false, error: error.message });
+                        }
+                    };
+                `;
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
+                this.worker = new Worker(URL.createObjectURL(blob));
+                this.worker.onmessage = (e) => {
+                    const { id, success, diff, stats, error } = e.data;
+                    if (id === this.currentWorkerId) {
+                        if (success) {
+                            this.renderDiff(diff);
+                            this.updateStats(stats);
+                        } else {
+                            this.showError(error);
+                        }
+                        this.currentWorkerId = null;
+                    }
+                };
+            }
 
-                // Create a document fragment to build the output efficiently
-                const fragment = document.createDocumentFragment();
+            bindEvents() {
+                const debouncedUpdate = () => {
+                    clearTimeout(this.debounceTimer);
+                    this.debounceTimer = setTimeout(() => this.updateDiff(), 300);
+                };
+                this.originalTextArea.addEventListener('input', () => { this.toggleClearButton(this.clearOriginal, this.originalTextArea.value); debouncedUpdate(); });
+                this.comparisonTextArea.addEventListener('input', () => { this.toggleClearButton(this.clearComparison, this.comparisonTextArea.value); debouncedUpdate(); });
+                this.diffModeSelect.addEventListener('change', () => this.updateDiff());
+                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+                this.clearOriginal.addEventListener('click', () => { this.originalTextArea.value = ''; this.originalTextArea.focus(); this.toggleClearButton(this.clearOriginal, ''); this.updateDiff(); });
+                this.clearComparison.addEventListener('click', () => { this.comparisonTextArea.value = ''; this.comparisonTextArea.focus(); this.toggleClearButton(this.clearComparison, ''); this.updateDiff(); });
+                this.diffOutputDiv.addEventListener('click', (e) => { if (e.target && e.target.id === 'cancelDiffBtn') { this.cancelDiff(); } });
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        if (e.key.toLowerCase() === 'k') { e.preventDefault(); this.clearAll(); }
+                        if (e.key.toLowerCase() === 't') { e.preventDefault(); this.toggleTheme(); }
+                    }
+                });
+            }
 
-                diff.forEach((part) => {
-                    // Determine the CSS class based on the diff type
-                    const cssClass = part.added ? 'diff-added' :
-                                    part.removed ? 'diff-removed' : 'diff-common'; // 'diff-common' is optional
+            initDragAndDrop() {
+                const setupPanel = (panel, textarea) => {
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => panel.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false));
+                    ['dragenter', 'dragover'].forEach(eventName => panel.addEventListener(eventName, () => panel.classList.add('drag-over'), false));
+                    ['dragleave', 'drop'].forEach(eventName => panel.addEventListener(eventName, () => panel.classList.remove('drag-over'), false));
+                    panel.addEventListener('drop', (e) => {
+                        const file = e.dataTransfer.files[0];
+                        if (!file) return;
+                        if (file.size > this.MAX_FILE_SIZE) { this.showFileError(textarea, `文件过大 (最大 ${this.MAX_FILE_SIZE / 1024 / 1024}MB)`); return; }
+                        const reader = new FileReader();
+                        reader.onload = (readEvent) => { textarea.value = readEvent.target.result; textarea.dispatchEvent(new Event('input', { bubbles: true })); };
+                        reader.onerror = () => { this.showFileError(textarea, "无法读取文件，请确保为文本文件"); };
+                        reader.readAsText(file, 'UTF-8');
+                    }, false);
+                };
+                setupPanel(this.originalPanel, this.originalTextArea);
+                setupPanel(this.comparisonPanel, this.comparisonTextArea);
+            }
 
-                    // Create a span for the part
-                    const span = document.createElement('span');
-                    span.className = cssClass; // Apply the class (even for common parts if styled)
-                    // Escape the text content before adding it
-                    span.appendChild(document.createTextNode(part.value));
+            initScrollSync() {
+                const panes = document.querySelectorAll('.scroll-sync');
+                let activePane = null;
+                let isSyncing = false;
 
-                    // Append the span to the fragment
-                    fragment.appendChild(span);
+                panes.forEach(pane => {
+                    pane.addEventListener('mouseenter', () => activePane = pane);
+                    pane.addEventListener('mouseleave', () => activePane = null);
                 });
 
-                // Append the completed fragment to the output div
-                diffOutputDiv.appendChild(fragment);
+                const syncScroll = () => {
+                    if (isSyncing || !activePane) {
+                        isSyncing = false;
+                        return;
+                    }
+
+                    isSyncing = true;
+                    
+                    const scrollRatio = activePane.scrollTop / (activePane.scrollHeight - activePane.clientHeight);
+
+                    panes.forEach(pane => {
+                        if (pane !== activePane) {
+                            if (pane.scrollHeight > pane.clientHeight) {
+                                pane.scrollTop = scrollRatio * (pane.scrollHeight - pane.clientHeight);
+                            }
+                        }
+                    });
+                    
+                    isSyncing = false;
+                };
+                
+                let animationFrameId = null;
+                const onScroll = () => {
+                     if (animationFrameId) {
+                        window.cancelAnimationFrame(animationFrameId);
+                    }
+                    animationFrameId = window.requestAnimationFrame(syncScroll);
+                };
+
+                panes.forEach(pane => {
+                    pane.addEventListener('scroll', onScroll, { passive: true });
+                });
             }
-            originalTextArea.addEventListener('input', updateDiff);
-            originalTextArea.oninput = updateDiff;
-            comparisonTextArea.addEventListener('input', updateDiff);
-            comparisonTextArea.oninput = updateDiff;
-        </script>
-        
-    </body>
+
+            showFileError(textarea, message) {
+                const originalPlaceholder = textarea.placeholder;
+                textarea.value = '';
+                textarea.placeholder = message;
+                textarea.classList.add('error-flash');
+                setTimeout(() => { textarea.placeholder = originalPlaceholder; textarea.classList.remove('error-flash'); }, 3000);
+            }
+
+            toggleClearButton(button, value) { button.classList.toggle('show', value.trim().length > 0); }
+            checkInitialClearButtons() { this.toggleClearButton(this.clearOriginal, this.originalTextArea.value); this.toggleClearButton(this.clearComparison, this.comparisonTextArea.value); }
+
+            updateDiff() {
+                const originalText = this.originalTextArea.value;
+                const comparisonText = this.comparisonTextArea.value;
+                const mode = this.diffModeSelect.value;
+                if (!originalText && !comparisonText) { this.showEmptyState(); return; }
+                this.showLoading();
+                this.currentWorkerId = Date.now();
+                this.worker.postMessage({ originalText, comparisonText, mode, id: this.currentWorkerId });
+            }
+
+            cancelDiff() { if (this.worker) this.worker.terminate(); this.initWorker(); this.currentWorkerId = null; this.showEmptyState(); }
+
+            renderDiff(diff) {
+                const mode = this.diffModeSelect.value;
+                if (['lines', 'sentences', 'json'].includes(mode)) {
+                    this.renderUnifiedDiff(diff);
+                } else {
+                    this.renderInlineDiff(diff);
+                }
+            }
+
+            renderInlineDiff(diff) {
+                const fragment = document.createDocumentFragment();
+                const pre = document.createElement('pre');
+                pre.className = 'inline-diff';
+                diff.forEach((part) => {
+                    const span = document.createElement('span');
+                    if (part.added) span.className = 'diff-added';
+                    else if (part.removed) span.className = 'diff-removed';
+                    span.textContent = part.value;
+                    pre.appendChild(span);
+                });
+                this.diffOutputDiv.innerHTML = '';
+                this.diffOutputDiv.appendChild(pre);
+            }
+
+            renderUnifiedDiff(diff) {
+                const fragment = document.createDocumentFragment();
+                const container = document.createElement('div');
+                container.className = 'unified-diff';
+                diff.forEach(part => {
+                    const type = part.added ? 'added' : part.removed ? 'removed' : 'common';
+                    const prefix = part.added ? '+' : part.removed ? '-' : ' ';
+                    let lines = part.value.split('\n');
+                    if (lines[lines.length - 1] === '') { lines.pop(); }
+                    lines.forEach(line => {
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = `diff-line diff-line-${type}`;
+                        const prefixSpan = document.createElement('span');
+                        prefixSpan.className = 'diff-line-prefix';
+                        prefixSpan.textContent = prefix;
+                        const contentSpan = document.createElement('span');
+                        contentSpan.className = 'diff-line-content';
+                        contentSpan.textContent = line;
+                        lineDiv.appendChild(prefixSpan);
+                        lineDiv.appendChild(contentSpan);
+                        container.appendChild(lineDiv);
+                    });
+                });
+                this.diffOutputDiv.innerHTML = '';
+                this.diffOutputDiv.appendChild(container);
+            }
+
+            updateStats(stats) {
+                this.addedCount.textContent = stats.added;
+                this.removedCount.textContent = stats.removed;
+                this.changedCount.textContent = stats.changed || 0;
+            }
+
+            showLoading() { this.diffOutputDiv.innerHTML = `<div class="loading"><div class="loading-content"><div class="spinner"></div><div>正在对比中...</div></div><button id="cancelDiffBtn" class="cancel-btn">取消</button></div>`; }
+            showEmptyState() { this.diffOutputDiv.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📊</div><div>输入文本开始对比</div><div style="font-size: 0.8rem; opacity: 0.7;">支持粘贴文本或直接拖拽文件</div></div>`; this.updateStats({ added: 0, removed: 0, changed: 0 }); }
+            showError(error) { this.diffOutputDiv.innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><div>对比出错</div><div style="font-size: 0.8rem; opacity: 0.7;">${error}</div></div>`; }
+            clearAll() { this.originalTextArea.value = ''; this.comparisonTextArea.value = ''; this.toggleClearButton(this.clearOriginal, ''); this.toggleClearButton(this.clearComparison, ''); this.showEmptyState(); this.originalTextArea.focus(); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { new DiffTool(); });
+    </script>
+</body>
 </html>
