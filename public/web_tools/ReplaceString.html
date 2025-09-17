@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本替换工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: white;
+            padding: 15px 25px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 24px;
+        }
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .left-panel {
+            width: 50%;
+            background: white;
+            padding: 20px;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+        }
+        .right-panel {
+            width: 50%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: monospace;
+        }
+        textarea:focus, input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: auto;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        .mode-option:hover {
+            background-color: #f8f9fa;
+            border-color: #3498db;
+        }
+        .mode-option.selected {
+            background-color: #e3f2fd;
+            border-color: #3498db;
+        }
+        .mode-option input[type="radio"] {
+            margin: 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            position: relative;
+        }
+        .result-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 16px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-content {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .regex-info {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .hidden {
+            display: none;
+        }
+        .replace-pair {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .replace-pair input {
+            flex: 1;
+        }
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+        .add-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .copy-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .copy-btn:hover {
+            background: #8e44ad;
+        }
+        .copy-all-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .copy-all-btn:hover {
+            background: #8e44ad;
+        }
+        .option-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .copy-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .right-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>文本替换工具</h1>
+        <button id="copy-all-btn" class="copy-all-btn">复制全部结果</button>
+    </header>
+    
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="section-title">输入区域</div>
+            
+            <div class="input-group">
+                <label for="source-text">源文本：</label>
+                <textarea id="source-text" placeholder="请输入要替换的文本" spellcheck="false">function testPD335() {
+    console.log("PD335 is working");
+    let pd335 = "PD335 value";
+    return pd335;
+}</textarea>
+            </div>
+            
+            <div class="mode-selector">
+                <label class="mode-option selected" id="exact-mode-label">
+                    <input type="radio" id="exact-mode" name="mode" value="exact" checked>
+                    <span>完全匹配</span>
+                </label>
+                <label class="mode-option" id="regex-mode-label">
+                    <input type="radio" id="regex-mode" name="mode" value="regex">
+                    <span>正则匹配</span>
+                </label>
+            </div>
+            
+            <div id="exact-controls">
+                <label>替换规则：</label>
+                <div id="exact-pairs">
+                    <div class="replace-pair">
+                        <input type="text" class="search-text" placeholder="查找文本" value="PD335">
+                        <span>→</span>
+                        <input type="text" class="replace-text" placeholder="替换文本" value="PD324">
+                        <button class="remove-btn">×</button>
+                    </div>
+                </div>
+                <button class="add-btn" id="add-exact-pair">添加替换规则</button>
+            </div>
+            
+            <div id="regex-controls" class="hidden">
+                <div class="input-group">
+                    <label for="regex-pattern">正则表达式：</label>
+                    <input type="text" id="regex-pattern" placeholder="例如：PD335" value="(pd335)" spellcheck="false">
+                    <p class="regex-info">使用标准正则表达式语法，如 /pattern/flags 格式</p>
+                </div>
+                
+                <label>替换为：</label>
+                <div id="regex-replacements">
+                    <div class="replace-pair">
+                        <input type="text" class="replace-text" placeholder="替换文本" value="pd324">
+                        <button class="remove-btn">×</button>
+                    </div>
+                </div>
+                <button class="add-btn" id="add-regex-replacement">添加替换文本</button>
+            </div>
+            
+            <div class="option-group">
+                <input type="checkbox" id="preserve-case" checked>
+                <label for="preserve-case">大小写继承（保持原文本的大小写格式）</label>
+            </div>
+            
+            <div class="actions">
+                <button id="replace-btn">执行替换</button>
+                <button id="clear-btn">清除结果</button>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="right-header">
+                <div class="section-title">替换结果</div>
+            </div>
+            <div id="result-container" class="result-container">
+                <!-- 结果将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <div id="copy-feedback" class="copy-feedback">已复制到剪贴板！</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sourceText = document.getElementById('source-text');
+            const exactControls = document.getElementById('exact-controls');
+            const regexControls = document.getElementById('regex-controls');
+            const regexPattern = document.getElementById('regex-pattern');
+            const exactPairs = document.getElementById('exact-pairs');
+            const regexReplacements = document.getElementById('regex-replacements');
+            const addExactPairBtn = document.getElementById('add-exact-pair');
+            const addRegexReplacementBtn = document.getElementById('add-regex-replacement');
+            const replaceBtn = document.getElementById('replace-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const resultContainer = document.getElementById('result-container');
+            const modeRadios = document.querySelectorAll('input[name="mode"]');
+            const preserveCaseCheckbox = document.getElementById('preserve-case');
+            const copyFeedback = document.getElementById('copy-feedback');
+            const copyAllBtn = document.getElementById('copy-all-btn');
+            const exactModeLabel = document.getElementById('exact-mode-label');
+            const regexModeLabel = document.getElementById('regex-mode-label');
+            
+            // 存储所有结果文本
+            let allResults = [];
+            
+            // 模式切换
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'exact') {
+                        exactControls.classList.remove('hidden');
+                        regexControls.classList.add('hidden');
+                        exactModeLabel.classList.add('selected');
+                        regexModeLabel.classList.remove('selected');
+                    } else {
+                        exactControls.classList.add('hidden');
+                        regexControls.classList.remove('hidden');
+                        exactModeLabel.classList.remove('selected');
+                        regexModeLabel.classList.add('selected');
+                    }
+                });
+            });
+            
+            // 添加完全匹配替换规则对
+            addExactPairBtn.addEventListener('click', function() {
+                if (document.querySelectorAll('#exact-pairs .replace-pair').length >= 5) {
+                    alert('最多只能添加5个替换规则');
+                    return;
+                }
+                
+                const newPair = document.createElement('div');
+                newPair.className = 'replace-pair';
+                newPair.innerHTML = `
+                    <input type="text" class="search-text" placeholder="查找文本">
+                    <span>→</span>
+                    <input type="text" class="replace-text" placeholder="替换文本">
+                    <button class="remove-btn">×</button>
+                `;
+                
+                newPair.querySelector('.remove-btn').addEventListener('click', function() {
+                    newPair.remove();
+                });
+                
+                exactPairs.appendChild(newPair);
+            });
+            
+            // 添加正则替换文本
+            addRegexReplacementBtn.addEventListener('click', function() {
+                if (document.querySelectorAll('#regex-replacements .replace-pair').length >= 5) {
+                    alert('最多只能添加5个替换文本');
+                    return;
+                }
+                
+                const newReplacement = document.createElement('div');
+                newReplacement.className = 'replace-pair';
+                newReplacement.innerHTML = `
+                    <input type="text" class="replace-text" placeholder="替换文本">
+                    <button class="remove-btn">×</button>
+                `;
+                
+                newReplacement.querySelector('.remove-btn').addEventListener('click', function() {
+                    newReplacement.remove();
+                });
+                
+                regexReplacements.appendChild(newReplacement);
+            });
+            
+            // 初始化删除按钮事件
+            document.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.parentElement.remove();
+                });
+            });
+            
+            // 清除结果
+            clearBtn.addEventListener('click', function() {
+                resultContainer.innerHTML = '';
+                allResults = [];
+            });
+            
+            // 执行替换
+            replaceBtn.addEventListener('click', function() {
+                const text = sourceText.value;
+                if (!text.trim()) {
+                    alert('请输入源文本');
+                    return;
+                }
+                
+                resultContainer.innerHTML = '';
+                allResults = [];
+                
+                if (document.querySelector('input[name="mode"]:checked').value === 'exact') {
+                    // 完全匹配模式
+                    const pairs = document.querySelectorAll('#exact-pairs .replace-pair');
+                    if (pairs.length === 0) {
+                        alert('请至少添加一个替换规则');
+                        return;
+                    }
+                    
+                    pairs.forEach(pair => {
+                        const search = pair.querySelector('.search-text').value.trim();
+                        const replace = pair.querySelector('.replace-text').value;
+                        
+                        if (!search) {
+                            alert('查找文本不能为空');
+                            return;
+                        }
+                        
+                        let result = text;
+                        // 全局替换所有匹配项
+                        const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escapedSearch, 'g');
+                        result = result.replace(regex, replace);
+                        
+                        addResult(result, `替换 "${search}" → "${replace}"`);
+                    });
+                } else {
+                    // 正则匹配模式
+                    const pattern = regexPattern.value.trim();
+                    if (!pattern) {
+                        alert('请输入正则表达式');
+                        return;
+                    }
+                    
+                    const replacements = document.querySelectorAll('#regex-replacements .replace-text');
+                    if (replacements.length === 0) {
+                        alert('请至少添加一个替换文本');
+                        return;
+                    }
+                    
+                    try {
+                        // 尝试解析正则表达式
+                        let regex;
+                        if (pattern.startsWith('/')) {
+                            // 处理 /pattern/flags 格式
+                            const lastSlash = pattern.lastIndexOf('/');
+                            if (lastSlash === 0) {
+                                throw new Error('无效的正则表达式格式');
+                            }
+                            
+                            const expr = pattern.substring(1, lastSlash);
+                            const flags = pattern.substring(lastSlash + 1);
+                            regex = new RegExp(expr, flags);
+                        } else {
+                            // 直接使用字符串
+                            regex = new RegExp(pattern, 'gi');
+                        }
+                        
+                        // 为每个替换文本生成结果
+                        replacements.forEach(replacementInput => {
+                            const replace = replacementInput.value;
+                            let result = text;
+                            
+                            if (preserveCaseCheckbox.checked) {
+                                // 大小写继承逻辑
+                                result = result.replace(regex, (match) => {
+                                    return preserveCase(match, replace);
+                                });
+                            } else {
+                                // 普通替换
+                                result = result.replace(regex, replace);
+                            }
+                            
+                            addResult(result, `正则替换 "${pattern}" → "${replace}"`);
+                        });
+                    } catch (e) {
+                        alert('正则表达式错误: ' + e.message);
+                    }
+                }
+            });
+            
+            // 复制全部结果
+            copyAllBtn.addEventListener('click', function() {
+                if (allResults.length === 0) {
+                    alert('没有可复制的结果');
+                    return;
+                }
+                
+                // 将所有结果用两个换行符连接
+                const allText = allResults.join('\n\n');
+                
+                copyToClipboard(allText).then(() => {
+                    showCopyFeedback();
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动复制文本');
+                });
+            });
+            
+            // 大小写继承函数
+            function preserveCase(original, replacement) {
+                // 如果原始文本全大写，则替换文本也全大写
+                if (original === original.toUpperCase()) {
+                    return replacement.toUpperCase();
+                }
+                
+                // 如果原始文本首字母大写，则替换文本也首字母大写
+                if (original[0] === original[0].toUpperCase() && original.slice(1) === original.slice(1).toLowerCase()) {
+                    return replacement.charAt(0).toUpperCase() + replacement.slice(1).toLowerCase();
+                }
+                
+                // 如果原始文本全小写，则替换文本也全小写
+                if (original === original.toLowerCase()) {
+                    return replacement.toLowerCase();
+                }
+                
+                // 其他情况保持替换文本原样
+                return replacement;
+            }
+            
+            function addResult(text, title) {
+                // 存储结果文本
+                allResults.push(text);
+                
+                const resultBox = document.createElement('div');
+                resultBox.className = 'result-box';
+                
+                // 使用textContent避免XSS
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = title;
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = '复制结果';
+                
+                const heading = document.createElement('h3');
+                heading.appendChild(titleSpan);
+                heading.appendChild(copyBtn);
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'result-content';
+                contentDiv.textContent = text;
+                
+                resultBox.appendChild(heading);
+                resultBox.appendChild(contentDiv);
+                
+                // 添加复制功能
+                copyBtn.addEventListener('click', function() {
+                    copyToClipboard(text).then(() => {
+                        showCopyFeedback();
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        alert('复制失败，请手动复制文本');
+
+                    });
+                });
+                
+                resultContainer.appendChild(resultBox);
+            }
+            
+            // 复制到剪贴板函数
+            async function copyToClipboard(text) {
+                try {
+                    // 使用现代Clipboard API
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (err) {
+                    console.error('现代Clipboard API失败，使用备用方法:', err);
+                    
+                    // 备用方法：创建临时textarea元素
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.top = 0;
+                    textArea.style.left = 0;
+                    textArea.style.width = '2em';
+                    textArea.style.height = '2em';
+                    textArea.style.padding = 0;
+                    textArea.style.border = 'none';
+                    textArea.style.outline = 'none';
+                    textArea.style.boxShadow = 'none';
+                    textArea.style.background = 'transparent';
+                    
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    
+                    try {
+                        const successful = document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        return successful;
+                    } catch (err) {
+                        document.body.removeChild(textArea);
+                        throw err;
+                    }
+                }
+            }
+            
+            // 显示复制成功反馈
+            function showCopyFeedback() {
+                copyFeedback.style.opacity = 1;
+                setTimeout(() => {
+                    copyFeedback.style.opacity = 0;
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
