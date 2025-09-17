@@ -245,6 +245,10 @@
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .copy-feedback.show {
+            opacity: 1;
         }
         .right-header {
             display: flex;
@@ -525,7 +529,7 @@
                 }
             });
             
-            // 复制全部结果
+            // 复制全部结果 - 重新设计的功能
             copyAllBtn.addEventListener('click', function() {
                 if (allResults.length === 0) {
                     alert('没有可复制的结果');
@@ -535,12 +539,47 @@
                 // 将所有结果用两个换行符连接
                 const allText = allResults.join('\n\n');
                 
-                copyToClipboard(allText).then(() => {
-                    showCopyFeedback();
-                }).catch(err => {
+                // 创建一个临时的textarea元素用于复制
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = allText;
+                tempTextArea.setAttribute('readonly', '');
+                tempTextArea.style.position = 'absolute';
+                tempTextArea.style.left = '-9999px';
+                document.body.appendChild(tempTextArea);
+                
+                // 选择文本并尝试复制
+                tempTextArea.select();
+                tempTextArea.setSelectionRange(0, 99999); // 对于移动设备
+                
+                let copySuccess = false;
+                try {
+                    copySuccess = document.execCommand('copy');
+                } catch (err) {
                     console.error('复制失败:', err);
-                    alert('复制失败，请手动复制文本');
-                });
+                    copySuccess = false;
+                }
+                
+                // 移除临时元素
+                document.body.removeChild(tempTextArea);
+                
+                // 显示反馈
+                if (copySuccess) {
+                    showCopyFeedback('已复制全部结果到剪贴板！');
+                } else {
+                    // 如果execCommand失败，尝试使用现代Clipboard API
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(allText)
+                            .then(() => {
+                                showCopyFeedback('已复制全部结果到剪贴板！');
+                            })
+                            .catch(err => {
+                                console.error('Clipboard API失败:', err);
+                                alert('复制失败，请手动选择并复制文本。');
+                            });
+                    } else {
+                        alert('复制失败，请手动选择并复制文本。');
+                    }
+                }
             });
             
             // 大小写继承函数
@@ -590,102 +629,85 @@
                 resultBox.appendChild(heading);
                 resultBox.appendChild(contentDiv);
                 
-                // 添加复制功能
+                // 添加复制功能 - 为每个结果单独设计复制功能
                 copyBtn.addEventListener('click', function() {
-                    copyToClipboard(text).then(() => {
-                        showCopyFeedback();
-                    }).catch(err => {
-                        console.error('复制失败:', err);
-                        alert('复制失败，请手动复制文本');
+                    // 创建临时textarea
+                    const tempTextArea = document.createElement('textarea');
+                    tempTextArea.value = text;
+                    tempTextArea.setAttribute('readonly', '');
+                    tempTextArea.style.position = 'absolute';
 
-                    });
+
+                    tempTextArea.style.left = '-9999px';
+                    document.body.appendChild(tempTextArea);
+
+                    
+                    // 选择并复制
+                    tempTextArea.select();
+                    tempTextArea.setSelectionRange(0, 99999);
+                    
+                    let copySuccess = false;
+                    try {
+                        copySuccess = document.execCommand('copy');
+
+
+                    } catch (err) {
+                        console.error('复制失败:', err);
+
+                        copySuccess = false;
+                    }
+                    
+                    // 移除临时元素
+                    document.body.removeChild(tempTextArea);
+
+
+                    
+                    // 显示反馈
+                    if (copySuccess) {
+
+                        showCopyFeedback('已复制到剪贴板！');
+
+                    } else {
+                        // 尝试使用现代Clipboard API
+                        if (navigator.clipboard) {
+
+
+
+
+                            navigator.clipboard.writeText(text)
+
+                                .then(() => {
+                                    showCopyFeedback('已复制到剪贴板！');
+
+                                })
+                                .catch(err => {
+                                    console.error('Clipboard API失败:', err);
+
+                                    alert('复制失败，请手动选择并复制文本。');
+
+                                });
+                        } else {
+                            alert('复制失败，请手动选择并复制文本。');
+                        }
+                    }
                 });
                 
                 resultContainer.appendChild(resultBox);
             }
             
-            // 复制到剪贴板函数
-            async function copyToClipboard(text) {
-                try {
-                    // 使用现代Clipboard API
-                    await navigator.clipboard.writeText(text);
-                    return true;
-                } catch (err) {
-                    console.error('现代Clipboard API失败，使用备用方法:', err);
-                    
-                    // 备用方法：创建临时textarea元素
-                    const textArea = document.createElement('textarea');
-                    textArea.value = text;
-                    textArea.style.position = 'fixed';
-                    textArea.style.top = 0;
-                    textArea.style.left = 0;
-                    textArea.style.width = '2em';
-                    textArea.style.height = '2em';
-                    textArea.style.padding = 0;
-                    textArea.style.border = 'none';
-                    textArea.style.outline = 'none';
-                    textArea.style.boxShadow = 'none';
-                    textArea.style.background = 'transparent';
-                    
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    
-                    try {
-                        const successful = document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                        return successful;
-                    } catch (err) {
-                        document.body.removeChild(textArea);
-                        throw err;
-                    }
-                }
-            }
-            
             // 显示复制成功反馈
-            function showCopyFeedback() {
-                copyFeedback.style.opacity = 1;
+            function showCopyFeedback(message) {
+                copyFeedback.textContent = message || '已复制到剪贴板！';
+                copyFeedback.classList.add('show');
+                
                 setTimeout(() => {
-                    copyFeedback.style.opacity = 0;
+                    copyFeedback.classList.remove('show');
                 }, 2000);
             }
         });
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
